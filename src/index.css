@@ -119,6 +119,95 @@ body {
   font-weight: 600;
 }
 
+/* Username Reservation */
+.reservation-section {
+  background: linear-gradient(135deg, hsla(var(--bc-accent), 0.1) 0%, hsla(var(--bc-primary), 0.1) 100%);
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.reservation-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--bc-text));
+  margin-bottom: 0.5rem;
+}
+
+.reservation-section > p {
+  color: hsl(var(--bc-text-muted));
+  margin-bottom: 1.5rem;
+}
+
+.reservation-form {
+  display: flex;
+  gap: 1rem;
+  max-width: 500px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.reservation-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.875rem 1.25rem;
+  background: hsl(var(--bc-bg-dark));
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 12px;
+  color: hsl(var(--bc-text));
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.reservation-input:focus {
+  border-color: hsl(var(--bc-primary));
+}
+
+.reservation-input::placeholder {
+  color: hsl(var(--bc-text-muted));
+}
+
+.reservation-button {
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, hsl(var(--bc-primary)) 0%, hsl(var(--bc-secondary)) 100%);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reservation-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px hsla(var(--bc-primary), 0.3);
+}
+
+.reservation-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background: hsla(120, 60%, 40%, 0.2);
+  border: 1px solid hsla(120, 60%, 40%, 0.4);
+  border-radius: 12px;
+  color: hsl(120, 60%, 60%);
+  font-size: 1rem;
+}
+
+.reservation-success span {
+  font-size: 1.25rem;
+}
+
+.reservation-success strong {
+  color: hsl(120, 60%, 70%);
+}
+
 /* Info Cards */
 .info-cards {
   display: grid;
@@ -164,6 +253,68 @@ body {
   color: hsl(var(--bc-text));
 }
 
+/* Team Section */
+.team-section {
+  background: hsla(var(--bc-bg-card), 0.6);
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.team-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, hsl(var(--bc-secondary)) 0%, hsl(var(--bc-primary)) 100%);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.team-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--bc-text));
+  margin-bottom: 1rem;
+}
+
+.team-section > p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: hsl(var(--bc-text-muted));
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+}
+
+.team-section strong {
+  color: hsl(var(--bc-accent));
+}
+
+.disclaimer {
+  padding: 1rem 1.5rem;
+  background: hsla(0, 60%, 40%, 0.1);
+  border: 1px solid hsla(0, 60%, 40%, 0.3);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: hsl(var(--bc-text-muted));
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.disclaimer strong {
+  color: hsl(0, 60%, 60%);
+}
+
+.disclaimer em {
+  color: hsl(var(--bc-text));
+  font-style: normal;
+  font-weight: 600;
+}
+
 /* Domain Notice */
 .domain-notice {
   background: linear-gradient(135deg, hsla(var(--bc-primary), 0.1) 0%, hsla(var(--bc-secondary), 0.1) 100%);
@@ -197,6 +348,66 @@ body {
 .domain-notice strong {
   color: hsl(var(--bc-text));
   font-weight: 600;
+}
+
+/* Social Section */
+.social-section {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.social-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: hsl(var(--bc-text));
+  margin-bottom: 1.5rem;
+}
+
+.social-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.social-link:hover {
+  transform: translateY(-3px);
+}
+
+.social-link.discord {
+  background: #5865F2;
+  color: white;
+}
+
+.social-link.discord:hover {
+  box-shadow: 0 10px 25px rgba(88, 101, 242, 0.4);
+}
+
+.social-link.twitter {
+  background: hsl(var(--bc-bg-card));
+  border: 1px solid hsl(var(--bc-border));
+  color: hsl(var(--bc-text));
+}
+
+.social-link.twitter:hover {
+  box-shadow: 0 10px 25px hsla(var(--bc-primary), 0.2);
+}
+
+.social-icon {
+  width: 20px;
+  height: 20px;
 }
 
 /* Footer */
@@ -243,12 +454,22 @@ body {
     grid-template-columns: 1fr;
   }
   
-  .domain-notice {
+  .domain-notice,
+  .team-section,
+  .reservation-section {
     padding: 1.5rem;
     text-align: center;
   }
   
   .domain-notice h3 {
     justify-content: center;
+  }
+  
+  .reservation-form {
+    flex-direction: column;
+  }
+  
+  .reservation-input {
+    min-width: 100%;
   }
 }
