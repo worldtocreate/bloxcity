@@ -71,7 +71,7 @@ const Index = () => {
           <div className="info-card">
             <ArrowRight className="info-icon" />
             <h3>Returning</h3>
-            <p>2026</p>
+            <p>March 2026</p>
           </div>
           <div className="info-card">
             <Globe className="info-icon" />
@@ -87,8 +87,8 @@ const Index = () => {
           </div>
           <h3>A Community Revival Project</h3>
           <p>
-            BLOX City is being brought back by a dedicated team of <strong>4 developers</strong> who 
-            share a passion for reviving this once-loved platform. We are building this project with 
+            BLOX City is being brought back by a dedicated team of 4 developers who 
+            share a passion for reviving this once-loved platform. We are building this project with
             the vision to recreate the magic that made BLOX City special.
           </p>
           <div className="disclaimer">
