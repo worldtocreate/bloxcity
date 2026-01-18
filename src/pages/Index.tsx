@@ -29,7 +29,7 @@ const Index = () => {
         <div className="message-section">
           <h2 className="message-title">We're Coming Back</h2>
           <p className="message-text">
-            The original BLOX City experience from March 2016 is returning in <strong>2026</strong>. 
+            The original BLOX City experience from March 2016 is returning in 2026. 
             Our beloved website and client are being rebuilt from the ground up.
           </p>
         </div>
@@ -128,7 +128,7 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="maintenance-footer">
-          <p>© 2016 - 2026 BLOX City Revival Team. All rights reserved.</p>
+          <p>© 2026 BLOX City, Inc. All rights reserved.</p>
           <p className="domain-badge">bloxcity.net</p>
         </footer>
       </div>
