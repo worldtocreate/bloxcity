@@ -5,16 +5,20 @@
 /* BLOX City Maintenance Page Styles */
 
 :root {
-  --bc-primary: 220 90% 56%;
-  --bc-primary-dark: 220 90% 40%;
-  --bc-secondary: 280 80% 55%;
-  --bc-accent: 45 100% 55%;
-  --bc-bg-dark: 220 25% 8%;
-  --bc-bg-card: 220 25% 12%;
-  --bc-text: 0 0% 100%;
-  --bc-text-muted: 220 15% 65%;
-  --bc-border: 220 20% 20%;
-  --bc-glow: 220 90% 60%;
+  --bc-red: 4 80% 55%;
+  --bc-yellow: 45 95% 55%;
+  --bc-green: 145 65% 42%;
+  --bc-blue: 217 70% 60%;
+  --bc-primary: 217 70% 55%;
+  --bc-primary-dark: 217 70% 45%;
+  --bc-secondary: 4 80% 55%;
+  --bc-accent: 45 95% 55%;
+  --bc-bg-light: 0 0% 100%;
+  --bc-bg-card: 0 0% 98%;
+  --bc-text: 220 15% 20%;
+  --bc-text-muted: 220 10% 45%;
+  --bc-border: 220 15% 88%;
+  --bc-glow: 217 70% 60%;
 }
 
 * {
@@ -25,7 +29,7 @@
 
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: hsl(var(--bc-bg-dark));
+  background: hsl(var(--bc-bg-light));
   color: hsl(var(--bc-text));
   min-height: 100vh;
 }
@@ -37,9 +41,9 @@ body {
   justify-content: center;
   padding: 2rem;
   background: 
-    radial-gradient(ellipse at 20% 20%, hsla(var(--bc-primary), 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, hsla(var(--bc-secondary), 0.1) 0%, transparent 50%),
-    linear-gradient(180deg, hsl(var(--bc-bg-dark)) 0%, hsl(220 25% 5%) 100%);
+    radial-gradient(ellipse at 20% 20%, hsla(var(--bc-blue), 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, hsla(var(--bc-red), 0.06) 0%, transparent 50%),
+    hsl(var(--bc-bg-light));
 }
 
 .maintenance-content {
@@ -57,15 +61,16 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100px;
-  height: 100px;
-  background: linear-gradient(135deg, hsl(var(--bc-primary)) 0%, hsl(var(--bc-secondary)) 100%);
-  border-radius: 24px;
+  width: 120px;
+  height: 120px;
   margin-bottom: 1.5rem;
-  box-shadow: 
-    0 20px 40px hsla(var(--bc-primary), 0.3),
-    0 0 60px hsla(var(--bc-glow), 0.2);
   animation: float 6s ease-in-out infinite;
+}
+
+.logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 @keyframes float {
@@ -73,14 +78,10 @@ body {
   50% { transform: translateY(-10px); }
 }
 
-.logo-icon svg {
-  color: white;
-}
-
 .brand-title {
   font-size: 3.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, hsl(var(--bc-primary)) 0%, hsl(var(--bc-secondary)) 50%, hsl(var(--bc-accent)) 100%);
+  background: linear-gradient(135deg, hsl(var(--bc-red)) 0%, hsl(var(--bc-yellow)) 33%, hsl(var(--bc-green)) 66%, hsl(var(--bc-blue)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -121,12 +122,13 @@ body {
 
 /* Username Reservation */
 .reservation-section {
-  background: linear-gradient(135deg, hsla(var(--bc-accent), 0.1) 0%, hsla(var(--bc-primary), 0.1) 100%);
+  background: hsl(var(--bc-bg-card));
   border: 1px solid hsl(var(--bc-border));
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 3rem;
   text-align: center;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
 }
 
 .reservation-section h3 {
@@ -154,7 +156,7 @@ body {
   flex: 1;
   min-width: 200px;
   padding: 0.875rem 1.25rem;
-  background: hsl(var(--bc-bg-dark));
+  background: hsl(var(--bc-bg-light));
   border: 1px solid hsl(var(--bc-border));
   border-radius: 12px;
   color: hsl(var(--bc-text));
@@ -173,7 +175,7 @@ body {
 
 .reservation-button {
   padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, hsl(var(--bc-primary)) 0%, hsl(var(--bc-secondary)) 100%);
+  background: linear-gradient(135deg, hsl(var(--bc-blue)) 0%, hsl(var(--bc-primary)) 100%);
   border: none;
   border-radius: 12px;
   color: white;
@@ -217,18 +219,18 @@ body {
 }
 
 .info-card {
-  background: hsla(var(--bc-bg-card), 0.8);
+  background: hsl(var(--bc-bg-card));
   border: 1px solid hsl(var(--bc-border));
   border-radius: 16px;
   padding: 2rem 1.5rem;
-  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
   transition: all 0.3s ease;
 }
 
 .info-card:hover {
   transform: translateY(-5px);
-  border-color: hsl(var(--bc-primary));
-  box-shadow: 0 10px 30px hsla(var(--bc-primary), 0.2);
+  border-color: hsl(var(--bc-blue));
+  box-shadow: 0 10px 30px hsla(var(--bc-blue), 0.15);
 }
 
 .info-icon {
@@ -255,12 +257,13 @@ body {
 
 /* Team Section */
 .team-section {
-  background: hsla(var(--bc-bg-card), 0.6);
+  background: hsl(var(--bc-bg-card));
   border: 1px solid hsl(var(--bc-border));
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 3rem;
   text-align: center;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
 }
 
 .team-icon {
@@ -269,7 +272,7 @@ body {
   justify-content: center;
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, hsl(var(--bc-secondary)) 0%, hsl(var(--bc-primary)) 100%);
+  background: linear-gradient(135deg, hsl(var(--bc-green)) 0%, hsl(var(--bc-blue)) 100%);
   border-radius: 16px;
   margin-bottom: 1rem;
   color: white;
@@ -291,7 +294,7 @@ body {
 }
 
 .team-section strong {
-  color: hsl(var(--bc-accent));
+  color: hsl(var(--bc-blue));
 }
 
 .disclaimer {
@@ -317,18 +320,19 @@ body {
 
 /* Domain Notice */
 .domain-notice {
-  background: linear-gradient(135deg, hsla(var(--bc-primary), 0.1) 0%, hsla(var(--bc-secondary), 0.1) 100%);
+  background: hsl(var(--bc-bg-card));
   border: 1px solid hsl(var(--bc-border));
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 3rem;
   text-align: left;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
 }
 
 .domain-notice h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: hsl(var(--bc-accent));
+  color: hsl(var(--bc-yellow));
   margin-bottom: 1rem;
   display: flex;
   align-items: center;
@@ -396,13 +400,13 @@ body {
 }
 
 .social-link.twitter {
-  background: hsl(var(--bc-bg-card));
-  border: 1px solid hsl(var(--bc-border));
-  color: hsl(var(--bc-text));
+  background: hsl(220 10% 15%);
+  border: 1px solid hsl(220 10% 25%);
+  color: white;
 }
 
 .social-link.twitter:hover {
-  box-shadow: 0 10px 25px hsla(var(--bc-primary), 0.2);
+  box-shadow: 0 10px 25px hsla(220, 10%, 15%, 0.3);
 }
 
 .social-icon {
@@ -424,7 +428,7 @@ body {
 
 .domain-badge {
   display: inline-block;
-  background: linear-gradient(135deg, hsl(var(--bc-primary)) 0%, hsl(var(--bc-secondary)) 100%);
+  background: linear-gradient(135deg, hsl(var(--bc-red)) 0%, hsl(var(--bc-yellow)) 33%, hsl(var(--bc-green)) 66%, hsl(var(--bc-blue)) 100%);
   color: white !important;
   padding: 0.5rem 1.25rem;
   border-radius: 50px;

@@ -1,5 +1,6 @@
-import { Construction, Globe, Calendar, ArrowRight, Users } from "lucide-react";
+import { Globe, Calendar, ArrowRight, Users } from "lucide-react";
 import { useState } from "react";
+import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
 const Index = () => {
   const [username, setUsername] = useState("");
@@ -18,7 +19,7 @@ const Index = () => {
         {/* Logo/Brand */}
         <div className="brand-section">
           <div className="logo-icon">
-            <Construction className="w-16 h-16" />
+            <img src={bloxcityLogo} alt="BLOX City Logo" />
           </div>
           <h1 className="brand-title">BLOX City</h1>
           <div className="brand-tagline">Est. March 2016</div>
