@@ -1,4 +1,4 @@
-import { Globe, Calendar, ArrowRight, Users } from "lucide-react";
+import { Globe, Calendar, ArrowRight, Users, Target, Info } from "lucide-react";
 import { useState } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
@@ -78,6 +78,36 @@ const Index = () => {
             <h3>Official Domain</h3>
             <p>bloxcity.net</p>
           </div>
+        </div>
+
+        {/* We Are BLOX City Section */}
+        <div className="about-hero-section">
+          <h2>We are BLOX City.</h2>
+        </div>
+
+        {/* About Us */}
+        <div className="about-section">
+          <div className="about-icon">
+            <Info className="w-8 h-8" />
+          </div>
+          <h3>About Us</h3>
+          <p>
+            BLOX City was originally founded in January of 2016 by two young entrepreneurs with a dream — to create a gaming platform that enables users from all over the globe to create and play user created games. With over 50,000 monthly active users, content growth on BLOX City continued to increase. 10,000 users join per month on average.
+          </p>
+        </div>
+
+        {/* Our Mission */}
+        <div className="mission-section">
+          <div className="mission-icon">
+            <Target className="w-8 h-8" />
+          </div>
+          <h3>Our Mission</h3>
+          <p>
+            Our mission is to encourage young children and adolescents across the globe to create and share 3D content with users alike. Users that sign up are allowed to customize their character, chat with users, create groups, and participate in a marketplace. By enabling creativity within users at a young age, many discover hidden talents within them, such as liking art or coding.
+          </p>
+          <p>
+            As a new company, we are currently focused on website and game development. Our primary goal for 2017 is to release our game client and game workshop, where users can build and script games to their liking. Our games will be available to users on Windows, Mac OS X, and Linux. Additionally, we plan on releasing mobile apps for iOS and Android.
+          </p>
         </div>
 
         {/* About the Team */}

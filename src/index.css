@@ -252,6 +252,98 @@ body {
   color: hsl(var(--bc-text));
 }
 
+/* About Hero Section */
+.about-hero-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.about-hero-section h2 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: hsl(var(--bc-text));
+}
+
+/* About Section */
+.about-section {
+  background: hsl(var(--bc-bg-card));
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
+}
+
+.about-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, hsl(var(--bc-blue)) 0%, hsl(var(--bc-primary)) 100%);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.about-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--bc-text));
+  margin-bottom: 1rem;
+}
+
+.about-section p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: hsl(var(--bc-text-muted));
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Mission Section */
+.mission-section {
+  background: hsl(var(--bc-bg-card));
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
+}
+
+.mission-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, hsl(var(--bc-red)) 0%, hsl(var(--bc-yellow)) 100%);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.mission-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--bc-text));
+  margin-bottom: 1rem;
+}
+
+.mission-section p {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: hsl(var(--bc-text-muted));
+  max-width: 600px;
+  margin: 0 auto 1rem;
+}
+
+.mission-section p:last-child {
+  margin-bottom: 0;
+}
+
 /* Team Section */
 .team-section {
   background: hsl(var(--bc-bg-card));
