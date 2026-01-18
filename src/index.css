@@ -81,10 +81,7 @@ body {
 .brand-title {
   font-size: 3.5rem;
   font-weight: 800;
-  background: linear-gradient(135deg, hsl(var(--bc-red)) 0%, hsl(var(--bc-yellow)) 33%, hsl(var(--bc-green)) 66%, hsl(var(--bc-blue)) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: hsl(var(--bc-text));
   letter-spacing: -0.02em;
   margin-bottom: 0.5rem;
 }
