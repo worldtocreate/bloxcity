@@ -162,6 +162,14 @@ const Index = () => {
           </div>
         </div>
 
+        {/* Original BLOX City Notice */}
+        <div className="original-notice">
+          <p>
+            Looking for where the original BLOX City is now? Check out{" "}
+            <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer">brickplanet.com</a>
+          </p>
+        </div>
+
         {/* Footer */}
         <footer className="maintenance-footer">
           <p>© 2026 BLOX City, Inc. All rights reserved.</p>
