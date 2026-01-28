@@ -1,16 +1,63 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info } from "lucide-react";
 import { useState } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import { supabase } from "@/integrations/supabase/client";
+
+const generateReservationCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 12; i++) {
+    if (i > 0 && i % 4 === 0) code += '-';
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
 
 const Index = () => {
   const [username, setUsername] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [reservationCode, setReservationCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleReserve = (e: React.FormEvent) => {
+  const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim()) {
-      setSubmitted(true);
+    if (!username.trim()) return;
+    
+    setLoading(true);
+    setError("");
+
+    // Check if username is already taken
+    const { data: existing } = await supabase
+      .from('reserved_usernames')
+      .select('username')
+      .eq('username', username.trim().toLowerCase())
+      .maybeSingle();
+
+    if (existing) {
+      setError("This username has already been reserved. Please choose another.");
+      setLoading(false);
+      return;
     }
+
+    // Generate code and save reservation
+    const code = generateReservationCode();
+    const { error: insertError } = await supabase
+      .from('reserved_usernames')
+      .insert({
+        username: username.trim().toLowerCase(),
+        reservation_code: code
+      });
+
+    if (insertError) {
+      setError("Failed to reserve username. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setReservationCode(code);
+    setSubmitted(true);
+    setLoading(false);
   };
 
   return (
@@ -39,24 +86,36 @@ const Index = () => {
           <h3>Reserve Your Username</h3>
           <p>Be first in line when we launch. Reserve your username now!</p>
           {!submitted ? (
-            <form onSubmit={handleReserve} className="reservation-form">
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your desired username"
-                className="reservation-input"
-                minLength={3}
-                maxLength={20}
-                required
-              />
-              <button type="submit" className="reservation-button">
-                Reserve Username
-              </button>
-            </form>
+            <>
+              <form onSubmit={handleReserve} className="reservation-form">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your desired username"
+                  className="reservation-input"
+                  minLength={3}
+                  maxLength={20}
+                  required
+                  disabled={loading}
+                />
+                <button type="submit" className="reservation-button" disabled={loading}>
+                  {loading ? "Reserving..." : "Reserve Username"}
+                </button>
+              </form>
+              {error && <div className="reservation-error">{error}</div>}
+            </>
           ) : (
             <div className="reservation-success">
-              <span>✓</span> Username "<strong>{username}</strong>" has been reserved!
+              <div className="success-header">
+                <span>✓</span> Username "<strong>{username}</strong>" has been reserved!
+              </div>
+              <div className="reservation-code-section">
+                <p className="code-warning">⚠️ KEEP THIS CODE SAFE!</p>
+                <p className="code-instruction">You will need this code to claim your reserved username when we launch:</p>
+                <div className="reservation-code">{reservationCode}</div>
+                <p className="code-note">Write it down or take a screenshot. This code will not be shown again.</p>
+              </div>
             </div>
           )}
         </div>
