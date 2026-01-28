@@ -498,6 +498,15 @@ body {
   box-shadow: 0 10px 25px hsla(220, 10%, 15%, 0.3);
 }
 
+.social-link.upscrolled {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: white;
+}
+
+.social-link.upscrolled:hover {
+  box-shadow: 0 10px 25px rgba(255, 107, 53, 0.4);
+}
+
 .social-icon {
   width: 20px;
   height: 20px;
