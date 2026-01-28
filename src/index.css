@@ -188,23 +188,78 @@ body {
 }
 
 .reservation-success {
+  padding: 1.5rem;
+  background: hsla(120, 60%, 40%, 0.1);
+  border: 1px solid hsla(120, 60%, 40%, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.success-header {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  background: hsla(120, 60%, 40%, 0.2);
-  border: 1px solid hsla(120, 60%, 40%, 0.4);
-  border-radius: 12px;
-  color: hsl(120, 60%, 60%);
-  font-size: 1rem;
+  color: hsl(120, 60%, 50%);
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
 }
 
-.reservation-success span {
+.success-header span {
   font-size: 1.25rem;
 }
 
-.reservation-success strong {
-  color: hsl(120, 60%, 70%);
+.success-header strong {
+  color: hsl(120, 60%, 60%);
+}
+
+.reservation-code-section {
+  background: hsl(var(--bc-bg-light));
+  border: 2px dashed hsl(var(--bc-yellow));
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.code-warning {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: hsl(var(--bc-yellow));
+  margin-bottom: 0.5rem;
+}
+
+.code-instruction {
+  color: hsl(var(--bc-text-muted));
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.reservation-code {
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: hsl(var(--bc-text));
+  background: hsl(var(--bc-bg-card));
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--bc-border));
+  margin-bottom: 1rem;
+  user-select: all;
+}
+
+.code-note {
+  font-size: 0.85rem;
+  color: hsl(var(--bc-red));
+  font-weight: 500;
+}
+
+.reservation-error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: hsla(0, 60%, 50%, 0.1);
+  border: 1px solid hsla(0, 60%, 50%, 0.3);
+  border-radius: 8px;
+  color: hsl(0, 60%, 60%);
+  font-size: 0.95rem;
 }
 
 /* Info Cards */
