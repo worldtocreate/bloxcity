@@ -1,17 +1,7 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import { supabase } from "@/integrations/supabase/client";
-
-const generateReservationCode = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 12; i++) {
-    if (i > 0 && i % 4 === 0) code += '-';
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-};
 
 const Index = () => {
   const [username, setUsername] = useState("");
@@ -19,6 +9,17 @@ const Index = () => {
   const [reservationCode, setReservationCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [totalReservations, setTotalReservations] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { count } = await supabase
+        .from('reserved_usernames')
+        .select('*', { count: 'exact', head: true });
+      setTotalReservations(count);
+    };
+    fetchCount();
+  }, [submitted]);
 
   const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,36 +28,31 @@ const Index = () => {
     setLoading(true);
     setError("");
 
-    // Check if username is already taken
-    const { data: existing } = await supabase
-      .from('reserved_usernames')
-      .select('username')
-      .eq('username', username.trim().toLowerCase())
-      .maybeSingle();
-
-    if (existing) {
-      setError("This username has already been reserved. Please choose another.");
-      setLoading(false);
-      return;
-    }
-
-    // Generate code and save reservation
-    const code = generateReservationCode();
-    const { error: insertError } = await supabase
-      .from('reserved_usernames')
-      .insert({
-        username: username.trim().toLowerCase(),
-        reservation_code: code
+    try {
+      const response = await supabase.functions.invoke('reserve-username', {
+        body: { username: username.trim() }
       });
 
-    if (insertError) {
-      setError("Failed to reserve username. Please try again.");
-      setLoading(false);
-      return;
-    }
+      if (response.error) {
+        setError(response.error.message || "Failed to reserve username. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-    setReservationCode(code);
-    setSubmitted(true);
+      const data = response.data;
+
+      if (data.error) {
+        setError(data.error);
+        setLoading(false);
+        return;
+      }
+
+      setReservationCode(data.reservationCode);
+      setSubmitted(true);
+    } catch (err) {
+      setError("Failed to reserve username. Please try again.");
+    }
+    
     setLoading(false);
   };
 
@@ -119,6 +115,14 @@ const Index = () => {
             </div>
           )}
         </div>
+
+        {/* Reservation Counter */}
+        {totalReservations !== null && totalReservations > 0 && (
+          <div className="reservation-counter">
+            <div className="counter-number">{totalReservations.toLocaleString()}</div>
+            <div className="counter-label">usernames reserved</div>
+          </div>
+        )}
 
         {/* Info Cards */}
         <div className="info-cards">

@@ -262,6 +262,32 @@ body {
   font-size: 0.95rem;
 }
 
+/* Reservation Counter */
+.reservation-counter {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, hsla(var(--bc-blue), 0.1) 0%, hsla(var(--bc-primary), 0.1) 100%);
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+}
+
+.counter-number {
+  font-size: 3rem;
+  font-weight: 800;
+  color: hsl(var(--bc-primary));
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.counter-label {
+  font-size: 1rem;
+  color: hsl(var(--bc-text-muted));
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
 /* Info Cards */
 .info-cards {
   display: grid;
