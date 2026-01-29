@@ -176,7 +176,7 @@ const Index = () => {
           </div>
           <h3>Our Mission</h3>
           <p>
-            Our mission is to encourage young children and adolescents across the globe to create and share 3D content with users alike. Users that sign up are allowed to customize their character, chat with users, create groups, and participate in a marketplace. By enabling creativity within users at a young age, many discover hidden talents within them, such as liking art or coding.
+            Our mission is to bring back the classic BLOX City experience as it was known and loved, preserving the identity, features, and community spirit that defined the platform in its original era. This revival is focused on restoring the core elements of BLOX City—from character customization and social interaction to user-created content, groups, and the marketplace—while rebuilding everything from the ground up to ensure long-term stability and security. By reviving BLOX City for a new generation, we aim to recreate the same creative environment that once encouraged young users to experiment, express themselves, and connect with others. Through this faithful restoration, BLOX City continues its original mission of empowering creativity, helping users discover passions such as art, building, and coding, just as it did before.
           </p>
         </div>
 
