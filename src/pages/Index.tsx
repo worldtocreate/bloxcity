@@ -165,7 +165,7 @@ const Index = () => {
           </div>
           <h3>About Us</h3>
           <p>
-            BLOX City was originally founded in January of 2016 by two young entrepreneurs with a dream — to create a gaming platform that enables users from all over the globe to create and play user created games. With over 50,000 monthly active users, content growth on BLOX City continued to increase. 10,000 users join per month on average.
+            BLOX City was originally founded in January 2016 by two young entrepreneurs with a shared vision of creating a global gaming platform where users could create and play games made by the community. At its peak, BLOX City reached over 50,000 monthly active users, with content creation rapidly expanding and an average of 10,000 new users joining each month. Now, BLOX City is making its return under an entirely new development team and a renewed vision while staying true to the classic design and experience that defined the original platform.
           </p>
         </div>
 
