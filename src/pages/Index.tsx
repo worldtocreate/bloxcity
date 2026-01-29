@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [reservationCode, setReservationCode] = useState("");
   const [error, setError] = useState("");
@@ -30,7 +31,7 @@ const Index = () => {
 
     try {
       const response = await supabase.functions.invoke('reserve-username', {
-        body: { username: username.trim() }
+        body: { username: username.trim(), email: email.trim() }
       });
 
       if (response.error) {
@@ -92,6 +93,15 @@ const Index = () => {
                   className="reservation-input"
                   minLength={3}
                   maxLength={20}
+                  required
+                  disabled={loading}
+                />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className="reservation-input"
                   required
                   disabled={loading}
                 />
