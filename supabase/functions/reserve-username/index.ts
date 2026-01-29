@@ -15,6 +15,12 @@ const generateReservationCode = () => {
   return code;
 };
 
+// Blocked usernames (case-insensitive)
+const BLOCKED_USERNAMES = [
+  'josh', 'alex', 'isaac', 'brennan', 'kyle', 'logan', 
+  'bloxcity', 'blox city', 'insdel'
+];
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -35,7 +41,7 @@ Deno.serve(async (req) => {
 
     console.log('Request from IP:', clientIp);
 
-    const { username } = await req.json();
+    const { username, email } = await req.json();
 
     if (!username || typeof username !== 'string') {
       return new Response(
@@ -44,7 +50,24 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (!email || typeof email !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Email is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return new Response(
+        JSON.stringify({ error: 'Please enter a valid email address' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const cleanUsername = username.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
 
     if (cleanUsername.length < 3 || cleanUsername.length > 20) {
       return new Response(
@@ -57,6 +80,14 @@ Deno.serve(async (req) => {
     if (!/^[a-z0-9_]+$/.test(cleanUsername)) {
       return new Response(
         JSON.stringify({ error: 'Username can only contain letters, numbers, and underscores' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if username is blocked
+    if (BLOCKED_USERNAMES.includes(cleanUsername)) {
+      return new Response(
+        JSON.stringify({ error: 'This username is reserved and cannot be claimed.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -114,7 +145,8 @@ Deno.serve(async (req) => {
       .insert({
         username: cleanUsername,
         reservation_code: code,
-        ip_address: clientIp
+        ip_address: clientIp,
+        email: cleanEmail
       });
 
     if (insertError) {
@@ -125,7 +157,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Username "${cleanUsername}" reserved successfully for IP ${clientIp}`);
+    console.log(`Username "${cleanUsername}" reserved successfully for IP ${clientIp}, email ${cleanEmail}`);
+
+    // TODO: Send confirmation email when RESEND_API_KEY is configured
+    // For now, just return success
 
     return new Response(
       JSON.stringify({ 
