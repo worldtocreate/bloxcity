@@ -178,9 +178,6 @@ const Index = () => {
           <p>
             Our mission is to encourage young children and adolescents across the globe to create and share 3D content with users alike. Users that sign up are allowed to customize their character, chat with users, create groups, and participate in a marketplace. By enabling creativity within users at a young age, many discover hidden talents within them, such as liking art or coding.
           </p>
-          <p>
-            As a new company, we are currently focused on website and game development. Our primary goal for 2017 is to release our game client and game workshop, where users can build and script games to their liking. Our games will be available to users on Windows, Mac OS X, and Linux. Additionally, we plan on releasing mobile apps for iOS and Android.
-          </p>
         </div>
 
         {/* About the Team */}
