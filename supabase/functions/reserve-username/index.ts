@@ -21,6 +21,57 @@ const BLOCKED_USERNAMES = [
   'bloxcity', 'blox city', 'insdel'
 ];
 
+// Profanity/bad words filter (common variations included)
+const BAD_WORDS = [
+  // Explicit profanity
+  'fuck', 'fck', 'fuk', 'fuq', 'fux', 'f4ck', 'phuck', 'phuk',
+  'shit', 'sh1t', 'sht', 'shyt', 's4it',
+  'ass', 'a55', 'azz', 'arse',
+  'bitch', 'b1tch', 'biatch', 'bytch',
+  'bastard', 'b4stard',
+  'damn', 'd4mn', 'dammit',
+  'crap',
+  'dick', 'd1ck', 'dik', 'dyck',
+  'cock', 'c0ck', 'kok',
+  'pussy', 'puss', 'pu55y',
+  'cunt', 'c4nt', 'kunt',
+  'whore', 'wh0re', 'hore',
+  'slut', 's1ut',
+  'porn', 'p0rn', 'pr0n',
+  'xxx', 'xxxx',
+  'sex', 's3x', 'sexx',
+  'nude', 'nudes', 'nud3',
+  'naked', 'nak3d',
+  'penis', 'pen1s', 'p3nis',
+  'vagina', 'vag1na', 'v4gina',
+  'boob', 'b00b', 'boobs', 'tits', 't1ts',
+  'anal', 'an4l',
+  'anus', 'an4s',
+  'fag', 'f4g', 'faggot', 'f4ggot',
+  'nigger', 'n1gger', 'nigga', 'n1gga',
+  'retard', 'r3tard', 'retarded',
+  'spic', 'sp1c',
+  'chink', 'ch1nk',
+  'kike', 'k1ke',
+  'wetback',
+  'beaner',
+  // Drug references
+  'cocaine', 'coke', 'heroin', 'meth',
+  // Violence
+  'kill', 'murder', 'rape', 'r4pe',
+  // Other offensive
+  'nazi', 'n4zi', 'hitler', 'h1tler',
+  'kkk', 'klan',
+  'terrorist', 'terror',
+  'pedophile', 'pedo', 'p3do',
+  'molest', 'm0lest'
+];
+
+const containsBadWord = (username: string): boolean => {
+  const lower = username.toLowerCase();
+  return BAD_WORDS.some(word => lower.includes(word));
+};
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -88,6 +139,14 @@ Deno.serve(async (req) => {
     if (BLOCKED_USERNAMES.includes(cleanUsername)) {
       return new Response(
         JSON.stringify({ error: 'This username is reserved and cannot be claimed.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check for profanity/bad words
+    if (containsBadWord(cleanUsername)) {
+      return new Response(
+        JSON.stringify({ error: 'This username contains inappropriate content and cannot be used.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
