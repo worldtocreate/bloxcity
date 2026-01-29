@@ -246,7 +246,6 @@ const Index = () => {
         {/* Footer */}
         <footer className="maintenance-footer">
           <p>© 2026 BLOX City, Inc. All rights reserved.</p>
-          <p className="domain-badge">bloxcity.net</p>
         </footer>
       </div>
     </div>
