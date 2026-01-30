@@ -1,6 +1,7 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityTeaser from "@/assets/bloxcity-teaser.mp4";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
@@ -9,6 +10,7 @@ const Index = () => {
   const [submitted, setSubmitted] = useState(false);
   const [reservationCode, setReservationCode] = useState("");
   const [error, setError] = useState("");
+  const [errorType, setErrorType] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [totalReservations, setTotalReservations] = useState<number | null>(null);
 
@@ -28,6 +30,7 @@ const Index = () => {
     
     setLoading(true);
     setError("");
+    setErrorType(null);
 
     try {
       const response = await supabase.functions.invoke('reserve-username', {
@@ -36,6 +39,7 @@ const Index = () => {
 
       if (response.error) {
         setError(response.error.message || "Failed to reserve username. Please try again.");
+        setErrorType(null);
         setLoading(false);
         return;
       }
@@ -44,6 +48,7 @@ const Index = () => {
 
       if (data.error) {
         setError(data.error);
+        setErrorType(data.errorType || null);
         setLoading(false);
         return;
       }
@@ -78,6 +83,20 @@ const Index = () => {
           </p>
         </div>
 
+        {/* Teaser Video */}
+        <div className="video-section">
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            className="teaser-video"
+          >
+            <source src={bloxcityTeaser} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
         {/* Username Reservation */}
         <div className="reservation-section">
           <h3>Reserve Your Username</h3>
@@ -109,7 +128,11 @@ const Index = () => {
                   {loading ? "Reserving..." : "Reserve Username"}
                 </button>
               </form>
-              {error && <div className="reservation-error">{error}</div>}
+              {error && (
+                <div className={`reservation-error ${errorType === 'banned' ? 'reservation-error-banned' : ''}`}>
+                  {error}
+                </div>
+              )}
             </>
           ) : (
             <div className="reservation-success">

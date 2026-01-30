@@ -262,6 +262,29 @@ body {
   font-size: 0.95rem;
 }
 
+.reservation-error-banned {
+  background: hsla(0, 80%, 40%, 0.15);
+  border: 2px solid hsla(0, 80%, 50%, 0.5);
+  color: hsl(0, 80%, 50%);
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+}
+
+/* Video Section */
+.video-section {
+  margin-bottom: 3rem;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px hsla(var(--bc-text), 0.15);
+}
+
+.teaser-video {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  border-radius: 16px;
+}
+
 /* Reservation Counter */
 .reservation-counter {
   text-align: center;
