@@ -147,6 +147,9 @@ const Index = () => {
                   {error}
                 </div>
               )}
+              <a href="/reserve/check-status" className="check-status-link check-status-link-secondary">
+                Already reserved? Check your status →
+              </a>
             </>
           ) : (
             <div className="reservation-success">
