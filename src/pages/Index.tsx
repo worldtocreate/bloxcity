@@ -167,7 +167,7 @@ const Index = () => {
           <div className="info-card">
             <ArrowRight className="info-icon" />
             <h3>Returning</h3>
-            <p>March 2026</p>
+            <p>2026</p>
           </div>
           <div className="info-card">
             <Globe className="info-icon" />
