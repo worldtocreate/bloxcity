@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
     // Send confirmation email with reservation code
     try {
       const { error: emailError } = await resend.emails.send({
-        from: 'BLOX City <noreply@bloxcity.net>',
+        from: 'BLOX City <onboarding@resend.dev>',
         to: [cleanEmail],
         subject: 'Your BLOX City Username Reservation',
         html: `
