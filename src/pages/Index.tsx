@@ -34,29 +34,45 @@ const Index = () => {
 
     try {
       const response = await supabase.functions.invoke('reserve-username', {
-        body: { username: username.trim(), email: email.trim() }
+        body: { username: username.trim(), email: email.trim() },
       });
 
       // Handle edge function errors (non-2xx responses)
       if (response.error) {
-        // Try to parse the error context for our custom error messages
-        const errorContext = response.error.context;
-        if (errorContext && typeof errorContext === 'object') {
-          const parsed = errorContext as { error?: string; errorType?: string };
-          if (parsed.error) {
-            setError(parsed.error);
-            setErrorType(parsed.errorType || null);
-            setLoading(false);
-            return;
+        const anyError = response.error as any;
+
+        // Prefer parsing the JSON body from the failed Response (Supabase FunctionsHttpError)
+        const failedResponse: Response | undefined = anyError?.context?.response;
+        if (failedResponse && typeof failedResponse.json === 'function') {
+          try {
+            const payload = (await failedResponse.json()) as { error?: string; errorType?: string };
+            if (payload?.error) {
+              setError(payload.error);
+              setErrorType(payload.errorType || null);
+              setLoading(false);
+              return;
+            }
+          } catch {
+            // ignore JSON parse errors and fall back to generic message
           }
         }
-        setError(response.error.message || "Failed to reserve username. Please try again.");
+
+        // Fallback: some error types expose a context object with message fields
+        const contextPayload = anyError?.context as { error?: string; errorType?: string } | undefined;
+        if (contextPayload?.error) {
+          setError(contextPayload.error);
+          setErrorType(contextPayload.errorType || null);
+          setLoading(false);
+          return;
+        }
+
+        setError(anyError?.message || "Failed to reserve username. Please try again.");
         setErrorType(null);
         setLoading(false);
         return;
       }
 
-      const data = response.data;
+      const data = response.data as any;
 
       if (data.error) {
         setError(data.error);
