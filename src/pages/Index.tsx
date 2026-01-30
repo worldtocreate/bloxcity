@@ -1,7 +1,7 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
-import bloxcityTeaser from "@/assets/bloxcity-teaser.mp4";
+
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
@@ -83,19 +83,6 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Teaser Video */}
-        <div className="video-section">
-          <video 
-            autoPlay 
-            loop 
-            muted 
-            playsInline
-            className="teaser-video"
-          >
-            <source src={bloxcityTeaser} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
 
         {/* Username Reservation */}
         <div className="reservation-section">
