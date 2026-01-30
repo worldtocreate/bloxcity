@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.update-reservation-status]
 verify_jwt = false
+
+[functions.admin-get-reservations]
+verify_jwt = false
