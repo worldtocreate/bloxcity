@@ -18,7 +18,12 @@ const generateReservationCode = () => {
   return code;
 };
 
-// Blocked usernames (case-insensitive)
+// Banned users - completely blocked from signing up
+const BANNED_USERS = [
+  'lordclassified', 'lord_classified'
+];
+
+// Blocked usernames (case-insensitive) - reserved names
 const BLOCKED_USERNAMES = [
   'josh', 'alex', 'isaac', 'brennan', 'kyle', 'logan', 
   'bloxcity', 'blox city', 'insdel'
@@ -139,10 +144,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if username is blocked
+    // Check if user is banned
+    if (BANNED_USERS.includes(cleanUsername)) {
+      return new Response(
+        JSON.stringify({ error: 'This person has been banned from signing up to BLOX City.', errorType: 'banned' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if username is blocked/reserved
     if (BLOCKED_USERNAMES.includes(cleanUsername)) {
       return new Response(
-        JSON.stringify({ error: 'This username is reserved and cannot be claimed.' }),
+        JSON.stringify({ error: 'This username is reserved.', errorType: 'reserved' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -150,7 +163,7 @@ Deno.serve(async (req) => {
     // Check for profanity/bad words
     if (containsBadWord(cleanUsername)) {
       return new Response(
-        JSON.stringify({ error: 'This username contains inappropriate content and cannot be used.' }),
+        JSON.stringify({ error: 'This username contains inappropriate content and cannot be used.', errorType: 'profanity' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -196,7 +209,7 @@ Deno.serve(async (req) => {
 
     if (existingUsername) {
       return new Response(
-        JSON.stringify({ error: 'This username has already been reserved. Please choose another.' }),
+        JSON.stringify({ error: 'This username is reserved.', errorType: 'taken' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
