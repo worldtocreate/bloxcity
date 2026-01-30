@@ -94,6 +94,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       get_reservation_count: { Args: never; Returns: number }
       has_role: {
         Args: {

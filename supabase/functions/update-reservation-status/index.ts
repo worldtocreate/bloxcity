@@ -16,10 +16,52 @@ Deno.serve(async (req) => {
 
   try {
     const requestId = crypto.randomUUID();
-    const supabase = createClient(
+
+    // Verify admin authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify user and check admin role
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claims, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    
+    if (claimsError || !claims?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claims.claims.sub;
+
+    // Check if user has admin role
+    const { data: hasAdminRole, error: roleError } = await supabaseAdmin.rpc('has_role', {
+      _user_id: userId,
+      _role: 'admin'
+    });
+
+    if (roleError || !hasAdminRole) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: Admin access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { reservationId, status, denialReason } = await req.json();
 
@@ -38,7 +80,7 @@ Deno.serve(async (req) => {
     }
 
     // Get the reservation details
-    const { data: reservation, error: fetchError } = await supabase
+    const { data: reservation, error: fetchError } = await supabaseAdmin
       .from('reserved_usernames')
       .select('*')
       .eq('id', reservationId)
@@ -58,7 +100,7 @@ Deno.serve(async (req) => {
       updateData.denial_reason = denialReason;
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('reserved_usernames')
       .update(updateData)
       .eq('id', reservationId);
@@ -71,7 +113,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[${requestId}] Reservation ${reservationId} updated to ${status}`);
+    console.log(`[${requestId}] Reservation ${reservationId} updated to ${status} by admin ${userId}`);
 
     // Send email notification
     let emailSent = false;
@@ -212,7 +254,7 @@ Deno.serve(async (req) => {
 
     // If denied, also delete the reservation so the user can reserve again
     if (status === 'denied') {
-      const { error: deleteError } = await supabase
+      const { error: deleteError } = await supabaseAdmin
         .from('reserved_usernames')
         .delete()
         .eq('id', reservationId);
