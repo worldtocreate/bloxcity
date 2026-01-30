@@ -14,10 +14,10 @@ const Index = () => {
 
   useEffect(() => {
     const fetchCount = async () => {
-      const { count } = await supabase
-        .from('reserved_usernames')
-        .select('*', { count: 'exact', head: true });
-      setTotalReservations(count);
+      const { data, error } = await supabase.rpc('get_reservation_count');
+      if (!error && data !== null) {
+        setTotalReservations(data);
+      }
     };
     fetchCount();
   }, [submitted]);
