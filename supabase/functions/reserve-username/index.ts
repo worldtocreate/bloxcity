@@ -252,42 +252,41 @@ Deno.serve(async (req) => {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f0f4ff; color: #2d3748; padding: 40px 20px; margin: 0;">
-            <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%); border-radius: 24px; padding: 40px; border: 2px solid #e0e7ff; box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);">
+          <body style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f8f9fa; color: #2d3748; padding: 40px 20px; margin: 0;">
+            <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 40px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
               <div style="text-align: center; margin-bottom: 30px;">
-                <img src="https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/email-assets/bloxcity-logo.jpg" alt="BLOX City Logo" style="width: 80px; height: 80px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                <h1 style="color: #4f46e5; font-size: 32px; font-weight: 800; margin: 0; letter-spacing: -0.02em;">BLOX City</h1>
-                <p style="color: #818cf8; font-size: 14px; margin-top: 5px; font-weight: 600;">Est. March 2016</p>
+                <h1 style="color: #2d3748; font-size: 32px; font-weight: 800; margin: 0; letter-spacing: -0.02em;">BLOX City</h1>
+                <p style="color: #718096; font-size: 14px; margin-top: 5px; font-weight: 500;">Est. March 2016</p>
               </div>
               
               <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 20px; text-align: center; font-weight: 700;">Username Reserved! 🎉</h2>
               
-              <p style="color: #6b7280; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
+              <p style="color: #718096; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
                 Congratulations! You've successfully reserved the username:
               </p>
               
-              <div style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 2px solid #c7d2fe; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 25px;">
-                <span style="color: #4f46e5; font-size: 28px; font-weight: bold;">${cleanUsername}</span>
+              <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
+                <span style="color: #4a7cc9; font-size: 24px; font-weight: bold;">${cleanUsername}</span>
               </div>
               
-              <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); border: 3px dashed #f59e0b; border-radius: 16px; padding: 25px; margin-bottom: 25px;">
-                <p style="color: #d97706; font-size: 18px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⚠️ KEEP THIS CODE SAFE!</p>
-                <p style="color: #78716c; font-size: 14px; margin: 0 0 15px 0; text-align: center;">You'll need this reservation code to claim your username when BLOX City launches:</p>
-                <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 12px; padding: 18px; text-align: center;">
-                  <code style="color: #1f2937; font-size: 28px; font-weight: 700; letter-spacing: 0.1em; font-family: 'Courier New', monospace;">${code}</code>
+              <div style="background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
+                <p style="color: #d97706; font-size: 16px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⚠️ KEEP THIS CODE SAFE!</p>
+                <p style="color: #718096; font-size: 14px; margin: 0 0 15px 0; text-align: center;">You'll need this reservation code to claim your username when BLOX City launches:</p>
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;">
+                  <code style="color: #2d3748; font-size: 28px; font-weight: 700; letter-spacing: 0.1em; font-family: 'Courier New', monospace;">${code}</code>
                 </div>
-                <p style="color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; font-weight: 600;">Write it down or take a screenshot. This code will not be shown again.</p>
+                <p style="color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; font-weight: 500;">Write it down or take a screenshot. This code will not be shown again.</p>
               </div>
               
-              <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
-                Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #4f46e5;">2026</strong>.
+              <p style="color: #718096; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
+                Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #4a7cc9;">2026</strong>.
               </p>
               
-              <hr style="border: none; border-top: 2px solid #e0e7ff; margin: 30px 0;">
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
               
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+              <p style="color: #a0aec0; font-size: 12px; text-align: center; margin: 0;">
                 © 2026 BLOX City, Inc. All rights reserved.<br>
-                <a href="https://bloxcity.net" style="color: #4f46e5; text-decoration: none; font-weight: 600;">bloxcity.net</a>
+                <a href="https://bloxcity.net" style="color: #4a7cc9; text-decoration: none; font-weight: 600;">bloxcity.net</a>
               </p>
             </div>
           </body>
@@ -304,49 +303,48 @@ Deno.serve(async (req) => {
            from: fromFallback,
            to: [cleanEmail],
            subject: 'Your BLOX City Username Reservation',
-           html: `
+          html: `
             <!DOCTYPE html>
             <html>
             <head>
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f0f4ff; color: #2d3748; padding: 40px 20px; margin: 0;">
-              <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%); border-radius: 24px; padding: 40px; border: 2px solid #e0e7ff; box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);">
+            <body style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f8f9fa; color: #2d3748; padding: 40px 20px; margin: 0;">
+              <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 40px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
                 <div style="text-align: center; margin-bottom: 30px;">
-                  <img src="https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/email-assets/bloxcity-logo.jpg" alt="BLOX City Logo" style="width: 80px; height: 80px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                  <h1 style="color: #4f46e5; font-size: 32px; font-weight: 800; margin: 0; letter-spacing: -0.02em;">BLOX City</h1>
-                  <p style="color: #818cf8; font-size: 14px; margin-top: 5px; font-weight: 600;">Est. March 2016</p>
+                  <h1 style="color: #2d3748; font-size: 32px; font-weight: 800; margin: 0; letter-spacing: -0.02em;">BLOX City</h1>
+                  <p style="color: #718096; font-size: 14px; margin-top: 5px; font-weight: 500;">Est. March 2016</p>
                 </div>
                 
                 <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 20px; text-align: center; font-weight: 700;">Username Reserved! 🎉</h2>
                 
-                <p style="color: #6b7280; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
+                <p style="color: #718096; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
                   Congratulations! You've successfully reserved the username:
                 </p>
                 
-                <div style="background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%); border: 2px solid #c7d2fe; border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 25px;">
-                  <span style="color: #4f46e5; font-size: 28px; font-weight: bold;">${cleanUsername}</span>
+                <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
+                  <span style="color: #4a7cc9; font-size: 24px; font-weight: bold;">${cleanUsername}</span>
                 </div>
                 
-                <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); border: 3px dashed #f59e0b; border-radius: 16px; padding: 25px; margin-bottom: 25px;">
-                  <p style="color: #d97706; font-size: 18px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⚠️ KEEP THIS CODE SAFE!</p>
-                  <p style="color: #78716c; font-size: 14px; margin: 0 0 15px 0; text-align: center;">You'll need this reservation code to claim your username when BLOX City launches:</p>
-                  <div style="background: #ffffff; border: 2px solid #e5e7eb; border-radius: 12px; padding: 18px; text-align: center;">
-                    <code style="color: #1f2937; font-size: 28px; font-weight: 700; letter-spacing: 0.1em; font-family: 'Courier New', monospace;">${code}</code>
+                <div style="background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
+                  <p style="color: #d97706; font-size: 16px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⚠️ KEEP THIS CODE SAFE!</p>
+                  <p style="color: #718096; font-size: 14px; margin: 0 0 15px 0; text-align: center;">You'll need this reservation code to claim your username when BLOX City launches:</p>
+                  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;">
+                    <code style="color: #2d3748; font-size: 28px; font-weight: 700; letter-spacing: 0.1em; font-family: 'Courier New', monospace;">${code}</code>
                   </div>
-                  <p style="color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; font-weight: 600;">Write it down or take a screenshot. This code will not be shown again.</p>
+                  <p style="color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; font-weight: 500;">Write it down or take a screenshot. This code will not be shown again.</p>
                 </div>
                 
-                <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
-                  Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #4f46e5;">2026</strong>.
+                <p style="color: #718096; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
+                  Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #4a7cc9;">2026</strong>.
                 </p>
                 
-                <hr style="border: none; border-top: 2px solid #e0e7ff; margin: 30px 0;">
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
                 
-                <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">
+                <p style="color: #a0aec0; font-size: 12px; text-align: center; margin: 0;">
                   © 2026 BLOX City, Inc. All rights reserved.<br>
-                  <a href="https://bloxcity.net" style="color: #4f46e5; text-decoration: none; font-weight: 600;">bloxcity.net</a>
+                  <a href="https://bloxcity.net" style="color: #4a7cc9; text-decoration: none; font-weight: 600;">bloxcity.net</a>
                 </p>
               </div>
             </body>
