@@ -282,6 +282,21 @@ body {
   color: #718096;
   font-size: 0.9rem;
   font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.check-status-link {
+  display: inline-block;
+  color: #4a7cc9;
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.check-status-link:hover {
+  color: #3b6cb5;
+  text-decoration: underline;
 }
 
 /* Status Check Section */
