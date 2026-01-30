@@ -270,19 +270,149 @@ body {
   padding: 1rem 1.5rem;
 }
 
-/* Video Section */
-.video-section {
-  margin-bottom: 3rem;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 40px hsla(var(--bc-text), 0.15);
+/* Success message styles */
+.success-message {
+  color: #4a5568;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
 }
 
-.teaser-video {
-  width: 100%;
-  max-width: 100%;
-  display: block;
+.success-note {
+  color: #718096;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Status Check Section */
+.status-check-section {
+  background: #f8f9fa;
   border-radius: 16px;
+  padding: 2rem;
+  margin-top: 2rem;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+}
+
+.status-check-section h3 {
+  color: #2d3748;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.inline-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.status-check-section > p {
+  color: #718096;
+  margin-bottom: 1.5rem;
+}
+
+.status-check-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.status-check-button {
+  background: #4a5568;
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-check-button:hover {
+  background: #2d3748;
+}
+
+.status-check-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.status-result {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  text-align: left;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.status-result.status-pending {
+  background: #fffbeb;
+  border: 1px solid #f59e0b;
+}
+
+.status-result.status-approved {
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+}
+
+.status-result.status-denied {
+  background: #fef2f2;
+  border: 1px solid #ef4444;
+}
+
+.status-result.status-not-found {
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+}
+
+.status-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.status-pending .status-title {
+  color: #d97706;
+}
+
+.status-approved .status-title {
+  color: #059669;
+}
+
+.status-denied .status-title {
+  color: #dc2626;
+}
+
+.denial-reason {
+  color: #991b1b;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.reserve-again-button {
+  margin-top: 1rem;
+  background: #4a7cc9;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reserve-again-button:hover {
+  background: #3b6cb5;
 }
 
 /* Reservation Counter */
