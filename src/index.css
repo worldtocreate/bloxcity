@@ -286,6 +286,51 @@ body {
 }
 
 /* Reservation Counter */
+/* Reservation Disclaimer */
+.reservation-disclaimer {
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.reservation-disclaimer h4 {
+  color: #2d3748;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reservation-disclaimer > p {
+  color: #4a5568;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.reservation-disclaimer ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+.reservation-disclaimer li {
+  color: #718096;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.reservation-disclaimer li:last-child {
+  margin-bottom: 0;
+}
+
 .reservation-counter {
   text-align: center;
   margin-bottom: 2rem;
