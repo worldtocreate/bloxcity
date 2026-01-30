@@ -37,7 +37,19 @@ const Index = () => {
         body: { username: username.trim(), email: email.trim() }
       });
 
+      // Handle edge function errors (non-2xx responses)
       if (response.error) {
+        // Try to parse the error context for our custom error messages
+        const errorContext = response.error.context;
+        if (errorContext && typeof errorContext === 'object') {
+          const parsed = errorContext as { error?: string; errorType?: string };
+          if (parsed.error) {
+            setError(parsed.error);
+            setErrorType(parsed.errorType || null);
+            setLoading(false);
+            return;
+          }
+        }
         setError(response.error.message || "Failed to reserve username. Please try again.");
         setErrorType(null);
         setLoading(false);
@@ -202,7 +214,7 @@ const Index = () => {
             the vision to recreate the magic that made BLOX City special.
           </p>
           <div className="disclaimer">
-            <strong>Disclaimer:</strong> This project is <em>not</em> associated with Isaac Hymer or the 
+            <strong>Disclaimer:</strong> This project is <em>not</em> associated with Isaac Hymer, Kyle Vickers & his team, or the 
             original BLOX City ownership. This is an independent revival effort by fans, for fans.
           </div>
         </div>
@@ -227,7 +239,7 @@ const Index = () => {
               </svg>
               Join Discord
             </a>
-            <a href="https://x.com/" target="_blank" rel="noopener noreferrer" className="social-link twitter">
+            <a href="https://x.com/bloxcitynet" target="_blank" rel="noopener noreferrer" className="social-link twitter">
               <svg viewBox="0 0 24 24" fill="currentColor" className="social-icon">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
               </svg>

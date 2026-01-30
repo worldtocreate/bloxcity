@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
     // Check if user is banned
     if (BANNED_USERS.includes(cleanUsername)) {
       return new Response(
-        JSON.stringify({ error: 'This person has been banned from signing up to BLOX City.', errorType: 'banned' }),
+        JSON.stringify({ error: 'This user is banned from reserving on BLOX City.', errorType: 'banned' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
