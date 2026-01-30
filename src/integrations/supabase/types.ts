@@ -17,26 +17,32 @@ export type Database = {
       reserved_usernames: {
         Row: {
           created_at: string
+          denial_reason: string | null
           email: string | null
           id: string
           ip_address: string | null
           reservation_code: string
+          status: string
           username: string
         }
         Insert: {
           created_at?: string
+          denial_reason?: string | null
           email?: string | null
           id?: string
           ip_address?: string | null
           reservation_code: string
+          status?: string
           username: string
         }
         Update: {
           created_at?: string
+          denial_reason?: string | null
           email?: string | null
           id?: string
           ip_address?: string | null
           reservation_code?: string
+          status?: string
           username?: string
         }
         Relationships: []

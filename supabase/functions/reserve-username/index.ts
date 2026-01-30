@@ -233,9 +233,9 @@ Deno.serve(async (req) => {
       );
     }
 
-     console.log(`[${requestId}] Username "${cleanUsername}" reserved successfully for IP ${clientIp}, email ${cleanEmail}`);
+     console.log(`[${requestId}] Username "${cleanUsername}" reserved successfully for IP ${clientIp}, email ${cleanEmail} - pending review`);
 
-    // Send confirmation email with reservation code
+    // Send confirmation email (without the code - code will be sent when approved)
      let emailSent = false;
     try {
        const fromPrimary = 'BLOX City <noreply@bloxcity.net>';
@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
        const primaryResponse = await resend.emails.send({
          from: fromPrimary,
         to: [cleanEmail],
-        subject: 'Your BLOX City Username Reservation',
+        subject: 'Your BLOX City Username Reservation Request',
         html: `
           <!DOCTYPE html>
           <html>
@@ -259,10 +259,10 @@ Deno.serve(async (req) => {
                 <p style="color: #718096; font-size: 14px; margin-top: 5px; font-weight: 500;">Est. March 2016</p>
               </div>
               
-              <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 20px; text-align: center; font-weight: 700;">Username Reserved! 🎉</h2>
+              <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 20px; text-align: center; font-weight: 700;">Username Request Received! 📝</h2>
               
               <p style="color: #718096; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
-                Congratulations! You've successfully reserved the username:
+                Thank you for your interest in BLOX City! You've requested the username:
               </p>
               
               <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
@@ -270,16 +270,14 @@ Deno.serve(async (req) => {
               </div>
               
               <div style="background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
-                <p style="color: #d97706; font-size: 16px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⚠️ KEEP THIS CODE SAFE!</p>
-                <p style="color: #718096; font-size: 14px; margin: 0 0 15px 0; text-align: center;">You'll need this reservation code to claim your username when BLOX City launches:</p>
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;">
-                  <code style="color: #2d3748; font-size: 28px; font-weight: 700; letter-spacing: 0.1em; font-family: 'Courier New', monospace;">${code}</code>
-                </div>
-                <p style="color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; font-weight: 500;">Write it down or take a screenshot. This code will not be shown again.</p>
+                <p style="color: #d97706; font-size: 16px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⏳ PENDING REVIEW</p>
+                <p style="color: #718096; font-size: 14px; margin: 0; text-align: center;">
+                  Our team is reviewing your username request. Once approved, you'll receive another email with your reservation code.
+                </p>
               </div>
               
               <p style="color: #718096; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
-                Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #4a7cc9;">2026</strong>.
+                You can check your reservation status anytime at <a href="https://bloxcity.net" style="color: #4a7cc9; text-decoration: none; font-weight: 600;">bloxcity.net</a>
               </p>
               
               <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
@@ -302,7 +300,7 @@ Deno.serve(async (req) => {
          const fallbackResponse = await resend.emails.send({
            from: fromFallback,
            to: [cleanEmail],
-           subject: 'Your BLOX City Username Reservation',
+           subject: 'Your BLOX City Username Reservation Request',
           html: `
             <!DOCTYPE html>
             <html>
@@ -317,10 +315,10 @@ Deno.serve(async (req) => {
                   <p style="color: #718096; font-size: 14px; margin-top: 5px; font-weight: 500;">Est. March 2016</p>
                 </div>
                 
-                <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 20px; text-align: center; font-weight: 700;">Username Reserved! 🎉</h2>
+                <h2 style="color: #2d3748; font-size: 24px; margin-bottom: 20px; text-align: center; font-weight: 700;">Username Request Received! 📝</h2>
                 
                 <p style="color: #718096; font-size: 16px; line-height: 1.8; margin-bottom: 20px; text-align: center;">
-                  Congratulations! You've successfully reserved the username:
+                  Thank you for your interest in BLOX City! You've requested the username:
                 </p>
                 
                 <div style="background: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
@@ -328,16 +326,14 @@ Deno.serve(async (req) => {
                 </div>
                 
                 <div style="background: #fffbeb; border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
-                  <p style="color: #d97706; font-size: 16px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⚠️ KEEP THIS CODE SAFE!</p>
-                  <p style="color: #718096; font-size: 14px; margin: 0 0 15px 0; text-align: center;">You'll need this reservation code to claim your username when BLOX City launches:</p>
-                  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center;">
-                    <code style="color: #2d3748; font-size: 28px; font-weight: 700; letter-spacing: 0.1em; font-family: 'Courier New', monospace;">${code}</code>
-                  </div>
-                  <p style="color: #dc2626; font-size: 13px; margin-top: 12px; text-align: center; font-weight: 500;">Write it down or take a screenshot. This code will not be shown again.</p>
+                  <p style="color: #d97706; font-size: 16px; font-weight: 700; margin: 0 0 10px 0; text-align: center;">⏳ PENDING REVIEW</p>
+                  <p style="color: #718096; font-size: 14px; margin: 0; text-align: center;">
+                    Our team is reviewing your username request. Once approved, you'll receive another email with your reservation code.
+                  </p>
                 </div>
                 
                 <p style="color: #718096; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
-                  Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #4a7cc9;">2026</strong>.
+                  You can check your reservation status anytime at <a href="https://bloxcity.net" style="color: #4a7cc9; text-decoration: none; font-weight: 600;">bloxcity.net</a>
                 </p>
                 
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
@@ -370,9 +366,9 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        username: cleanUsername, 
-         reservationCode: code,
-         emailSent
+        username: cleanUsername,
+        message: 'Your username reservation request has been submitted for review.',
+        emailSent
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

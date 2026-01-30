@@ -1,1 +1,7 @@
 project_id = "mmugfnagubtmxetcpjkb"
+
+[functions.reserve-username]
+verify_jwt = false
+
+[functions.check-reservation-status]
+verify_jwt = false

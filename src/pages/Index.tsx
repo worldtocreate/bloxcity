@@ -1,18 +1,30 @@
-import { Globe, Calendar, ArrowRight, Users, Target, Info } from "lucide-react";
+import { Globe, Calendar, ArrowRight, Users, Target, Info, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
 import { supabase } from "@/integrations/supabase/client";
 
+type ReservationStatus = 'pending' | 'approved' | 'denied' | null;
+
 const Index = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [reservationCode, setReservationCode] = useState("");
   const [error, setError] = useState("");
   const [errorType, setErrorType] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [totalReservations, setTotalReservations] = useState<number | null>(null);
+  
+  // Status check states
+  const [checkEmail, setCheckEmail] = useState("");
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [checkError, setCheckError] = useState("");
+  const [statusResult, setStatusResult] = useState<{
+    found: boolean;
+    username?: string;
+    status?: ReservationStatus;
+    denialReason?: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -81,13 +93,56 @@ const Index = () => {
         return;
       }
 
-      setReservationCode(data.reservationCode);
       setSubmitted(true);
     } catch (err) {
       setError("Failed to reserve username. Please try again.");
     }
     
     setLoading(false);
+  };
+
+  const handleCheckStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkEmail.trim()) return;
+
+    setCheckLoading(true);
+    setCheckError("");
+    setStatusResult(null);
+
+    try {
+      const response = await supabase.functions.invoke('check-reservation-status', {
+        body: { email: checkEmail.trim() },
+      });
+
+      if (response.error) {
+        setCheckError("Failed to check status. Please try again.");
+        setCheckLoading(false);
+        return;
+      }
+
+      const data = response.data as any;
+      setStatusResult(data);
+
+      // If denied, allow them to reserve again
+      if (data.found && data.status === 'denied') {
+        // Reset the main form to allow new reservation
+        setSubmitted(false);
+        setUsername("");
+        setEmail("");
+      }
+    } catch (err) {
+      setCheckError("Failed to check status. Please try again.");
+    }
+
+    setCheckLoading(false);
+  };
+
+  const handleReserveAgain = () => {
+    setSubmitted(false);
+    setUsername("");
+    setEmail("");
+    setStatusResult(null);
+    setCheckEmail("");
   };
 
   return (
@@ -152,18 +207,69 @@ const Index = () => {
           ) : (
             <div className="reservation-success">
               <div className="success-header">
-                <span>✓</span> Username "<strong>{username}</strong>" has been reserved!
+                <span>🎉</span> Fantastic!
               </div>
-              <div className="reservation-code-section">
-                <p className="code-warning">⚠️ KEEP THIS CODE SAFE!</p>
-                <p className="code-instruction">You will need this code to claim your reserved username when we launch:</p>
-                <div className="reservation-code">{reservationCode}</div>
-                <p className="code-note">Write it down or take a screenshot. This code will not be shown again.</p>
-              </div>
+              <p className="success-message">
+                You have requested the username <strong>{username}</strong>. Our team is reviewing your reserved username. 
+                You can check the progress below to see if it's been accepted or denied.
+              </p>
+              <p className="success-note">
+                If approved, your reservation code will be sent to your email address.
+              </p>
             </div>
           )}
         </div>
 
+        {/* Check Reservation Status */}
+        <div className="status-check-section">
+          <h3><Search className="inline-icon" /> Check Reservation Status</h3>
+          <p>Enter your email to check if your username has been approved or denied.</p>
+          <form onSubmit={handleCheckStatus} className="status-check-form">
+            <input
+              type="email"
+              value={checkEmail}
+              onChange={(e) => setCheckEmail(e.target.value)}
+              placeholder="Enter your email address"
+              className="reservation-input"
+              required
+              disabled={checkLoading}
+            />
+            <button type="submit" className="status-check-button" disabled={checkLoading}>
+              {checkLoading ? "Checking..." : "Check Status"}
+            </button>
+          </form>
+          {checkError && (
+            <div className="reservation-error">{checkError}</div>
+          )}
+          {statusResult && (
+            <div className={`status-result status-${statusResult.status || 'not-found'}`}>
+              {!statusResult.found ? (
+                <p>No reservation found for this email address.</p>
+              ) : statusResult.status === 'pending' ? (
+                <div>
+                  <p className="status-title">⏳ Pending Review</p>
+                  <p>Your username "<strong>{statusResult.username}</strong>" is currently being reviewed by our team.</p>
+                </div>
+              ) : statusResult.status === 'approved' ? (
+                <div>
+                  <p className="status-title">✅ Approved!</p>
+                  <p>Your username "<strong>{statusResult.username}</strong>" has been approved! Check your email for your reservation code.</p>
+                </div>
+              ) : statusResult.status === 'denied' ? (
+                <div>
+                  <p className="status-title">❌ Denied</p>
+                  <p>Unfortunately, the username "<strong>{statusResult.username}</strong>" was not approved.</p>
+                  {statusResult.denialReason && (
+                    <p className="denial-reason">Reason: {statusResult.denialReason}</p>
+                  )}
+                  <button onClick={handleReserveAgain} className="reserve-again-button">
+                    Reserve a Different Username
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
 
         {/* Reservation Counter */}
         {totalReservations !== null && totalReservations > 0 && (
