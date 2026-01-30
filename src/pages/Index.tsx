@@ -279,12 +279,6 @@ const Index = () => {
               </svg>
               Follow on X
             </a>
-            <a href="https://upscrolled.com/" target="_blank" rel="noopener noreferrer" className="social-link upscrolled">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="social-icon">
-                <path d="M12 2L4 10h5v8h6v-8h5L12 2z"/>
-              </svg>
-              Upscrolled
-            </a>
           </div>
         </div>
 
