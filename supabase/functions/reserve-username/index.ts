@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const requestId = crypto.randomUUID();
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
     const cfConnectingIp = req.headers.get('cf-connecting-ip');
     const clientIp = cfConnectingIp || (forwardedFor?.split(',')[0]?.trim()) || realIp || 'unknown';
 
-    console.log('Request from IP:', clientIp);
+     console.log(`[${requestId}] Request from IP:`, clientIp);
 
     const { username, email } = await req.json();
 
@@ -219,12 +220,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Username "${cleanUsername}" reserved successfully for IP ${clientIp}, email ${cleanEmail}`);
+     console.log(`[${requestId}] Username "${cleanUsername}" reserved successfully for IP ${clientIp}, email ${cleanEmail}`);
 
     // Send confirmation email with reservation code
+     let emailSent = false;
     try {
-      const { error: emailError } = await resend.emails.send({
-        from: 'BLOX City <onboarding@resend.dev>',
+       const fromPrimary = 'BLOX City <noreply@bloxcity.net>';
+       const fromFallback = 'BLOX City <onboarding@resend.dev>';
+
+       const primaryResponse = await resend.emails.send({
+         from: fromPrimary,
         to: [cleanEmail],
         subject: 'Your BLOX City Username Reservation',
         html: `
@@ -275,14 +280,75 @@ Deno.serve(async (req) => {
         `,
       });
 
-      if (emailError) {
-        console.error('Email send error:', emailError);
-        // Don't fail the reservation if email fails, just log it
-      } else {
-        console.log(`Confirmation email sent to ${cleanEmail}`);
-      }
+       // Resend returns either { data } or { error }
+       if ((primaryResponse as any)?.error) {
+         console.error(`[${requestId}] Email send error (primary from=${fromPrimary}):`, (primaryResponse as any).error);
+
+         // Try fallback sender to determine whether the issue is domain/from verification
+         const fallbackResponse = await resend.emails.send({
+           from: fromFallback,
+           to: [cleanEmail],
+           subject: 'Your BLOX City Username Reservation',
+           html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0f; color: #ffffff; padding: 40px 20px; margin: 0;">
+              <div style="max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 40px; border: 1px solid #2a2a4e;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h1 style="color: #00d9ff; font-size: 28px; margin: 0;">BLOX City</h1>
+                  <p style="color: #888; font-size: 14px; margin-top: 5px;">Est. March 2016</p>
+                </div>
+
+                <h2 style="color: #ffffff; font-size: 24px; margin-bottom: 20px; text-align: center;">Username Reserved! 🎉</h2>
+
+                <p style="color: #cccccc; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                  Congratulations! You've successfully reserved the username:
+                </p>
+
+                <div style="background: #0d0d1a; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 25px;">
+                  <span style="color: #00d9ff; font-size: 24px; font-weight: bold;">${cleanUsername}</span>
+                </div>
+
+                <div style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%); border-radius: 8px; padding: 25px; margin-bottom: 25px;">
+                  <p style="color: #ffffff; font-size: 14px; font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">⚠️ IMPORTANT - SAVE THIS CODE!</p>
+                  <p style="color: #ffffff; font-size: 14px; margin: 0 0 15px 0;">You'll need this reservation code to claim your username when BLOX City launches:</p>
+                  <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; text-align: center;">
+                    <code style="color: #ffffff; font-size: 28px; font-weight: bold; letter-spacing: 2px;">${code}</code>
+                  </div>
+                </div>
+
+                <p style="color: #888888; font-size: 14px; line-height: 1.6; margin-bottom: 25px; text-align: center;">
+                  Keep this email safe! You'll need your reservation code when we launch in <strong style="color: #00d9ff;">March 2026</strong>.
+                </p>
+
+                <hr style="border: none; border-top: 1px solid #2a2a4e; margin: 30px 0;">
+
+                <p style="color: #666666; font-size: 12px; text-align: center; margin: 0;">
+                  © 2026 BLOX City, Inc. All rights reserved.<br>
+                  <a href="https://bloxcity.net" style="color: #00d9ff; text-decoration: none;">bloxcity.net</a>
+                </p>
+              </div>
+            </body>
+            </html>
+           `,
+         });
+
+         if ((fallbackResponse as any)?.error) {
+           console.error(`[${requestId}] Email send error (fallback from=${fromFallback}):`, (fallbackResponse as any).error);
+         } else {
+           emailSent = true;
+           console.log(`[${requestId}] Confirmation email sent to ${cleanEmail} (fallback sender)`);
+         }
+       } else {
+         emailSent = true;
+         console.log(`[${requestId}] Confirmation email sent to ${cleanEmail} (primary sender)`);
+       }
     } catch (emailErr) {
-      console.error('Email send exception:', emailErr);
+       console.error(`[${requestId}] Email send exception:`, emailErr);
       // Don't fail the reservation if email fails
     }
 
@@ -290,7 +356,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         username: cleanUsername, 
-        reservationCode: code 
+         reservationCode: code,
+         emailSent
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
