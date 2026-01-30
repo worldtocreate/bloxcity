@@ -164,22 +164,6 @@ const Index = () => {
           )}
         </div>
 
-        {/* Reservation Disclaimer */}
-        <div className="reservation-disclaimer">
-          <h4>USERNAME RESERVATION DISCLAIMER:</h4>
-          <p>By reserving a username, you acknowledge:</p>
-          <ul>
-            <li>
-              Submission of a username request does not guarantee that the requested username will be assigned. All username assignments are subject to availability, platform policies, and internal review. Certain terms, including but not limited to generic, sensitive, or reserved words, may be withheld or assigned at the platform's discretion.
-            </li>
-            <li>
-              If you are a brand seeking a specific username corresponding to your trademark, the request must be submitted directly by the brand owner.
-            </li>
-            <li>
-              All requested usernames must comply with BLOX City's Terms of Service, Privacy Policy, Community Guidelines and any applicable laws. BLOX City reserves the right to deny or reassign usernames at any time.
-            </li>
-          </ul>
-        </div>
 
         {/* Reservation Counter */}
         {totalReservations !== null && totalReservations > 0 && (
@@ -285,6 +269,23 @@ const Index = () => {
               Upscrolled
             </a>
           </div>
+        </div>
+
+        {/* Reservation Disclaimer */}
+        <div className="reservation-disclaimer">
+          <h4>USERNAME RESERVATION DISCLAIMER:</h4>
+          <p>By reserving a username, you acknowledge:</p>
+          <ul>
+            <li>
+              Submission of a username request does not guarantee that the requested username will be assigned. All username assignments are subject to availability, platform policies, and internal review. Certain terms, including but not limited to generic, sensitive, or reserved words, may be withheld or assigned at the platform's discretion.
+            </li>
+            <li>
+              If you are a brand seeking a specific username corresponding to your trademark, the request must be submitted directly by the brand owner.
+            </li>
+            <li>
+              All requested usernames must comply with BLOX City's Terms of Service, Privacy Policy, Community Guidelines and any applicable laws. BLOX City reserves the right to deny or reassign usernames at any time.
+            </li>
+          </ul>
         </div>
 
         {/* Original BLOX City Notice */}
