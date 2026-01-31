@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
 import TwoFactorSetup from '@/components/forum/TwoFactorSetup';
+import MembershipBadge from '@/components/forum/MembershipBadge';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface CoverRequest {
   id: string;
@@ -53,6 +55,16 @@ interface UserThread {
   created_at: string;
 }
 
+interface UserSession {
+  id: string;
+  device_info: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  last_activity_at: string;
+  created_at: string;
+  is_current: boolean;
+}
+
 function maskEmail(email: string): string {
   if (!email) return '';
   const [local, domain] = email.split('@');
@@ -61,8 +73,29 @@ function maskEmail(email: string): string {
   return `${maskedLocal}@${domain}`;
 }
 
+function parseUserAgent(ua: string | null): { device: string; browser: string } {
+  if (!ua) return { device: 'Unknown Device', browser: 'Unknown Browser' };
+  
+  let device = 'Desktop';
+  let browser = 'Browser';
+  
+  if (/iPhone|iPad|iPod/i.test(ua)) device = 'iOS Device';
+  else if (/Android/i.test(ua)) device = 'Android Device';
+  else if (/Windows/i.test(ua)) device = 'Windows PC';
+  else if (/Mac/i.test(ua)) device = 'Mac';
+  else if (/Linux/i.test(ua)) device = 'Linux';
+  
+  if (/Chrome/i.test(ua) && !/Edge/i.test(ua)) browser = 'Chrome';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+  else if (/Edge/i.test(ua)) browser = 'Edge';
+  
+  return { device, browser };
+}
+
 export default function ForumSettings() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const { user, forumUser, isAdmin, loading, emailVerified } = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
@@ -83,6 +116,21 @@ export default function ForumSettings() {
   const [pendingAvatar, setPendingAvatar] = useState<AvatarRequest | null>(null);
   const [pendingCover, setPendingCover] = useState<CoverRequest | null>(null);
   
+  // Social Links
+  const [socialDiscord, setSocialDiscord] = useState('');
+  const [socialX, setSocialX] = useState('');
+  const [savingSocial, setSavingSocial] = useState(false);
+  
+  // Sessions
+  const [sessions, setSessions] = useState<UserSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [loggingOutOthers, setLoggingOutOthers] = useState(false);
+  
+  // Account deletion
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  
   // New states
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -102,6 +150,8 @@ export default function ForumSettings() {
       setSignature(forumUser.signature || '');
       setAllowDms(forumUser.allow_dms);
       setHideThreads(forumUser.hide_threads);
+      setSocialDiscord((forumUser as any).social_discord || '');
+      setSocialX((forumUser as any).social_x || '');
       setInitialized(true);
     }
   }, [forumUser, initialized]);
@@ -113,6 +163,7 @@ export default function ForumSettings() {
       fetchPendingCover();
       fetchVerificationRequest();
       fetchPinnedThreads();
+      fetchSessions();
     }
   }, [forumUser]);
 
@@ -180,7 +231,6 @@ export default function ForumSettings() {
     if (!forumUser) return;
     setLoadingThreads(true);
 
-    // Fetch pinned threads
     const { data: pinned } = await supabase
       .from('forum_pinned_threads')
       .select('id, thread_id, thread:thread_id (id, title)')
@@ -190,7 +240,6 @@ export default function ForumSettings() {
       setPinnedThreads(pinned as unknown as PinnedThread[]);
     }
 
-    // Fetch user's threads for pinning
     const { data: threads } = await supabase
       .from('forum_threads')
       .select('id, title, created_at')
@@ -202,6 +251,20 @@ export default function ForumSettings() {
       setUserThreads(threads);
     }
     setLoadingThreads(false);
+  };
+
+  const fetchSessions = async () => {
+    if (!forumUser) return;
+    setLoadingSessions(true);
+    
+    const { data } = await supabase
+      .from('forum_user_sessions')
+      .select('*')
+      .eq('forum_user_id', forumUser.id)
+      .order('last_activity_at', { ascending: false });
+    
+    setSessions((data || []) as UserSession[]);
+    setLoadingSessions(false);
   };
 
   const handleSaveSignature = async () => {
@@ -219,6 +282,80 @@ export default function ForumSettings() {
       toast.success('Signature saved!');
     }
     setSaving(false);
+  };
+
+  const handleSaveSocialLinks = async () => {
+    if (!forumUser) return;
+    setSavingSocial(true);
+
+    // Validate X.com URL if provided
+    if (socialX && !socialX.includes('x.com/') && !socialX.includes('twitter.com/')) {
+      toast.error('X link should be a valid x.com or twitter.com URL');
+      setSavingSocial(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ 
+        social_discord: socialDiscord.trim() || null,
+        social_x: socialX.trim() || null
+      })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to save social links');
+    } else {
+      toast.success('Social links saved!');
+    }
+    setSavingSocial(false);
+  };
+
+  const handleLogoutOtherSessions = async () => {
+    if (!forumUser) return;
+    setLoggingOutOthers(true);
+
+    // Delete all non-current sessions
+    const { error } = await supabase
+      .from('forum_user_sessions')
+      .delete()
+      .eq('forum_user_id', forumUser.id)
+      .eq('is_current', false);
+
+    if (error) {
+      toast.error('Failed to log out other sessions');
+    } else {
+      toast.success('Logged out of all other sessions');
+      fetchSessions();
+    }
+    setLoggingOutOthers(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!forumUser || !user || deleteConfirmText !== 'DELETE') return;
+    setDeleting(true);
+
+    // Create deletion request
+    const { error } = await supabase
+      .from('forum_account_deletion_requests')
+      .insert({
+        forum_user_id: forumUser.id,
+        user_id: user.id,
+        status: 'pending'
+      });
+
+    if (error) {
+      if (error.message.includes('duplicate')) {
+        toast.error('You already have a pending deletion request');
+      } else {
+        toast.error('Failed to submit deletion request');
+      }
+    } else {
+      toast.success('Account deletion requested. An admin will process this shortly.');
+      setShowDeleteModal(false);
+      setDeleteConfirmText('');
+    }
+    setDeleting(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -408,8 +545,6 @@ export default function ForumSettings() {
       });
 
     if (error) {
-      // Surface the real error to help diagnose any remaining RLS/validation issues.
-      // (No sensitive data is included in this error message.)
       if (error.message?.toLowerCase().includes('pending') || error.message?.toLowerCase().includes('exists')) {
         toast.error('You already have a pending verification request');
       } else {
@@ -495,6 +630,8 @@ export default function ForumSettings() {
     );
   }
 
+  const membershipTier = (forumUser as any).membership_tier as 'bronze' | 'silver' | 'platinum' | null;
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Forum Settings</h1>
@@ -558,10 +695,11 @@ export default function ForumSettings() {
           <div className="flex-1">
             <div className="mb-3">
               <label className="text-sm text-[hsl(var(--bc-text-muted))]">Username</label>
-              <div className="text-[hsl(var(--bc-text))] font-medium flex items-center gap-2">
+              <div className="text-[hsl(var(--bc-text))] font-medium flex items-center gap-2 flex-wrap">
                 {forumUser.username}
                 {forumUser.is_verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
                 {isAdmin && <Shield className="w-4 h-4 text-[hsl(var(--bc-accent))]" />}
+                {membershipTier && <MembershipBadge tier={membershipTier} size="sm" />}
               </div>
             </div>
             <div>
@@ -577,6 +715,89 @@ export default function ForumSettings() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Theme Toggle */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          Appearance
+        </h2>
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[hsl(var(--bc-text))] font-medium">Theme</div>
+            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Choose light or dark mode</div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setTheme('light')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                theme === 'light'
+                  ? 'bg-[hsl(var(--bc-primary))] text-white'
+                  : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-border))]'
+              }`}
+            >
+              <Sun className="w-4 h-4" />
+              Light
+            </button>
+            <button
+              onClick={() => setTheme('dark')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                theme === 'dark'
+                  ? 'bg-[hsl(var(--bc-primary))] text-white'
+                  : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-border))]'
+              }`}
+            >
+              <Moon className="w-4 h-4" />
+              Dark
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Social Links */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <Link2 className="w-5 h-5" />
+          Social Links
+        </h2>
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+          Add your social media links to display on your profile.
+        </p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">Discord Username</label>
+            <input
+              type="text"
+              value={socialDiscord}
+              onChange={(e) => setSocialDiscord(e.target.value)}
+              placeholder="username#0000 or just username"
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))]"
+              maxLength={100}
+            />
+          </div>
+          <div>
+            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">X (Twitter) Profile</label>
+            <input
+              type="text"
+              value={socialX}
+              onChange={(e) => setSocialX(e.target.value)}
+              placeholder="https://x.com/username"
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))]"
+              maxLength={200}
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSaveSocialLinks}
+          disabled={savingSocial}
+          className="mt-4 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
+        >
+          {savingSocial ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Social Links'}
+        </button>
       </div>
 
       {/* Cover Photo Section */}
@@ -626,6 +847,68 @@ export default function ForumSettings() {
           >
             {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
             {uploadingCover ? 'Uploading...' : (forumUser.cover_url ? 'Change Cover Photo' : 'Upload Cover Photo')}
+          </button>
+        )}
+      </div>
+
+      {/* Active Sessions */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <Monitor className="w-5 h-5" />
+          Active Sessions
+        </h2>
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+          See where you're logged in and manage your sessions.
+        </p>
+
+        {loadingSessions ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 text-[hsl(var(--bc-text-muted))] animate-spin mx-auto" />
+          </div>
+        ) : sessions.length === 0 ? (
+          <p className="text-[hsl(var(--bc-text-muted))] text-center py-4">No active sessions tracked</p>
+        ) : (
+          <div className="space-y-3 mb-4">
+            {sessions.map((session) => {
+              const { device, browser } = parseUserAgent(session.user_agent);
+              const isPhone = device.includes('iOS') || device.includes('Android');
+              return (
+                <div 
+                  key={session.id}
+                  className={`flex items-center justify-between bg-[hsl(var(--bc-bg-light))] rounded-lg p-3 ${session.is_current ? 'border-2 border-[hsl(var(--bc-primary))]' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    {isPhone ? (
+                      <Smartphone className="w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                    ) : (
+                      <Monitor className="w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                    )}
+                    <div>
+                      <div className="text-[hsl(var(--bc-text))] font-medium flex items-center gap-2">
+                        {device} - {browser}
+                        {session.is_current && (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Current</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                        Last active: {new Date(session.last_activity_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {sessions.length > 1 && (
+          <button
+            onClick={handleLogoutOtherSessions}
+            disabled={loggingOutOthers}
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-secondary))] hover:opacity-90 text-white rounded-lg transition text-sm"
+          >
+            {loggingOutOthers ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+            Log Out of All Other Sessions
           </button>
         )}
       </div>
@@ -907,6 +1190,65 @@ export default function ForumSettings() {
           </div>
         )}
       </div>
+
+      {/* Danger Zone - Account Deletion */}
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
+          <Trash2 className="w-5 h-5" />
+          Danger Zone
+        </h2>
+        <p className="text-red-600 dark:text-red-400 text-sm mb-4">
+          Once you delete your account, there is no going back. Please be certain.
+        </p>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition text-sm"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete Account
+        </button>
+      </div>
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Delete Account</h3>
+            <p className="text-[hsl(var(--bc-text-muted))] mb-4">
+              This action cannot be undone. Your account, posts, and all associated data will be permanently deleted.
+            </p>
+            <p className="text-[hsl(var(--bc-text))] mb-4">
+              Type <strong>DELETE</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText('');
+                }}
+                className="px-4 py-2 text-[hsl(var(--bc-text-muted))] hover:opacity-80"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

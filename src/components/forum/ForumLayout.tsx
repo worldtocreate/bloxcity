@@ -273,8 +273,16 @@ export default function ForumLayout() {
         )}
       </main>
       <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-4 text-center text-[hsl(var(--bc-text-muted))] text-sm">
-          © 2026 BLOX City, Inc. All rights reserved.
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
+          <p className="text-[hsl(var(--bc-text-muted))] text-sm">
+            © 2026 BLOX City, Inc. All rights reserved.
+          </p>
+          <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+            Looking for where BLOX City is now? Isaac is over at{" "}
+            <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">brickplanet.com</a>
+            {" "}& Kyle is over at{" "}
+            <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">truworlds.net</a>
+          </p>
         </div>
       </footer>
     </div>
