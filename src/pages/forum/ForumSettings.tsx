@@ -16,18 +16,28 @@ interface BlockedUser {
 
 export default function ForumSettings() {
   const navigate = useNavigate();
-  const { user, forumUser, isAdmin } = useOutletContext<{
+  const { user, forumUser, isAdmin, loading } = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
     isAdmin: boolean;
+    loading?: boolean;
   }>();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [signature, setSignature] = useState(forumUser?.signature || '');
+  const [signature, setSignature] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loadingBlocked, setLoadingBlocked] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize signature when forumUser loads
+  useEffect(() => {
+    if (forumUser && !initialized) {
+      setSignature(forumUser.signature || '');
+      setInitialized(true);
+    }
+  }, [forumUser, initialized]);
 
   useEffect(() => {
     if (forumUser) fetchBlockedUsers();
@@ -140,6 +150,19 @@ export default function ForumSettings() {
       fetchBlockedUsers();
     }
   };
+
+  // Show loading while auth is initializing
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-[hsl(var(--bc-bg-card))] rounded w-1/3 border border-[hsl(var(--bc-border))]" />
+          <div className="h-64 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
+          <div className="h-48 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
+        </div>
+      </div>
+    );
+  }
 
   if (!user || !forumUser) {
     navigate('/forum/login');
