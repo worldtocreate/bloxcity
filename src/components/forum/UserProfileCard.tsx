@@ -196,7 +196,7 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
           View Profile
         </Link>
         <Link
-          to={`/forum/messages?to=${profile.username}`}
+          to={`/messages?to=${profile.username}`}
           className="flex-1 text-center text-sm bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white py-2 rounded-lg transition flex items-center justify-center gap-1"
         >
           <MessageCircle className="w-4 h-4" />
