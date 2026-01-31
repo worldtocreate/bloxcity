@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
 import ForumHeader from './ForumHeader';
-import { Loader2, Megaphone, X } from 'lucide-react';
+import { Loader2, Megaphone, X, Shield, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ForumAnnouncement {
@@ -11,10 +11,19 @@ interface ForumAnnouncement {
   type: 'info' | 'warning' | 'success';
 }
 
+interface TwoFASettings {
+  is_enabled: boolean;
+  method: string;
+}
+
 export default function ForumLayout() {
   const { user, forumUser, isAdmin, loading } = useForumAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [announcement, setAnnouncement] = useState<ForumAnnouncement | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [twoFAStatus, setTwoFAStatus] = useState<TwoFASettings | null>(null);
+  const [checkingTwoFA, setCheckingTwoFA] = useState(true);
 
   useEffect(() => {
     fetchAnnouncement();
@@ -42,6 +51,28 @@ export default function ForumLayout() {
       ogDescription?.setAttribute('content', originalOgDescription);
     };
   }, []);
+
+  // Check 2FA status for admins
+  useEffect(() => {
+    if (!loading && isAdmin && forumUser) {
+      checkTwoFAStatus();
+    } else if (!loading) {
+      setCheckingTwoFA(false);
+    }
+  }, [loading, isAdmin, forumUser]);
+
+  const checkTwoFAStatus = async () => {
+    if (!forumUser) return;
+    
+    const { data } = await supabase
+      .from('forum_2fa_settings')
+      .select('is_enabled, method')
+      .eq('forum_user_id', forumUser.id)
+      .single();
+    
+    setTwoFAStatus(data as TwoFASettings | null);
+    setCheckingTwoFA(false);
+  };
 
   const fetchAnnouncement = async () => {
     const { data } = await supabase
@@ -84,6 +115,41 @@ export default function ForumLayout() {
     }
   }
 
+  // Block admin access if 2FA is not enabled (except on settings page to allow setup)
+  const isSettingsPage = location.pathname === '/forum/settings';
+  const adminNeeds2FA = !loading && !checkingTwoFA && isAdmin && forumUser && (!twoFAStatus || !twoFAStatus.is_enabled);
+  
+  if (adminNeeds2FA && !isSettingsPage) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
+        <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+        <div className="flex items-center justify-center p-4 py-20">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-8 max-w-md text-center">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-amber-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">Two-Factor Authentication Required</h1>
+            <p className="text-[hsl(var(--bc-text-muted))] mb-6">
+              As an administrator, you are required to enable two-factor authentication to protect your account and the community.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/forum/settings')}
+                className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-6 py-3 rounded-lg transition font-medium flex items-center justify-center gap-2"
+              >
+                <Lock className="w-5 h-5" />
+                Set Up 2FA Now
+              </button>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                You can choose between Google Authenticator or Email codes
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const bannerStyles = {
     info: 'bg-blue-50 border-blue-200 text-blue-800',
     warning: 'bg-amber-50 border-amber-200 text-amber-800',
@@ -93,6 +159,18 @@ export default function ForumLayout() {
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
       <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+      
+      {/* Admin 2FA Warning Banner on Settings Page */}
+      {adminNeeds2FA && isSettingsPage && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Shield className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-amber-800">
+              You must enable Two-Factor Authentication before you can access other forum features.
+            </span>
+          </div>
+        </div>
+      )}
       
       {/* Announcement Banner */}
       {announcement?.enabled && announcement.message && !bannerDismissed && (
@@ -114,7 +192,7 @@ export default function ForumLayout() {
       )}
       
       <main className="max-w-6xl mx-auto px-4 py-6">
-        {loading ? (
+        {loading || checkingTwoFA ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
           </div>
