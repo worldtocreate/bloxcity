@@ -289,6 +289,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_suspended: boolean | null
+          last_post_at: string | null
           post_count: number | null
           signature: string | null
           suspension_ends_at: string | null
@@ -301,6 +302,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_suspended?: boolean | null
+          last_post_at?: string | null
           post_count?: number | null
           signature?: string | null
           suspension_ends_at?: string | null
@@ -313,6 +315,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_suspended?: boolean | null
+          last_post_at?: string | null
           post_count?: number | null
           signature?: string | null
           suspension_ends_at?: string | null

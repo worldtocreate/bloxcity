@@ -182,7 +182,11 @@ export default function ForumThread() {
     });
 
     if (error) {
-      toast.error('Failed to post reply');
+      if (error.message.includes('row-level security') || error.code === '42501') {
+        toast.error('Please wait 30 seconds between posts.');
+      } else {
+        toast.error('Failed to post reply');
+      }
     } else {
       toast.success('Reply posted!');
       setReplyContent('');
