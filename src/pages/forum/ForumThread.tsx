@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2 } from 'lucide-react';
+import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 
@@ -31,6 +31,7 @@ interface Thread {
   id: string;
   title: string;
   is_locked: boolean;
+  is_pinned: boolean;
   view_count: number;
   category: {
     name: string;
@@ -78,6 +79,8 @@ export default function ForumThread() {
 
       setThread({ 
         ...threadData, 
+        is_pinned: threadData.is_pinned ?? false,
+        is_locked: threadData.is_locked ?? false,
         category: categoryData || { name: 'Unknown', slug: '' }
       } as Thread);
       await fetchPosts();
@@ -207,6 +210,40 @@ export default function ForumThread() {
     setSubmitting(false);
   };
 
+  const handleTogglePin = async () => {
+    if (!thread || !isAdmin) return;
+    const newPinned = !thread.is_pinned;
+    
+    const { error } = await supabase
+      .from('forum_threads')
+      .update({ is_pinned: newPinned })
+      .eq('id', thread.id);
+    
+    if (error) {
+      toast.error('Failed to update thread');
+    } else {
+      setThread({ ...thread, is_pinned: newPinned });
+      toast.success(newPinned ? 'Thread pinned' : 'Thread unpinned');
+    }
+  };
+
+  const handleToggleLock = async () => {
+    if (!thread || !isAdmin) return;
+    const newLocked = !thread.is_locked;
+    
+    const { error } = await supabase
+      .from('forum_threads')
+      .update({ is_locked: newLocked })
+      .eq('id', thread.id);
+    
+    if (error) {
+      toast.error('Failed to update thread');
+    } else {
+      setThread({ ...thread, is_locked: newLocked });
+      toast.success(newLocked ? 'Thread locked' : 'Thread unlocked');
+    }
+  };
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -233,10 +270,43 @@ export default function ForumThread() {
           <ChevronLeft className="w-4 h-4" />
           {thread.category.name}
         </Link>
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2">
-          {thread.title}
-          {thread.is_locked && <Lock className="w-5 h-5 text-[hsl(var(--bc-secondary))]" />}
-        </h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2 flex-wrap">
+            {thread.is_pinned && <Pin className="w-5 h-5 text-[hsl(var(--bc-accent))]" />}
+            {thread.title}
+            {thread.is_locked && <Lock className="w-5 h-5 text-[hsl(var(--bc-secondary))]" />}
+          </h1>
+          
+          {/* Admin Controls */}
+          {isAdmin && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleTogglePin}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  thread.is_pinned 
+                    ? 'bg-[hsla(var(--bc-accent),0.2)] text-[hsl(var(--bc-accent))]' 
+                    : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
+                }`}
+                title={thread.is_pinned ? 'Unpin thread' : 'Pin thread'}
+              >
+                <Pin className="w-4 h-4" />
+                {thread.is_pinned ? 'Pinned' : 'Pin'}
+              </button>
+              <button
+                onClick={handleToggleLock}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  thread.is_locked 
+                    ? 'bg-red-100 text-red-600' 
+                    : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
+                }`}
+                title={thread.is_locked ? 'Unlock thread' : 'Lock thread'}
+              >
+                {thread.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                {thread.is_locked ? 'Unlock' : 'Lock'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Posts */}
