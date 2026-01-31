@@ -139,8 +139,8 @@ export default function ForumHome() {
         ))}
       </div>
 
-      {/* Username Reservation Section - Only for logged-in users */}
-      {isLoggedIn && (
+      {/* Username Reservation Section */}
+      {isLoggedIn ? (
         <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
           <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
           <div className="grid sm:grid-cols-2 gap-4">
@@ -168,6 +168,23 @@ export default function ForumHome() {
                 <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
               </div>
             </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
+                <Ticket className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+              </div>
+              <p className="text-[hsl(var(--bc-text))]">
+                Looking to reserve your BLOX City username?{' '}
+                <Link to="/register" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">Sign up</Link>
+                {' '}or{' '}
+                <Link to="/login" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">log in</Link>
+                {' '}to do so.
+              </p>
+            </div>
           </div>
         </div>
       )}
