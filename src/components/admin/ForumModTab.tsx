@@ -255,6 +255,7 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
     setProcessingCover(null);
   };
 
+  const handleApproveVerification = async (request: VerificationRequest) => {
     setProcessingVerification(request.id);
 
     // Update verification request status
