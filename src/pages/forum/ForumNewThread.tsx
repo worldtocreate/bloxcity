@@ -75,7 +75,11 @@ export default function ForumNewThread() {
       .single();
 
     if (threadError || !thread) {
-      toast.error('Failed to create thread');
+      if (threadError?.message.includes('row-level security') || threadError?.code === '42501') {
+        toast.error('Please wait 30 seconds between posts.');
+      } else {
+        toast.error('Failed to create thread');
+      }
       setSubmitting(false);
       return;
     }
