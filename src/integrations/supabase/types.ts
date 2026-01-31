@@ -338,6 +338,47 @@ export type Database = {
           },
         ]
       }
+      forum_cover_requests: {
+        Row: {
+          created_at: string
+          denial_reason: string | null
+          forum_user_id: string
+          id: string
+          image_url: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          denial_reason?: string | null
+          forum_user_id: string
+          id?: string
+          image_url: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          denial_reason?: string | null
+          forum_user_id?: string
+          id?: string
+          image_url?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_cover_requests_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_direct_messages: {
         Row: {
           created_at: string
@@ -596,6 +637,7 @@ export type Database = {
         Row: {
           allow_dms: boolean | null
           avatar_url: string | null
+          cover_url: string | null
           created_at: string | null
           dm_encryption_pin_hash: string | null
           hide_threads: boolean | null
@@ -613,6 +655,7 @@ export type Database = {
         Insert: {
           allow_dms?: boolean | null
           avatar_url?: string | null
+          cover_url?: string | null
           created_at?: string | null
           dm_encryption_pin_hash?: string | null
           hide_threads?: boolean | null
@@ -630,6 +673,7 @@ export type Database = {
         Update: {
           allow_dms?: boolean | null
           avatar_url?: string | null
+          cover_url?: string | null
           created_at?: string | null
           dm_encryption_pin_hash?: string | null
           hide_threads?: boolean | null

@@ -11,6 +11,7 @@ interface ProfileData {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  cover_url: string | null;
   signature: string | null;
   created_at: string;
   post_count: number;
@@ -226,7 +227,14 @@ export default function ForumUserProfile() {
       {/* Profile Header Card */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
         {/* Cover/Banner Area */}
-        <div className="h-24 bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))]" />
+        {profile.cover_url ? (
+          <div 
+            className="h-32 sm:h-40 bg-cover bg-center"
+            style={{ backgroundImage: `url(${profile.cover_url})` }}
+          />
+        ) : (
+          <div className="h-24 bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))]" />
+        )}
         
         <div className="relative px-6 pb-6">
           {/* Avatar - overlapping banner */}

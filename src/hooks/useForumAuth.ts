@@ -7,6 +7,7 @@ export interface ForumUser {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  cover_url: string | null;
   signature: string | null;
   is_suspended: boolean;
   suspension_reason: string | null;
