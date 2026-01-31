@@ -586,13 +586,19 @@ export default function ForumMessages() {
                   selectedConversation === convo.id ? 'bg-[hsl(var(--bc-bg-light))]' : ''
                 }`}
               >
-                {convo.other_user?.avatar_url ? (
-                  <img src={convo.other_user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                    <User className="w-5 h-5 text-white" />
-                  </div>
-                )}
+                <Link 
+                  to={`/forum/user/${convo.other_user?.username}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block hover:opacity-80 transition flex-shrink-0"
+                >
+                  {convo.other_user?.avatar_url ? (
+                    <img src={convo.other_user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                      <User className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                </Link>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <span className="font-medium text-[hsl(var(--bc-text))] truncate">
@@ -634,13 +640,18 @@ export default function ForumMessages() {
                 if (!convo?.other_user) return null;
                 return (
                   <>
-                    {convo.other_user.avatar_url ? (
-                      <img src={convo.other_user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                    )}
+                    <Link 
+                      to={`/forum/user/${convo.other_user.username}`}
+                      className="block hover:opacity-80 transition"
+                    >
+                      {convo.other_user.avatar_url ? (
+                        <img src={convo.other_user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                    </Link>
                     <div className="flex items-center gap-1">
                       <Link 
                         to={`/forum/user/${convo.other_user.username}`}

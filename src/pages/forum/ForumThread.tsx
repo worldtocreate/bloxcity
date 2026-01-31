@@ -397,23 +397,31 @@ export default function ForumThread() {
                   {/* Author Sidebar */}
                   <div className="sm:w-48 p-4 bg-[hsl(var(--bc-bg-light))] border-b sm:border-b-0 sm:border-r border-[hsl(var(--bc-border))]">
                     <div className="flex sm:flex-col items-center sm:items-start gap-3">
-                      {post.author.avatar_url ? (
-                        <img
-                          src={post.author.avatar_url}
-                          alt={post.author.username}
-                          className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                          <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                        </div>
-                      )}
+                      <Link 
+                        to={`/forum/user/${post.author.username}`}
+                        className="block hover:opacity-80 transition"
+                      >
+                        {post.author.avatar_url ? (
+                          <img
+                            src={post.author.avatar_url}
+                            alt={post.author.username}
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                            <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                          </div>
+                        )}
+                      </Link>
                       <div>
-                        <div className="font-medium text-[hsl(var(--bc-text))] flex items-center gap-1">
+                        <Link 
+                          to={`/forum/user/${post.author.username}`}
+                          className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] flex items-center gap-1 transition"
+                        >
                           {post.author.username}
                           {post.author.is_verified && <VerifiedBadge size="sm" />}
                           <AdminBadge userId={post.author?.user_id || ''} />
-                        </div>
+                        </Link>
                         <div className="text-xs text-[hsl(var(--bc-text-muted))]">
                           {post.author.post_count} posts
                         </div>
