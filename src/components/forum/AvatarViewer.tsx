@@ -6,14 +6,16 @@ function AvatarModel() {
   const { scene } = useGLTF('/models/avatar.glb');
 
   return (
-    <primitive object={scene} scale={1} position={[0, -1.5, 0]} />
+    <group rotation={[0, -0.4, 0]}>
+      <primitive object={scene} scale={1} position={[0, -1.2, 0]} />
+    </group>
   );
 }
 
 function LoadingFallback() {
   return (
-    <mesh>
-      <boxGeometry args={[1, 2, 0.5]} />
+    <mesh position={[0, 0, 0]}>
+      <boxGeometry args={[0.8, 1.6, 0.4]} />
       <meshStandardMaterial color="#4f46e5" wireframe />
     </mesh>
   );
@@ -27,23 +29,28 @@ export default function AvatarViewer({ className = '' }: AvatarViewerProps) {
   return (
     <div className={`w-full h-full ${className}`}>
       <Canvas
-        camera={{ position: [0, 0, 5], fov: 45 }}
+        camera={{ 
+          position: [2, 0.5, 3.5], 
+          fov: 35,
+          near: 0.1,
+          far: 100
+        }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: 'transparent' }}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 5, 5]} intensity={1} />
-        <directionalLight position={[-5, 5, -5]} intensity={0.5} />
-        <pointLight position={[0, 3, 2]} intensity={0.5} />
+        <ambientLight intensity={0.7} />
+        <directionalLight position={[5, 5, 5]} intensity={1.2} />
+        <directionalLight position={[-3, 3, -3]} intensity={0.4} />
+        <pointLight position={[0, 2, 3]} intensity={0.6} />
         
         <Suspense fallback={<LoadingFallback />}>
           <AvatarModel />
           <ContactShadows 
-            position={[0, -1.5, 0]} 
-            opacity={0.4} 
-            scale={10} 
-            blur={2} 
-            far={4} 
+            position={[0, -1.2, 0]} 
+            opacity={0.5} 
+            scale={6} 
+            blur={2.5} 
+            far={3} 
           />
           <Environment preset="studio" />
         </Suspense>
