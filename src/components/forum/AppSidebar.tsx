@@ -12,6 +12,7 @@ import {
   Mail,
   ChevronLeft,
   Heart,
+  Award,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const mainNavItems = [
   { title: 'Forum', url: '/forum', icon: MessageSquare },
   { title: 'Players', url: '/players', icon: Users },
   { title: 'Groups', url: '/groups', icon: UsersRound },
+  { title: 'Achievements', url: '/achievements', icon: Award },
 ];
 
 const comingSoonItems = [

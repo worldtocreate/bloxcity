@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useOutletContext, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Settings, Loader2, Save, Users, Shield, 
-  Trash2, Crown, Plus, X, AlertTriangle, UserCheck, Edit2
+  Trash2, Crown, Plus, X, AlertTriangle, UserCheck, Edit2, Camera, ImageIcon, Upload
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -113,6 +113,12 @@ export default function GroupSettings() {
   const [show2FAVerify, setShow2FAVerify] = useState(false);
   const [has2FAEnabled, setHas2FAEnabled] = useState(false);
   const [transferring, setTransferring] = useState(false);
+
+  // Media upload state
+  const iconInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -457,6 +463,71 @@ export default function GroupSettings() {
     setShowOwnershipModal(false);
   };
 
+  const handleMediaUpload = async (file: File, type: 'icon' | 'cover') => {
+    if (!group || !forumUser) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    if (type === 'icon') {
+      setUploadingIcon(true);
+    } else {
+      setUploadingCover(true);
+    }
+
+    try {
+      // Upload to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `group-${group.id}-${type}-${Date.now()}.${fileExt}`;
+      const filePath = `groups/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('forum-avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('forum-avatars')
+        .getPublicUrl(filePath);
+
+      const imageUrl = urlData.publicUrl;
+
+      // Submit for review (moderation)
+      const { error: requestError } = await supabase
+        .from('forum_group_media_requests')
+        .insert({
+          group_id: group.id,
+          media_type: type,
+          image_url: imageUrl,
+          status: 'pending'
+        });
+
+      if (requestError) throw requestError;
+
+      toast.success(`${type === 'icon' ? 'Icon' : 'Cover'} submitted for review`);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+    }
+
+    if (type === 'icon') {
+      setUploadingIcon(false);
+    } else {
+      setUploadingCover(false);
+    }
+  };
+
   const handleDeleteGroup = async () => {
     if (!group || !isOwner) return;
 
@@ -583,6 +654,114 @@ export default function GroupSettings() {
                 rows={4}
                 className="w-full px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] resize-none focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
               />
+            </div>
+
+            {/* Media Upload Section */}
+            <div className="py-4 border-t border-[hsl(var(--bc-border))]">
+              <h3 className="font-medium text-[hsl(var(--bc-text))] mb-4">Group Media</h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Icon Upload */}
+                <div className="space-y-2">
+                  <label className="block text-sm text-[hsl(var(--bc-text-muted))]">
+                    Group Icon
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      {group.icon_url ? (
+                        <img
+                          src={group.icon_url}
+                          alt="Group icon"
+                          className="w-16 h-16 rounded-xl object-cover border border-[hsl(var(--bc-border))]"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-[hsl(var(--bc-text-muted))]" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        ref={iconInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleMediaUpload(file, 'icon');
+                        }}
+                      />
+                      <button
+                        onClick={() => iconInputRef.current?.click()}
+                        disabled={uploadingIcon}
+                        className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-border))] transition text-sm"
+                      >
+                        {uploadingIcon ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        Upload Icon
+                      </button>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                        Recommended: 128x128px
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cover Upload */}
+                <div className="space-y-2">
+                  <label className="block text-sm text-[hsl(var(--bc-text-muted))]">
+                    Cover Photo
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      {group.cover_url ? (
+                        <img
+                          src={group.cover_url}
+                          alt="Group cover"
+                          className="w-24 h-16 rounded-lg object-cover border border-[hsl(var(--bc-border))]"
+                        />
+                      ) : (
+                        <div className="w-24 h-16 rounded-lg bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-[hsl(var(--bc-text-muted))]" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        ref={coverInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleMediaUpload(file, 'cover');
+                        }}
+                      />
+                      <button
+                        onClick={() => coverInputRef.current?.click()}
+                        disabled={uploadingCover}
+                        className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-border))] transition text-sm"
+                      >
+                        {uploadingCover ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        Upload Cover
+                      </button>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                        Recommended: 1200x400px
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-3">
+                All media uploads are reviewed by moderators before being displayed.
+              </p>
             </div>
 
             <div className="flex items-center justify-between py-3 border-t border-[hsl(var(--bc-border))]">
