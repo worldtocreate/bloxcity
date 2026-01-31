@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { User, Calendar, MessageCircle, Shield, MessageSquare, Pin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import VerifiedBadge from './VerifiedBadge';
@@ -113,13 +113,18 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
       {/* Header */}
       <div className="p-4 border-b border-[hsl(var(--bc-border))]">
         <div className="flex items-start gap-3">
-          {profile.avatar_url ? (
-            <img src={profile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-              <User className="w-7 h-7 text-white" />
-            </div>
-          )}
+          <Link 
+            to={`/forum/user/${profile.username}`}
+            className="block hover:opacity-80 transition"
+          >
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                <User className="w-7 h-7 text-white" />
+              </div>
+            )}
+          </Link>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-[hsl(var(--bc-text))] truncate">{profile.username}</span>
