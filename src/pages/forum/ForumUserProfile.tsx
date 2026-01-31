@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2 } from 'lucide-react';
+import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
@@ -18,6 +18,7 @@ interface ProfileData {
   is_suspended: boolean;
   hide_threads: boolean;
   allow_dms: boolean;
+  last_post_at: string | null;
 }
 
 interface ThreadData {
@@ -31,6 +32,12 @@ interface ThreadData {
     slug: string;
   };
   is_pinned_by_user?: boolean;
+}
+
+interface ProfileStats {
+  totalViews: number;
+  totalReplies: number;
+  threadCount: number;
 }
 
 export default function ForumUserProfile() {
@@ -48,6 +55,8 @@ export default function ForumUserProfile() {
   const [loading, setLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blocking, setBlocking] = useState(false);
+  const [stats, setStats] = useState<ProfileStats>({ totalViews: 0, totalReplies: 0, threadCount: 0 });
+  const [activeTab, setActiveTab] = useState<'threads' | 'activity'>('threads');
 
   const isOwnProfile = forumUser?.username === username;
   const canSeeThreads = isOwnProfile || isAdmin || !profile?.hide_threads;
@@ -104,11 +113,21 @@ export default function ForumUserProfile() {
         .from('forum_threads')
         .select('id, title, reply_count, view_count, created_at, category:category_id (name, slug)')
         .eq('author_id', userData.id)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
         .limit(20);
       
       if (threadData) {
         setThreads(threadData as unknown as ThreadData[]);
+        
+        // Calculate stats
+        const totalViews = threadData.reduce((sum, t: any) => sum + (t.view_count || 0), 0);
+        const totalReplies = threadData.reduce((sum, t: any) => sum + (t.reply_count || 0), 0);
+        setStats({
+          totalViews,
+          totalReplies,
+          threadCount: threadData.length
+        });
       }
     }
 
@@ -156,6 +175,28 @@ export default function ForumUserProfile() {
     setBlocking(false);
   };
 
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getTimeSince = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = now.getTime() - then.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+    if (days < 365) return `${Math.floor(days / 30)} months ago`;
+    return `${Math.floor(days / 365)} years ago`;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -182,90 +223,161 @@ export default function ForumUserProfile() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Profile Header */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <div className="flex flex-col sm:flex-row items-start gap-6">
-          {/* Avatar */}
-          {profile.avatar_url ? (
-            <img 
-              src={profile.avatar_url} 
-              alt={profile.username}
-              className="w-24 h-24 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-              <User className="w-12 h-12 text-white" />
-            </div>
-          )}
-
-          {/* Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
-              {profile.is_verified && <VerifiedBadge size="lg" />}
-              {profile.is_suspended && (
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Suspended</span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-sm text-[hsl(var(--bc-text-muted))]">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                Joined {new Date(profile.created_at).toLocaleDateString()}
-              </div>
-              <div className="flex items-center gap-1">
-                <MessageSquare className="w-4 h-4" />
-                {profile.post_count} posts
-              </div>
-            </div>
-
-            {profile.signature && (
-              <div className="mt-4 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg border-l-4 border-[hsl(var(--bc-primary))]">
-                <p className="text-sm text-[hsl(var(--bc-text-muted))] italic">{profile.signature}</p>
+      {/* Profile Header Card */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+        {/* Cover/Banner Area */}
+        <div className="h-24 bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))]" />
+        
+        <div className="relative px-6 pb-6">
+          {/* Avatar - overlapping banner */}
+          <div className="absolute -top-12 left-6">
+            {profile.avatar_url ? (
+              <img 
+                src={profile.avatar_url} 
+                alt={profile.username}
+                className="w-24 h-24 rounded-xl object-cover border-4 border-[hsl(var(--bc-bg-card))] shadow-lg"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-xl bg-[hsl(var(--bc-primary))] flex items-center justify-center border-4 border-[hsl(var(--bc-bg-card))] shadow-lg">
+                <User className="w-12 h-12 text-white" />
               </div>
             )}
           </div>
 
-          {/* Actions */}
-          {!isOwnProfile && forumUser && (
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigate(`/forum/messages?to=${profile.username}`)}
-                disabled={!profile.allow_dms && !isAdmin}
-                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] disabled:cursor-not-allowed text-white rounded-lg transition"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Message
-              </button>
-              {!isAdmin && (
+          {/* Actions - aligned right */}
+          <div className="flex justify-end pt-4">
+            {!isOwnProfile && forumUser && (
+              <div className="flex gap-2">
                 <button
-                  onClick={handleBlock}
-                  disabled={blocking}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                    isBlocked
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))]'
-                  }`}
+                  onClick={() => navigate(`/forum/messages?to=${profile.username}`)}
+                  disabled={!profile.allow_dms && !isAdmin}
+                  className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] disabled:cursor-not-allowed text-white rounded-lg transition text-sm font-medium"
                 >
-                  <Ban className="w-4 h-4" />
-                  {isBlocked ? 'Unblock' : 'Block'}
+                  <MessageCircle className="w-4 h-4" />
+                  Message
                 </button>
+                {!isAdmin && (
+                  <button
+                    onClick={handleBlock}
+                    disabled={blocking}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium ${
+                      isBlocked
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))]'
+                    }`}
+                  >
+                    <Ban className="w-4 h-4" />
+                    {isBlocked ? 'Unblock' : 'Block'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* User Info */}
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
+              {profile.is_verified && <VerifiedBadge size="lg" />}
+              {profile.is_suspended && (
+                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
               )}
+            </div>
+
+            {/* Member since */}
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+              Member since {formatDate(profile.created_at)}
+            </p>
+
+            {/* Signature */}
+            {profile.signature && (
+              <div className="p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg border-l-4 border-[hsl(var(--bc-primary))]">
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] italic">"{profile.signature}"</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[hsl(var(--bc-primary))]/20 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{profile.post_count}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Posts</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-[hsl(var(--bc-accent))]/20 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{stats.threadCount}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Threads</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <Eye className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{stats.totalViews.toLocaleString()}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Views</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{stats.totalReplies.toLocaleString()}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Replies</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Activity Info */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+        <div className="flex flex-wrap gap-6 text-sm">
+          <div className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))]">
+            <Calendar className="w-4 h-4" />
+            <span>Joined {formatDate(profile.created_at)}</span>
+          </div>
+          {profile.last_post_at && (
+            <div className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))]">
+              <Clock className="w-4 h-4" />
+              <span>Last active {getTimeSince(profile.last_post_at)}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Threads */}
+      {/* Threads Section */}
       {canSeeThreads && (
         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl">
-          <div className="p-4 border-b border-[hsl(var(--bc-border))]">
-            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Threads by {profile.username}</h2>
+          <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Recent Threads</h2>
+            <span className="text-sm text-[hsl(var(--bc-text-muted))]">{threads.length} threads</span>
           </div>
 
           {threads.length === 0 ? (
             <div className="p-8 text-center text-[hsl(var(--bc-text-muted))]">
-              No threads yet
+              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No threads yet</p>
             </div>
           ) : (
             <div className="divide-y divide-[hsl(var(--bc-border))]">
@@ -281,14 +393,17 @@ export default function ForumUserProfile() {
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-[hsl(var(--bc-text))] truncate">{thread.title}</h3>
-                      <div className="flex items-center gap-3 mt-1 text-sm text-[hsl(var(--bc-text-muted))]">
-                        <span>{thread.category?.name}</span>
-                        <span>•</span>
-                        <span>{thread.reply_count} replies</span>
-                        <span>•</span>
-                        <span>{thread.view_count} views</span>
-                        <span>•</span>
-                        <span>{new Date(thread.created_at).toLocaleDateString()}</span>
+                      <div className="flex items-center gap-3 mt-1.5 text-sm text-[hsl(var(--bc-text-muted))]">
+                        <span className="px-2 py-0.5 bg-[hsl(var(--bc-bg-light))] rounded text-xs">{thread.category?.name}</span>
+                        <span className="flex items-center gap-1">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          {thread.reply_count}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-3.5 h-3.5" />
+                          {thread.view_count}
+                        </span>
+                        <span>{getTimeSince(thread.created_at)}</span>
                       </div>
                     </div>
                   </div>

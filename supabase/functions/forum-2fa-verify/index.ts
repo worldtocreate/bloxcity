@@ -136,7 +136,7 @@ async function sendVerificationEmail(email: string, code: string, username: stri
     let result;
     try {
       result = await resend.emails.send({
-        from: "BLOX City Security <noreply@bloxcity.net>",
+        from: "BLOX City Security <security@bloxcity.net>",
         to: [email],
         subject: `${code} is your BLOX City verification code`,
         html: emailHtml,
