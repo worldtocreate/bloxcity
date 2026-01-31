@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
+import VerifiedBadge from '@/components/forum/VerifiedBadge';
 
 interface Post {
   id: string;
@@ -24,6 +25,7 @@ interface Post {
     avatar_url: string | null;
     signature: string | null;
     post_count: number;
+    is_verified: boolean;
   };
 }
 
@@ -103,7 +105,7 @@ export default function ForumThread() {
         postsData.map(async (post) => {
           const { data: author } = await supabase
             .from('forum_users')
-            .select('id, user_id, username, avatar_url, signature, post_count')
+            .select('id, user_id, username, avatar_url, signature, post_count, is_verified')
             .eq('id', post.author_id)
             .single();
           
@@ -408,6 +410,7 @@ export default function ForumThread() {
                       <div>
                         <div className="font-medium text-[hsl(var(--bc-text))] flex items-center gap-1">
                           {post.author.username}
+                          {post.author.is_verified && <VerifiedBadge size="sm" />}
                           <AdminBadge userId={post.author?.user_id || ''} />
                         </div>
                         <div className="text-xs text-[hsl(var(--bc-text-muted))]">

@@ -3,6 +3,7 @@ import { Link, useParams, useOutletContext, useNavigate } from 'react-router-dom
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Pin, Lock, MessageSquare, ChevronLeft, Clock, User, Shield } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
+import VerifiedBadge from '@/components/forum/VerifiedBadge';
 
 interface Thread {
   id: string;
@@ -17,6 +18,7 @@ interface Thread {
     id: string;
     username: string;
     avatar_url: string | null;
+    is_verified: boolean;
   };
   last_poster?: {
     username: string;
@@ -74,7 +76,7 @@ export default function ForumCategory() {
         threadData.map(async (thread) => {
           const { data: author } = await supabase
             .from('forum_users')
-            .select('id, username, avatar_url')
+            .select('id, username, avatar_url, is_verified')
             .eq('id', thread.author_id)
             .single();
           
@@ -183,7 +185,10 @@ export default function ForumCategory() {
                     </h3>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-[hsl(var(--bc-text-muted))]">
-                    <span>{thread.author?.username}</span>
+                    <span className="flex items-center gap-1">
+                      {thread.author?.username}
+                      {thread.author?.is_verified && <VerifiedBadge size="sm" />}
+                    </span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
