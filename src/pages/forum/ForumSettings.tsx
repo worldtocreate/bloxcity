@@ -5,6 +5,7 @@ import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, E
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
+import TwoFactorSetup from '@/components/forum/TwoFactorSetup';
 
 interface BlockedUser {
   id: string;
@@ -537,6 +538,9 @@ export default function ForumSettings() {
           )}
         </div>
       )}
+
+      {/* Two-Factor Authentication */}
+      <TwoFactorSetup forumUserId={forumUser.id} />
 
       {/* Encryption PIN */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">

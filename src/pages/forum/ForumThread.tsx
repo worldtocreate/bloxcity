@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock } from 'lucide-react';
+import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 
@@ -54,6 +54,9 @@ export default function ForumThread() {
   const [quotedPost, setQuotedPost] = useState<Post | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
+  const [deletingPost, setDeletingPost] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
 
   useEffect(() => {
     if (threadId) {
@@ -244,6 +247,56 @@ export default function ForumThread() {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    setDeletingPost(postId);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('forum-moderate-content', {
+        body: {
+          action: 'delete',
+          targetType: 'post',
+          targetId: postId,
+          reason: deleteReason || 'Violation of community guidelines'
+        }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast.success('Post deleted');
+      setShowDeleteModal(null);
+      setDeleteReason('');
+      fetchPosts();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete post');
+    }
+    
+    setDeletingPost(null);
+  };
+
+  const handleDeleteThread = async () => {
+    if (!thread) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('forum-moderate-content', {
+        body: {
+          action: 'delete',
+          targetType: 'thread',
+          targetId: thread.id,
+          reason: deleteReason || 'Violation of community guidelines'
+        }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast.success('Thread deleted');
+      window.location.href = `/forum/category/${thread.category.slug}`;
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete thread');
+    }
+  };
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -303,6 +356,14 @@ export default function ForumThread() {
               >
                 {thread.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                 {thread.is_locked ? 'Unlock' : 'Lock'}
+              </button>
+              <button
+                onClick={() => setShowDeleteModal('thread')}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition"
+                title="Delete thread"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
               </button>
             </div>
           )}
@@ -369,13 +430,24 @@ export default function ForumThread() {
                           </span>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleQuote(post)}
-                        className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
-                      >
-                        <Quote className="w-4 h-4" />
-                        Quote
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleQuote(post)}
+                          className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+                        >
+                          <Quote className="w-4 h-4" />
+                          Quote
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setShowDeleteModal(post.id)}
+                            className="flex items-center gap-1 text-red-400 hover:text-red-500 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Quoted Post */}
@@ -477,6 +549,45 @@ export default function ForumThread() {
             <Link to="/forum/register" className="text-[hsl(var(--bc-primary))] hover:underline">register</Link>
             {' '}to reply.
           </p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-[hsl(var(--bc-text))] mb-4">
+              Delete {showDeleteModal === 'thread' ? 'Thread' : 'Post'}?
+            </h3>
+            <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+              This will soft-delete the content and notify the author via email.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm text-[hsl(var(--bc-text-muted))] mb-2">Reason (optional)</label>
+              <input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Violation of community guidelines"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-2 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))]"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(null); setDeleteReason(''); }}
+                className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => showDeleteModal === 'thread' ? handleDeleteThread() : handleDeletePost(showDeleteModal)}
+                disabled={deletingPost !== null}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+              >
+                {deletingPost ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
