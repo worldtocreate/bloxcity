@@ -3,7 +3,8 @@ import { useParams, useOutletContext, useNavigate, Link } from 'react-router-dom
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Settings, Loader2, Save, Users, Shield, 
-  Trash2, Crown, Plus, X, AlertTriangle, UserCheck, Edit2, Camera, ImageIcon, Upload
+  Trash2, Crown, Plus, X, AlertTriangle, UserCheck, Edit2, Camera, ImageIcon, Upload,
+  Calendar, Handshake, Coins, Send, Check, XCircle
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -64,6 +65,36 @@ interface BlockedWord {
   created_at: string;
 }
 
+interface GroupEvent {
+  id: string;
+  title: string;
+  description: string | null;
+  event_date: string | null;
+  image_url: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface AllianceRequest {
+  id: string;
+  status: string;
+  created_at: string;
+  group_id: string;
+  affiliate_group_id: string;
+  affiliate_group?: {
+    id: string;
+    name: string;
+    slug: string;
+    icon_url: string | null;
+  };
+  requesting_group?: {
+    id: string;
+    name: string;
+    slug: string;
+    icon_url: string | null;
+  };
+}
+
 export default function GroupSettings() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -121,13 +152,32 @@ export default function GroupSettings() {
   const [selectedNewOwner, setSelectedNewOwner] = useState<GroupMember | null>(null);
   const [show2FAVerify, setShow2FAVerify] = useState(false);
   const [has2FAEnabled, setHas2FAEnabled] = useState(false);
+  const [twoFAMethod, setTwoFAMethod] = useState<'totp' | 'email'>('totp');
   const [transferring, setTransferring] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'ownership' | 'payout' | null>(null);
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
 
   // Media upload state
   const iconInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [uploadingIcon, setUploadingIcon] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Events state
+  const [events, setEvents] = useState<GroupEvent[]>([]);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDescription, setNewEventDescription] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [creatingEvent, setCreatingEvent] = useState(false);
+
+  // Alliance state
+  const [alliances, setAlliances] = useState<AllianceRequest[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<AllianceRequest[]>([]);
+  const [allGroups, setAllGroups] = useState<{ id: string; name: string; slug: string; icon_url: string | null }[]>([]);
+  const [selectedAllianceGroup, setSelectedAllianceGroup] = useState('');
+  const [sendingRequest, setSendingRequest] = useState(false);
 
   useEffect(() => {
     if (slug) {
@@ -145,10 +195,13 @@ export default function GroupSettings() {
     if (!forumUser) return;
     const { data } = await supabase
       .from('forum_2fa_settings')
-      .select('is_enabled')
+      .select('is_enabled, method')
       .eq('forum_user_id', forumUser.id)
       .single();
     setHas2FAEnabled(data?.is_enabled ?? false);
+    if (data?.method === 'email' || data?.method === 'totp') {
+      setTwoFAMethod(data.method);
+    }
   };
 
   const fetchGroup = async () => {
@@ -234,6 +287,57 @@ export default function GroupSettings() {
 
     if (wordsData) {
       setBlockedWords(wordsData);
+    }
+
+    // Fetch group events
+    const { data: eventsData } = await supabase
+      .from('forum_group_events')
+      .select('*')
+      .eq('group_id', groupData.id)
+      .order('created_at', { ascending: false });
+
+    if (eventsData) {
+      setEvents(eventsData as GroupEvent[]);
+    }
+
+    // Fetch alliances (accepted)
+    const { data: allianceData } = await supabase
+      .from('forum_group_affiliates')
+      .select(`
+        id, status, created_at, group_id, affiliate_group_id,
+        affiliate_group:affiliate_group_id (id, name, slug, icon_url)
+      `)
+      .eq('group_id', groupData.id)
+      .eq('status', 'accepted');
+
+    if (allianceData) {
+      setAlliances(allianceData as unknown as AllianceRequest[]);
+    }
+
+    // Fetch incoming alliance requests
+    const { data: incomingData } = await supabase
+      .from('forum_group_affiliates')
+      .select(`
+        id, status, created_at, group_id, affiliate_group_id,
+        requesting_group:group_id (id, name, slug, icon_url)
+      `)
+      .eq('affiliate_group_id', groupData.id)
+      .eq('status', 'pending');
+
+    if (incomingData) {
+      setIncomingRequests(incomingData as unknown as AllianceRequest[]);
+    }
+
+    // Fetch all groups for alliance selection (exclude own group and existing alliances)
+    const { data: groupsData } = await supabase
+      .from('forum_groups')
+      .select('id, name, slug, icon_url')
+      .neq('id', groupData.id)
+      .eq('is_private', false)
+      .order('name');
+
+    if (groupsData) {
+      setAllGroups(groupsData);
     }
 
     setLoading(false);
@@ -486,15 +590,41 @@ export default function GroupSettings() {
       return;
     }
 
+    setPendingAction('ownership');
+    setShow2FAVerify(true);
+  };
+
+  const handlePayoutRequest = async () => {
+    const amount = parseInt(payoutAmount);
+    if (!amount || amount < 1 || !group || amount > group.coins_vault) {
+      toast.error('Invalid payout amount');
+      return;
+    }
+
+    if (!has2FAEnabled) {
+      toast.error('You must enable 2FA to payout coins');
+      return;
+    }
+
+    setPendingAction('payout');
     setShow2FAVerify(true);
   };
 
   const handle2FAVerified = async () => {
+    if (pendingAction === 'ownership') {
+      await executeOwnershipTransfer();
+    } else if (pendingAction === 'payout') {
+      await executePayoutTransfer();
+    }
+    setShow2FAVerify(false);
+    setPendingAction(null);
+  };
+
+  const executeOwnershipTransfer = async () => {
     if (!selectedNewOwner || !group) return;
 
     setTransferring(true);
     try {
-      // Update group owner
       const { error } = await supabase
         .from('forum_groups')
         .update({ owner_id: selectedNewOwner.forum_user_id })
@@ -503,7 +633,6 @@ export default function GroupSettings() {
       if (error) {
         toast.error('Failed to transfer ownership');
       } else {
-        // Log the action
         await supabase
           .from('forum_group_audit_logs')
           .insert({
@@ -522,8 +651,139 @@ export default function GroupSettings() {
       toast.error('Failed to transfer ownership');
     }
     setTransferring(false);
-    setShow2FAVerify(false);
     setShowOwnershipModal(false);
+  };
+
+  const executePayoutTransfer = async () => {
+    if (!group || !forumUser) return;
+    const amount = parseInt(payoutAmount);
+
+    setTransferring(true);
+    try {
+      // Deduct from vault
+      const { error: groupError } = await supabase
+        .from('forum_groups')
+        .update({ coins_vault: group.coins_vault - amount })
+        .eq('id', group.id);
+
+      if (groupError) throw groupError;
+
+      // Add to owner's balance
+      const { error: userError } = await supabase
+        .from('forum_users')
+        .update({ coins: forumUser.coins + amount })
+        .eq('id', forumUser.id);
+
+      if (userError) throw userError;
+
+      await supabase
+        .from('forum_group_audit_logs')
+        .insert({
+          group_id: group.id,
+          actor_id: forumUser.id,
+          action: 'vault_payout',
+          target_type: 'vault',
+          details: { amount }
+        });
+
+      toast.success(`Paid out ${amount} coins!`);
+      setPayoutAmount('');
+      setShowPayoutModal(false);
+      fetchGroup();
+    } catch {
+      toast.error('Failed to payout coins');
+    }
+    setTransferring(false);
+  };
+
+  // Event handlers
+  const handleCreateEvent = async () => {
+    if (!group || !forumUser || !newEventTitle.trim()) return;
+
+    setCreatingEvent(true);
+    const { error } = await supabase
+      .from('forum_group_events')
+      .insert({
+        group_id: group.id,
+        created_by: forumUser.id,
+        title: newEventTitle.trim(),
+        description: newEventDescription.trim() || null,
+        event_date: newEventDate || null,
+        status: 'pending'
+      });
+
+    if (error) {
+      toast.error('Failed to create event');
+    } else {
+      toast.success('Event submitted for review!');
+      setShowEventModal(false);
+      setNewEventTitle('');
+      setNewEventDescription('');
+      setNewEventDate('');
+      fetchGroup();
+    }
+    setCreatingEvent(false);
+  };
+
+  // Alliance handlers
+  const handleSendAllianceRequest = async () => {
+    if (!group || !forumUser || !selectedAllianceGroup) return;
+
+    setSendingRequest(true);
+    const { error } = await supabase
+      .from('forum_group_affiliates')
+      .insert({
+        group_id: group.id,
+        affiliate_group_id: selectedAllianceGroup,
+        requested_by: forumUser.id,
+        status: 'pending'
+      });
+
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('Alliance request already exists');
+      } else {
+        toast.error('Failed to send alliance request');
+      }
+    } else {
+      toast.success('Alliance request sent!');
+      setSelectedAllianceGroup('');
+      fetchGroup();
+    }
+    setSendingRequest(false);
+  };
+
+  const handleAllianceResponse = async (requestId: string, accept: boolean) => {
+    const { error } = await supabase
+      .from('forum_group_affiliates')
+      .update({ 
+        status: accept ? 'accepted' : 'declined',
+        responded_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to respond to request');
+    } else {
+      toast.success(accept ? 'Alliance accepted!' : 'Alliance declined');
+      fetchGroup();
+    }
+  };
+
+  const handleRemoveAlliance = async (allianceId: string) => {
+    if (!confirm('Remove this alliance?')) return;
+
+    const { error } = await supabase
+      .from('forum_group_affiliates')
+      .delete()
+      .eq('id', allianceId);
+
+    if (error) {
+      toast.error('Failed to remove alliance');
+    } else {
+      toast.success('Alliance removed');
+      fetchGroup();
+    }
   };
 
   const handleMediaUpload = async (file: File, type: 'icon' | 'cover') => {
@@ -678,6 +938,14 @@ export default function GroupSettings() {
           <TabsTrigger value="requests" className="flex items-center gap-1">
             <UserCheck className="w-4 h-4" />
             Requests ({joinRequests.length})
+          </TabsTrigger>
+          <TabsTrigger value="events" className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            Events
+          </TabsTrigger>
+          <TabsTrigger value="alliances" className="flex items-center gap-1">
+            <Handshake className="w-4 h-4" />
+            Alliances
           </TabsTrigger>
           <TabsTrigger value="moderation" className="flex items-center gap-1">
             <AlertTriangle className="w-4 h-4" />
@@ -1138,6 +1406,170 @@ export default function GroupSettings() {
           </div>
         </TabsContent>
 
+        {/* Events */}
+        <TabsContent value="events" className="mt-6 space-y-6">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Events</h2>
+              <button
+                onClick={() => setShowEventModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition"
+              >
+                <Plus className="w-4 h-4" />
+                Create Event
+              </button>
+            </div>
+            
+            {events.length === 0 ? (
+              <p className="text-[hsl(var(--bc-text-muted))]">No events yet. Create one to engage your members!</p>
+            ) : (
+              <div className="space-y-3">
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between p-4 bg-[hsl(var(--bc-bg-light))] rounded-lg"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-[hsl(var(--bc-text))]">{event.title}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          event.status === 'approved' 
+                            ? 'bg-green-500/20 text-green-400'
+                            : event.status === 'denied'
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {event.status}
+                        </span>
+                      </div>
+                      {event.description && (
+                        <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">{event.description}</p>
+                      )}
+                      {event.event_date && (
+                        <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                          <Calendar className="w-3 h-3 inline mr-1" />
+                          {new Date(event.event_date).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Alliances */}
+        <TabsContent value="alliances" className="mt-6 space-y-6">
+          {/* Send Alliance Request */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Send Alliance Request</h2>
+            <div className="flex gap-2">
+              <select
+                value={selectedAllianceGroup}
+                onChange={(e) => setSelectedAllianceGroup(e.target.value)}
+                className="flex-1 px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+              >
+                <option value="">Select a group...</option>
+                {allGroups.filter(g => !alliances.some(a => a.affiliate_group_id === g.id)).map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleSendAllianceRequest}
+                disabled={!selectedAllianceGroup || sendingRequest}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg transition"
+              >
+                {sendingRequest ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Send
+              </button>
+            </div>
+          </div>
+
+          {/* Incoming Requests */}
+          {incomingRequests.length > 0 && (
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">
+                Incoming Requests ({incomingRequests.length})
+              </h2>
+              <div className="space-y-3">
+                {incomingRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      {request.requesting_group?.icon_url ? (
+                        <img src={request.requesting_group.icon_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                          <Users className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                      <span className="font-medium text-[hsl(var(--bc-text))]">
+                        {request.requesting_group?.name}
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAllianceResponse(request.id, true)}
+                        className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleAllianceResponse(request.id, false)}
+                        className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Current Alliances */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Current Alliances</h2>
+            {alliances.length === 0 ? (
+              <p className="text-[hsl(var(--bc-text-muted))]">No alliances yet. Send a request to another group!</p>
+            ) : (
+              <div className="space-y-3">
+                {alliances.map((alliance) => (
+                  <div
+                    key={alliance.id}
+                    className="flex items-center justify-between p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg"
+                  >
+                    <Link
+                      to={`/group/${alliance.affiliate_group?.slug}`}
+                      className="flex items-center gap-3 hover:opacity-80 transition"
+                    >
+                      {alliance.affiliate_group?.icon_url ? (
+                        <img src={alliance.affiliate_group.icon_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                          <Users className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                      <span className="font-medium text-[hsl(var(--bc-text))]">
+                        {alliance.affiliate_group?.name}
+                      </span>
+                    </Link>
+                    <button
+                      onClick={() => handleRemoveAlliance(alliance.id)}
+                      className="text-red-500 hover:text-red-600 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
         {/* Moderation */}
         <TabsContent value="moderation" className="mt-6 space-y-6">
           <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
@@ -1189,7 +1621,55 @@ export default function GroupSettings() {
 
         {/* Ownership Transfer */}
         {isOwner && (
-          <TabsContent value="ownership" className="mt-6">
+          <TabsContent value="ownership" className="mt-6 space-y-6">
+            {/* Vault Payout */}
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Vault Payout</h2>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+                Withdraw coins from the group vault. This requires 2FA verification.
+              </p>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+                Current vault balance: <span className="font-semibold text-[hsl(var(--bc-text))]">{group.coins_vault.toLocaleString()} coins</span>
+              </p>
+
+              {!has2FAEnabled ? (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    You must enable Two-Factor Authentication to payout coins.
+                  </p>
+                  <Link
+                    to="/settings"
+                    className="text-sm text-[hsl(var(--bc-primary))] hover:underline mt-2 inline-block"
+                  >
+                    Go to Settings → Security
+                  </Link>
+                </div>
+              ) : group.coins_vault > 0 ? (
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={payoutAmount}
+                    onChange={(e) => setPayoutAmount(e.target.value)}
+                    placeholder="Amount"
+                    min="1"
+                    max={group.coins_vault}
+                    className="flex-1 px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                  />
+                  <button
+                    onClick={handlePayoutRequest}
+                    disabled={!payoutAmount || parseInt(payoutAmount) < 1 || parseInt(payoutAmount) > group.coins_vault}
+                    className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg transition"
+                  >
+                    <Coins className="w-4 h-4" />
+                    Payout
+                  </button>
+                </div>
+              ) : (
+                <p className="text-[hsl(var(--bc-text-muted))]">Vault is empty.</p>
+              )}
+            </div>
+
+            {/* Transfer Ownership */}
             <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
               <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Transfer Ownership</h2>
               <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
@@ -1221,6 +1701,81 @@ export default function GroupSettings() {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Create Event Modal */}
+      {showEventModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Create Event</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Event Title
+                </label>
+                <input
+                  type="text"
+                  value={newEventTitle}
+                  onChange={(e) => setNewEventTitle(e.target.value)}
+                  placeholder="e.g., Group Meetup"
+                  className="w-full px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Description (optional)
+                </label>
+                <textarea
+                  value={newEventDescription}
+                  onChange={(e) => setNewEventDescription(e.target.value)}
+                  rows={3}
+                  placeholder="Describe your event..."
+                  className="w-full px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] resize-none focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Event Date (optional)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newEventDate}
+                  onChange={(e) => setNewEventDate(e.target.value)}
+                  className="w-full px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                />
+              </div>
+
+              <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                Events are reviewed by moderators before being displayed.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowEventModal(false);
+                    setNewEventTitle('');
+                    setNewEventDescription('');
+                    setNewEventDate('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateEvent}
+                  disabled={creatingEvent || !newEventTitle.trim()}
+                  className="flex-1 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  {creatingEvent ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Role Modal */}
       {showRoleModal && (
@@ -1501,9 +2056,12 @@ export default function GroupSettings() {
           <div className="w-full max-w-md">
             <TwoFactorVerify
               email={context?.user?.email || ''}
-              method="totp"
+              method={twoFAMethod}
               onVerified={handle2FAVerified}
-              onCancel={() => setShow2FAVerify(false)}
+              onCancel={() => {
+                setShow2FAVerify(false);
+                setPendingAction(null);
+              }}
             />
           </div>
         </div>
