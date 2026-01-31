@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon } from 'lucide-react';
+import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ForumUserData {
@@ -70,7 +70,7 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
   const [suspensionReason, setSuspensionReason] = useState('');
   const [suspensionDays, setSuspensionDays] = useState('7');
   const [suspending, setSuspending] = useState(false);
-  const [activeSection, setActiveSection] = useState<'users' | 'avatars' | 'covers' | 'verification'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'avatars' | 'covers' | 'verification' | 'memberships'>('users');
   const [processingAvatar, setProcessingAvatar] = useState<string | null>(null);
   const [processingCover, setProcessingCover] = useState<string | null>(null);
   const [processingVerification, setProcessingVerification] = useState<string | null>(null);
@@ -80,6 +80,9 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
   const [coverDenyReason, setCoverDenyReason] = useState('');
   const [showDenyVerificationModal, setShowDenyVerificationModal] = useState<string | null>(null);
   const [verifyDenyReason, setVerifyDenyReason] = useState('');
+  const [showMembershipModal, setShowMembershipModal] = useState<string | null>(null);
+  const [selectedMembership, setSelectedMembership] = useState<string>('');
+  const [savingMembership, setSavingMembership] = useState(false);
 
   useEffect(() => {
     fetchForumUsers();
@@ -396,6 +399,42 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
     }
   };
 
+  const handleSetMembership = async (userId: string) => {
+    setSavingMembership(true);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({
+        membership_tier: selectedMembership || null
+      })
+      .eq('id', userId);
+
+    if (error) {
+      toast.error('Failed to update membership');
+    } else {
+      toast.success(selectedMembership ? `Membership set to ${selectedMembership}` : 'Membership removed');
+      fetchForumUsers();
+      setShowMembershipModal(null);
+      setSelectedMembership('');
+    }
+    setSavingMembership(false);
+  };
+
+  const getMembershipBadge = (tier: string | null) => {
+    if (!tier) return null;
+    const colors: Record<string, string> = {
+      bronze: 'bg-amber-700 text-amber-100',
+      silver: 'bg-gray-400 text-gray-900',
+      platinum: 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
+    };
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors[tier] || 'bg-gray-200 text-gray-700'}`}>
+        <Star className="w-3 h-3" />
+        {tier.charAt(0).toUpperCase() + tier.slice(1)}
+      </span>
+    );
+  };
+
   const filteredUsers = forumUsers.filter(u => 
     search.trim() === '' || u.username.toLowerCase().includes(search.toLowerCase())
   );
@@ -495,6 +534,17 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
               {verificationRequests.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveSection('memberships')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'memberships'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Star className="w-4 h-4" />
+          Memberships
         </button>
       </div>
 
@@ -819,6 +869,112 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
             </div>
           )}
         </div>
+      ) : activeSection === 'memberships' ? (
+        /* Memberships Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className={`font-semibold ${textClass}`}>Manage Memberships</h3>
+            <p className={`text-sm ${mutedClass} mt-1`}>Assign Bronze, Silver, or Platinum membership tiers to users.</p>
+          </div>
+          
+          {/* Stats */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => u.membership_tier === 'bronze').length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>Bronze</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => u.membership_tier === 'silver').length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>Silver</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => u.membership_tier === 'platinum').length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>Platinum</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => !u.membership_tier).length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>No Tier</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <tr>
+                  <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>User</th>
+                  <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Current Tier</th>
+                  <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Posts</th>
+                  <th className={`text-right px-6 py-4 text-sm font-semibold ${mutedClass}`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className={`px-6 py-12 text-center ${mutedClass}`}>
+                      Loading...
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className={`px-6 py-12 text-center ${mutedClass}`}>
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {user.avatar_url ? (
+                            <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                              <User className="w-5 h-5 text-white" />
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-medium ${textClass}`}>{user.username}</span>
+                            {user.is_verified && (
+                              <BadgeCheck className="w-4 h-4 text-blue-500" />
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getMembershipBadge(user.membership_tier) || (
+                          <span className={`text-sm ${mutedClass}`}>None</span>
+                        )}
+                      </td>
+                      <td className={`px-6 py-4 ${mutedClass}`}>{user.post_count}</td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedMembership(user.membership_tier || '');
+                            setShowMembershipModal(user.id);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition ml-auto"
+                        >
+                          <Star className="w-4 h-4" />
+                          Set Tier
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : null}
 
       {/* Suspend Modal */}
@@ -981,6 +1137,46 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
               >
                 <X className="w-4 h-4" />
                 Deny Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Membership Modal */}
+      {showMembershipModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${cardClass}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Set Membership Tier</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Membership Tier</label>
+              <select
+                value={selectedMembership}
+                onChange={(e) => setSelectedMembership(e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg ${inputClass}`}
+              >
+                <option value="">No Membership</option>
+                <option value="bronze">Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="platinum">Platinum</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowMembershipModal(null); setSelectedMembership(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSetMembership(showMembershipModal)}
+                disabled={savingMembership}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <Star className="w-4 h-4" />
+                {savingMembership ? 'Saving...' : 'Save Membership'}
               </button>
             </div>
           </div>

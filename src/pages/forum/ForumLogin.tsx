@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
+
+interface DisabledAccountInfo {
+  is_self_disabled: boolean;
+  self_disabled_reason: string | null;
+  self_disabled_until: string | null;
+}
 
 export default function ForumLogin() {
   const navigate = useNavigate();
@@ -20,6 +26,11 @@ export default function ForumLogin() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFAMethod, setTwoFAMethod] = useState<'totp' | 'email'>('totp');
   const [pendingAuth, setPendingAuth] = useState<{ email: string; password: string } | null>(null);
+
+  // Self-disabled account states
+  const [showReactivateModal, setShowReactivateModal] = useState(false);
+  const [disabledAccountInfo, setDisabledAccountInfo] = useState<DisabledAccountInfo | null>(null);
+  const [reactivating, setReactivating] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -57,6 +68,55 @@ export default function ForumLogin() {
       return true;
     } catch {
       return false;
+    }
+  };
+
+  const checkSelfDisabled = async (): Promise<DisabledAccountInfo | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data } = await supabase
+      .from('forum_users')
+      .select('is_self_disabled, self_disabled_reason, self_disabled_until')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data?.is_self_disabled) {
+      return data as DisabledAccountInfo;
+    }
+    return null;
+  };
+
+  const handleReactivateAccount = async () => {
+    setReactivating(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Authentication error. Please try again.');
+        setReactivating(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('forum_users')
+        .update({
+          is_self_disabled: false,
+          self_disabled_reason: null,
+          self_disabled_until: null,
+          self_disabled_at: null
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        toast.error('Failed to reactivate account');
+      } else {
+        toast.success('Welcome back! Your account has been reactivated.');
+        setShowReactivateModal(false);
+        navigate('/');
+      }
+    } finally {
+      setReactivating(false);
     }
   };
 
@@ -105,6 +165,15 @@ export default function ForumLogin() {
         setEmailNotConfirmed(true);
       }
       setError(msg);
+      setLoading(false);
+      return;
+    }
+
+    // Check if account is self-disabled
+    const disabledInfo = await checkSelfDisabled();
+    if (disabledInfo) {
+      setDisabledAccountInfo(disabledInfo);
+      setShowReactivateModal(true);
       setLoading(false);
       return;
     }
@@ -179,6 +248,87 @@ export default function ForumLogin() {
     }
   };
 
+  const handleCancelReactivation = async () => {
+    await supabase.auth.signOut();
+    setShowReactivateModal(false);
+    setDisabledAccountInfo(null);
+  };
+
+  const getReasonText = (reason: string | null): string => {
+    switch (reason) {
+      case 'need_a_break': return 'You needed a break from the forum';
+      case 'too_busy': return 'You were too busy';
+      case 'privacy_concerns': return 'Privacy concerns';
+      case 'not_using': return 'Not using the forum anymore';
+      case 'other': return 'Other reason';
+      default: return 'Personal reasons';
+    }
+  };
+
+  // Show reactivation modal
+  if (showReactivateModal && disabledAccountInfo) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+            </Link>
+          </div>
+
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4 text-center">Welcome Back!</h2>
+            
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
+              <p className="text-yellow-700 dark:text-yellow-300 text-sm">
+                Your account was disabled on your request.
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">
+                Reason: {getReasonText(disabledAccountInfo.self_disabled_reason)}
+              </p>
+              {disabledAccountInfo.self_disabled_until && (
+                <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
+                  Scheduled until: {new Date(disabledAccountInfo.self_disabled_until).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+
+            <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-6 text-center">
+              Would you like to reactivate your account and continue using the forum?
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleReactivateAccount}
+                disabled={reactivating}
+                className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
+              >
+                {reactivating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Reactivating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    Reactivate My Account
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={handleCancelReactivation}
+                className="w-full border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] font-medium py-3 rounded-lg transition hover:bg-[hsl(var(--bc-bg-light))]"
+              >
+                Not Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show 2FA verification screen
   if (requires2FA && pendingAuth) {
     return (
@@ -223,7 +373,7 @@ export default function ForumLogin() {
           {emailNotConfirmed && (
             <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 space-y-2">
               <p className="text-sm text-[hsl(var(--bc-text))]">
-                Your account email isn’t verified yet. You can resend the verification email, or use a login link to get in.
+                Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
               </p>
               <div className="flex flex-wrap gap-2">
                 <button
