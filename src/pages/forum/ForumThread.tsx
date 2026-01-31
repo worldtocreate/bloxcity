@@ -294,7 +294,7 @@ export default function ForumThread() {
       if (data.error) throw new Error(data.error);
 
       toast.success('Thread deleted');
-      window.location.href = `/forum/category/${thread.category.slug}`;
+      window.location.href = `/category/${thread.category.slug}`;
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete thread');
     }
@@ -320,7 +320,7 @@ export default function ForumThread() {
       {/* Header */}
       <div>
         <Link
-          to={`/forum/category/${thread.category.slug}`}
+          to={`/category/${thread.category.slug}`}
           className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-2"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -398,7 +398,7 @@ export default function ForumThread() {
                   <div className="sm:w-48 p-4 bg-[hsl(var(--bc-bg-light))] border-b sm:border-b-0 sm:border-r border-[hsl(var(--bc-border))]">
                     <div className="flex sm:flex-col items-center sm:items-start gap-3">
                       <Link 
-                        to={`/forum/user/${post.author.username}`}
+                        to={`/user/${post.author.username}`}
                         className="block hover:opacity-80 transition"
                       >
                         {post.author.avatar_url ? (
@@ -415,7 +415,7 @@ export default function ForumThread() {
                       </Link>
                       <div>
                         <Link 
-                          to={`/forum/user/${post.author.username}`}
+                          to={`/user/${post.author.username}`}
                           className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] flex items-center gap-1 transition"
                         >
                           {post.author.username}
@@ -552,7 +552,7 @@ export default function ForumThread() {
           </p>
           <div className="mt-3">
             <Link
-              to="/forum/register"
+              to="/register"
               className="inline-flex items-center justify-center bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
             >
               Create forum profile
@@ -562,9 +562,9 @@ export default function ForumThread() {
       ) : (
         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
           <p className="text-[hsl(var(--bc-text-muted))]">
-            <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link>
+            <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link>
             {' '}or{' '}
-            <Link to="/forum/register" className="text-[hsl(var(--bc-primary))] hover:underline">register</Link>
+            <Link to="/register" className="text-[hsl(var(--bc-primary))] hover:underline">register</Link>
             {' '}to reply.
           </p>
         </div>

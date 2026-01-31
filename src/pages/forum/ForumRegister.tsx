@@ -114,7 +114,7 @@ export default function ForumRegister() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/forum`
+            emailRedirectTo: `${window.location.origin}/`
           }
         });
 
@@ -143,7 +143,7 @@ export default function ForumRegister() {
         }
 
         toast.success('Account created! Welcome to the forum.');
-        navigate('/forum');
+        navigate('/');
         setLoading(false);
         return;
       }
@@ -161,7 +161,7 @@ export default function ForumRegister() {
       }
 
       toast.success('Forum profile created!');
-      navigate('/forum');
+      navigate('/');
     } catch (err) {
       setError('An unexpected error occurred');
     }
@@ -173,7 +173,7 @@ export default function ForumRegister() {
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/forum" className="inline-block">
+          <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">
               {existingAuthUser ? 'Create Forum Profile' : 'Create Account'}
@@ -276,7 +276,7 @@ export default function ForumRegister() {
           {!existingAuthUser && (
             <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
               Already have an account?{' '}
-              <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">
+              <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">
                 Login here
               </Link>
             </p>

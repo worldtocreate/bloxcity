@@ -88,7 +88,7 @@ const ForumReserve = () => {
     <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Back Link */}
-        <Link to="/forum" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] mb-6 transition">
+        <Link to="/" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] mb-6 transition">
           <ArrowLeft className="w-4 h-4" />
           Back to Forum
         </Link>
@@ -145,7 +145,7 @@ const ForumReserve = () => {
                 </div>
               )}
 
-              <Link to="/forum/check-status" className="block mt-4 text-center text-[hsl(var(--bc-primary))] hover:underline text-sm">
+              <Link to="/check-status" className="block mt-4 text-center text-[hsl(var(--bc-primary))] hover:underline text-sm">
                 Already reserved? Check your status →
               </Link>
             </>
@@ -159,7 +159,7 @@ const ForumReserve = () => {
               <p className="text-[hsl(var(--bc-text-muted))] text-sm mt-2">
                 If approved, your reservation code will be sent to your email address.
               </p>
-              <Link to="/forum/check-status" className="inline-block mt-4 text-[hsl(var(--bc-primary))] hover:underline font-medium">
+              <Link to="/check-status" className="inline-block mt-4 text-[hsl(var(--bc-primary))] hover:underline font-medium">
                 Check your reservation status →
               </Link>
             </div>

@@ -16,7 +16,7 @@ export default function ForumForgotPassword() {
     setLoading(true);
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/forum/reset-password`
+      redirectTo: `${window.location.origin}/reset-password`
     });
 
     if (resetError) {
@@ -39,7 +39,7 @@ export default function ForumForgotPassword() {
               We've sent a password reset link to <strong className="text-[hsl(var(--bc-text))]">{email}</strong>
             </p>
             <Link 
-              to="/forum/login"
+              to="/login"
               className="text-[hsl(var(--bc-primary))] hover:underline"
             >
               Back to login
@@ -54,7 +54,7 @@ export default function ForumForgotPassword() {
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/forum" className="inline-block">
+          <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Reset Password</h1>
             <p className="text-[hsl(var(--bc-text-muted))]">Enter your email to receive a reset link</p>
@@ -101,7 +101,7 @@ export default function ForumForgotPassword() {
 
           <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
             Remember your password?{' '}
-            <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">
+            <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">
               Login here
             </Link>
           </p>

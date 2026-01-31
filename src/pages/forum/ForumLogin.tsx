@@ -20,7 +20,7 @@ export default function ForumLogin() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/forum');
+      if (session) navigate('/');
     });
   }, [navigate]);
 
@@ -72,7 +72,7 @@ export default function ForumLogin() {
     }
 
     toast.success('Welcome back!');
-    navigate('/forum');
+    navigate('/');
   };
 
   const handle2FAVerified = async () => {
@@ -92,7 +92,7 @@ export default function ForumLogin() {
       <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link to="/forum" className="inline-block">
+            <Link to="/" className="inline-block">
               <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
             </Link>
           </div>
@@ -112,7 +112,7 @@ export default function ForumLogin() {
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/forum" className="inline-block">
+          <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Welcome Back</h1>
             <p className="text-[hsl(var(--bc-text-muted))]">Login to the BLOX City Forum</p>
@@ -158,7 +158,7 @@ export default function ForumLogin() {
           </div>
 
           <div className="flex justify-end">
-            <Link to="/forum/forgot-password" className="text-sm text-[hsl(var(--bc-primary))] hover:underline">
+            <Link to="/forgot-password" className="text-sm text-[hsl(var(--bc-primary))] hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -180,7 +180,7 @@ export default function ForumLogin() {
 
           <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
             Don't have an account?{' '}
-            <Link to="/forum/register" className="text-[hsl(var(--bc-primary))] hover:underline">
+            <Link to="/register" className="text-[hsl(var(--bc-primary))] hover:underline">
               Create one
             </Link>
           </p>

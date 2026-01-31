@@ -58,7 +58,7 @@ export default function ForumCategory() {
       .single();
 
     if (!cat) {
-      navigate('/forum');
+      navigate('/');
       return;
     }
 
@@ -112,7 +112,7 @@ export default function ForumCategory() {
       <div className="flex items-center justify-between">
         <div>
           <Link 
-            to="/forum" 
+            to="/" 
             className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-2"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -128,7 +128,7 @@ export default function ForumCategory() {
         </div>
         {canCreateThread ? (
           <Link
-            to={`/forum/category/${slug}/new`}
+            to={`/category/${slug}/new`}
             className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
           >
             <Plus className="w-4 h-4" />
@@ -136,7 +136,7 @@ export default function ForumCategory() {
           </Link>
         ) : user ? (
           <Link
-            to="/forum/register"
+            to="/register"
             className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
           >
             <Plus className="w-4 h-4" />
@@ -156,7 +156,7 @@ export default function ForumCategory() {
           threads.map((thread) => (
             <Link
               key={thread.id}
-              to={`/forum/thread/${thread.id}`}
+              to={`/thread/${thread.id}`}
               className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
             >
               <div className="flex items-center gap-4">
