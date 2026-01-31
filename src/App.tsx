@@ -36,6 +36,7 @@ import Trading from "./pages/forum/Trading";
 import Players from "./pages/forum/Players";
 import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
+import GroupSettings from "./pages/forum/GroupSettings";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="players" element={<Players />} />
               <Route path="groups" element={<Groups />} />
               <Route path="group/:slug" element={<GroupDetail />} />
+              <Route path="group/:slug/settings" element={<GroupSettings />} />
               <Route path="staff" element={<ForumStaff />} />
               <Route path="updates" element={<Updates />} />
               <Route path="games" element={<Games />} />
