@@ -33,6 +33,9 @@ import Games from "./pages/forum/Games";
 import Market from "./pages/forum/Market";
 import Character from "./pages/forum/Character";
 import Trading from "./pages/forum/Trading";
+import Players from "./pages/forum/Players";
+import Groups from "./pages/forum/Groups";
+import GroupDetail from "./pages/forum/GroupDetail";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +58,9 @@ const App = () => (
               <Route path="user/:username" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="users" element={<ForumUsers />} />
+              <Route path="players" element={<Players />} />
+              <Route path="groups" element={<Groups />} />
+              <Route path="group/:slug" element={<GroupDetail />} />
             </Route>
             <Route path="/staff" element={<ForumStaff />} />
             <Route path="/updates" element={<Updates />} />

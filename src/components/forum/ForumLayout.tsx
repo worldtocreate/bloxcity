@@ -129,29 +129,78 @@ export default function ForumLayout() {
   if (!loading && forumUser?.is_suspended) {
     const now = new Date();
     const endsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
+    const reviewDate = (forumUser as any).suspension_review_date ? new Date((forumUser as any).suspension_review_date) : null;
     
     if (!endsAt || now < endsAt) {
       return (
-        <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
-          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Account Suspended</h1>
-            <p className="text-[hsl(var(--bc-text))] mb-4">
-              Your forum account has been suspended.
-            </p>
-            {forumUser.suspension_reason && (
-              <p className="text-[hsl(var(--bc-text-muted))] mb-4">
-                <strong>Reason:</strong> {forumUser.suspension_reason}
+        <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
+          <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+          <div className="flex items-center justify-center p-4 py-20">
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md text-center">
+              <h1 className="text-2xl font-bold text-red-600 mb-4">Account Suspended</h1>
+              <p className="text-[hsl(var(--bc-text))] mb-4">
+                Your forum account has been suspended.
               </p>
-            )}
-            {endsAt && (
-              <p className="text-[hsl(var(--bc-text-muted))]">
-                <strong>Ends:</strong> {endsAt.toLocaleDateString()} at {endsAt.toLocaleTimeString()}
-              </p>
-            )}
+              {forumUser.suspension_reason && (
+                <p className="text-[hsl(var(--bc-text-muted))] mb-4">
+                  <strong>Reason:</strong> {forumUser.suspension_reason}
+                </p>
+              )}
+              {endsAt && (
+                <p className="text-[hsl(var(--bc-text-muted))] mb-2">
+                  <strong>Ends:</strong> {endsAt.toLocaleDateString()} at {endsAt.toLocaleTimeString()}
+                </p>
+              )}
+              {reviewDate && (
+                <p className="text-[hsl(var(--bc-text-muted))]">
+                  <strong>Review Date:</strong> {reviewDate.toLocaleDateString()}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       );
     }
+  }
+
+  // Check if user has a pending warning to accept
+  if (!loading && forumUser && (forumUser as any).has_pending_warning) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
+        <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+        <div className="flex items-center justify-center p-4 py-20">
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 max-w-lg">
+            <h1 className="text-2xl font-bold text-amber-600 mb-4 text-center">Account Warning</h1>
+            <p className="text-[hsl(var(--bc-text))] mb-4 text-center">
+              You have received a warning from the moderation team. Please review and acknowledge it to continue using the forum.
+            </p>
+            <div className="bg-white border border-amber-200 rounded-lg p-4 mb-4">
+              <p className="text-[hsl(var(--bc-text))] whitespace-pre-wrap">{(forumUser as any).warning_content}</p>
+              {(forumUser as any).warning_moderator_note && (
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-3 pt-3 border-t">
+                  <strong>Moderator Note:</strong> {(forumUser as any).warning_moderator_note}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={async () => {
+                await supabase
+                  .from('forum_users')
+                  .update({ 
+                    has_pending_warning: false, 
+                    warning_accepted_at: new Date().toISOString() 
+                  })
+                  .eq('id', forumUser.id);
+                window.location.reload();
+              }}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-3 rounded-lg transition"
+            >
+              I Understand and Accept
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Block admin access if 2FA is not enabled (except on settings page to allow setup)

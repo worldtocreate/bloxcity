@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone, Gamepad2, ShoppingBag, Users, ArrowLeftRight, Coins } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone, Gamepad2, ShoppingBag, Users, ArrowLeftRight, Coins, UsersRound } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -70,6 +70,22 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
           >
             <ArrowLeftRight className="w-4 h-4" />
             <span className="hidden sm:inline">Trading</span>
+          </Link>
+          
+          <Link 
+            to="/players"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <UsersRound className="w-4 h-4" />
+            <span className="hidden sm:inline">Players</span>
+          </Link>
+          
+          <Link 
+            to="/groups"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Groups</span>
           </Link>
           
           <Link 

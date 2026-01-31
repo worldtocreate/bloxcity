@@ -685,6 +685,543 @@ export type Database = {
           },
         ]
       }
+      forum_group_affiliates: {
+        Row: {
+          affiliate_group_id: string
+          created_at: string | null
+          group_id: string
+          id: string
+          requested_by: string | null
+          responded_at: string | null
+          status: string | null
+        }
+        Insert: {
+          affiliate_group_id: string
+          created_at?: string | null
+          group_id: string
+          id?: string
+          requested_by?: string | null
+          responded_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          affiliate_group_id?: string
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          requested_by?: string | null
+          responded_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_affiliates_affiliate_group_id_fkey"
+            columns: ["affiliate_group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_affiliates_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_affiliates_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string | null
+          details: Json | null
+          group_id: string
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          group_id: string
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          group_id?: string
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_audit_logs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_bans: {
+        Row: {
+          banned_by: string | null
+          created_at: string | null
+          forum_user_id: string
+          group_id: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string | null
+          forum_user_id: string
+          group_id: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string | null
+          forum_user_id?: string
+          group_id?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_bans_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_bans_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_bans_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_blocked_words: {
+        Row: {
+          added_by: string | null
+          created_at: string | null
+          group_id: string
+          id: string
+          word: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string | null
+          group_id: string
+          id?: string
+          word: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          word?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_blocked_words_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_blocked_words_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_events: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          denial_reason: string | null
+          description: string | null
+          event_date: string | null
+          group_id: string
+          id: string
+          image_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          denial_reason?: string | null
+          description?: string | null
+          event_date?: string | null
+          group_id: string
+          id?: string
+          image_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          denial_reason?: string | null
+          description?: string | null
+          event_date?: string | null
+          group_id?: string
+          id?: string
+          image_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_join_requests: {
+        Row: {
+          created_at: string | null
+          forum_user_id: string
+          group_id: string
+          id: string
+          responded_at: string | null
+          responded_by: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          forum_user_id: string
+          group_id: string
+          id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          forum_user_id?: string
+          group_id?: string
+          id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_join_requests_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_join_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_media_requests: {
+        Row: {
+          created_at: string | null
+          denial_reason: string | null
+          group_id: string
+          id: string
+          image_url: string
+          media_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          denial_reason?: string | null
+          group_id: string
+          id?: string
+          image_url: string
+          media_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          denial_reason?: string | null
+          group_id?: string
+          id?: string
+          image_url?: string
+          media_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_media_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_members: {
+        Row: {
+          forum_user_id: string
+          group_id: string
+          id: string
+          joined_at: string | null
+          role_id: string | null
+        }
+        Insert: {
+          forum_user_id: string
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          role_id?: string | null
+        }
+        Update: {
+          forum_user_id?: string
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          role_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_members_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_members_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "forum_group_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_roles: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          group_id: string
+          id: string
+          is_default: boolean | null
+          name: string
+          permissions: Json | null
+          rank: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          group_id: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          permissions?: Json | null
+          rank?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          permissions?: Json | null
+          rank?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_roles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_group_wall_posts: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          group_id: string
+          id: string
+          is_deleted: boolean | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          group_id: string
+          id?: string
+          is_deleted?: boolean | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          group_id?: string
+          id?: string
+          is_deleted?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_group_wall_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_group_wall_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "forum_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_groups: {
+        Row: {
+          coins_vault: number | null
+          cover_url: string | null
+          created_at: string | null
+          description: string | null
+          icon_url: string | null
+          id: string
+          is_verified: boolean | null
+          last_name_change: string | null
+          member_count: number | null
+          name: string
+          owner_id: string
+          require_approval: boolean | null
+          slug: string
+          updated_at: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          coins_vault?: number | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_verified?: boolean | null
+          last_name_change?: string | null
+          member_count?: number | null
+          name: string
+          owner_id: string
+          require_approval?: boolean | null
+          slug: string
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          coins_vault?: number | null
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_url?: string | null
+          id?: string
+          is_verified?: boolean | null
+          last_name_change?: string | null
+          member_count?: number | null
+          name?: string
+          owner_id?: string
+          require_approval?: boolean | null
+          slug?: string
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_groups_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_membership_redemptions: {
         Row: {
           coins_spent: number
@@ -1111,6 +1648,7 @@ export type Database = {
           cover_url: string | null
           created_at: string | null
           dm_encryption_pin_hash: string | null
+          has_pending_warning: boolean | null
           hide_threads: boolean | null
           id: string
           is_locked: boolean | null
@@ -1136,9 +1674,13 @@ export type Database = {
           status_updated_at: string | null
           suspension_ends_at: string | null
           suspension_reason: string | null
+          suspension_review_date: string | null
           thread_count: number | null
           user_id: string
           username: string
+          warning_accepted_at: string | null
+          warning_content: string | null
+          warning_moderator_note: string | null
           xp: number | null
         }
         Insert: {
@@ -1149,6 +1691,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string | null
           dm_encryption_pin_hash?: string | null
+          has_pending_warning?: boolean | null
           hide_threads?: boolean | null
           id?: string
           is_locked?: boolean | null
@@ -1174,9 +1717,13 @@ export type Database = {
           status_updated_at?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
+          suspension_review_date?: string | null
           thread_count?: number | null
           user_id: string
           username: string
+          warning_accepted_at?: string | null
+          warning_content?: string | null
+          warning_moderator_note?: string | null
           xp?: number | null
         }
         Update: {
@@ -1187,6 +1734,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string | null
           dm_encryption_pin_hash?: string | null
+          has_pending_warning?: boolean | null
           hide_threads?: boolean | null
           id?: string
           is_locked?: boolean | null
@@ -1212,9 +1760,13 @@ export type Database = {
           status_updated_at?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
+          suspension_review_date?: string | null
           thread_count?: number | null
           user_id?: string
           username?: string
+          warning_accepted_at?: string | null
+          warning_content?: string | null
+          warning_moderator_note?: string | null
           xp?: number | null
         }
         Relationships: []
