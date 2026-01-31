@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
 import ForumHeader from './ForumHeader';
 import { Loader2, Megaphone, X, Shield, Lock, Mail, Send } from 'lucide-react';
@@ -274,6 +274,11 @@ export default function ForumLayout() {
       </main>
       <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-12">
         <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <Link to="/users" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Members</Link>
+            <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Staff</Link>
+            <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">FAQ</Link>
+          </div>
           <p className="text-[hsl(var(--bc-text-muted))] text-sm">
             © 2026 BLOX City, Inc. All rights reserved.
           </p>
