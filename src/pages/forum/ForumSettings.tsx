@@ -151,19 +151,7 @@ export default function ForumSettings() {
     }
   };
 
-  // Show loading while auth is initializing
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-[hsl(var(--bc-bg-card))] rounded w-1/3 border border-[hsl(var(--bc-border))]" />
-          <div className="h-64 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
-          <div className="h-48 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
-        </div>
-      </div>
-    );
-  }
-
+  // Redirect to login if not authenticated (loading is handled by ForumLayout)
   if (!user || !forumUser) {
     navigate('/forum/login');
     return null;
