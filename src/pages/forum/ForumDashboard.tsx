@@ -3,13 +3,16 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Coins, Gift, Heart, Flag, MessageCircle, Clock, Users, 
-  Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle
+  Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import UserAvatar from '@/components/forum/UserAvatar';
 import MembershipBadge from '@/components/forum/MembershipBadge';
+import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import WelcomeDialog from '@/components/forum/WelcomeDialog';
+import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 
 interface FriendStatus {
   id: string;
@@ -64,16 +67,17 @@ export default function ForumDashboard() {
   const [selectedTier, setSelectedTier] = useState<'bronze' | 'silver' | 'platinum' | null>(null);
   const [reportingStatus, setReportingStatus] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState('');
+  const [statusText, setStatusText] = useState('');
+  const [postingStatus, setPostingStatus] = useState(false);
+
+  const isLoggedIn = !!user;
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
     if (forumUser) {
       fetchDashboardData();
+      setStatusText(forumUser.status_text || '');
     }
-  }, [user, forumUser, navigate]);
+  }, [forumUser]);
 
   const fetchDashboardData = async () => {
     if (!forumUser) return;
@@ -314,12 +318,36 @@ export default function ForumDashboard() {
         toast.error('Failed to submit report');
       } else {
         toast.success('Report submitted. Thank you!');
-        setReportingStatus(null);
+    setReportingStatus(null);
         setReportReason('');
       }
     } catch {
       toast.error('Failed to submit report');
     }
+  };
+
+  const handlePostStatus = async () => {
+    if (!forumUser || !statusText.trim()) return;
+    
+    setPostingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('forum_users')
+        .update({ 
+          status_text: statusText.trim(),
+          status_updated_at: new Date().toISOString()
+        })
+        .eq('id', forumUser.id);
+
+      if (error) {
+        toast.error('Failed to post status');
+      } else {
+        toast.success('Status updated!');
+      }
+    } catch {
+      toast.error('Failed to post status');
+    }
+    setPostingStatus(false);
   };
 
   const formatTimeAgo = (date: string) => {
@@ -335,8 +363,62 @@ export default function ForumDashboard() {
     return `${days}d ago`;
   };
 
+  // Not logged in - show public dashboard
   if (!user) {
-    return null;
+    return (
+      <div className="flex gap-6">
+        <div className="flex-1 space-y-6 min-w-0">
+          <WelcomeDialog isLoggedIn={false} />
+          
+          {/* Login CTA */}
+          <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] rounded-2xl p-8 text-white text-center">
+            <h1 className="text-3xl font-bold mb-3">Welcome to BLOX City</h1>
+            <p className="opacity-90 mb-6 max-w-md mx-auto">
+              Join our community to connect with friends, earn coins, and redeem exclusive memberships!
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link
+                to="/login"
+                className="bg-white text-[hsl(var(--bc-primary))] hover:bg-white/90 px-6 py-3 rounded-lg font-semibold transition"
+              >
+                Log In
+              </Link>
+              <Link
+                to="/register"
+                className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-lg font-semibold transition"
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+
+          {/* Explore Links */}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Link
+              to="/forum"
+              className="bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl p-6 transition group"
+            >
+              <MessageCircle className="w-8 h-8 text-[hsl(var(--bc-primary))] mb-3" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))]">Browse Forums</h3>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Explore community discussions</p>
+            </Link>
+            <Link
+              to="/reserve"
+              className="bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl p-6 transition group"
+            >
+              <Gift className="w-8 h-8 text-[hsl(var(--bc-accent))] mb-3" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-accent))]">Reserve Username</h3>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your name for launch</p>
+            </Link>
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+          <LeaderboardSidebar />
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -348,18 +430,83 @@ export default function ForumDashboard() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Welcome Header */}
+    <div className="flex gap-6">
+      <div className="flex-1 space-y-6 min-w-0">
+      {/* Welcome Header with Profile Picture */}
       <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] rounded-2xl p-6 text-white">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold mb-1">Welcome back, {forumUser?.username}!</h1>
-            <p className="opacity-90">Check out what your friends are up to</p>
+          <div className="flex items-center gap-4">
+            {/* Profile Picture */}
+            <Link to={`/user/${forumUser?.username}`} className="shrink-0">
+              {forumUser?.avatar_url ? (
+                <img 
+                  src={forumUser.avatar_url} 
+                  alt={forumUser.username}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+              )}
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                Welcome back, {forumUser?.username}!
+                {forumUser?.is_verified && <VerifiedBadge size="lg" />}
+              </h1>
+              <p className="opacity-90">Check out what your friends are up to</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="bg-white/20 backdrop-blur rounded-xl px-4 py-2 flex items-center gap-2">
               <Coins className="w-5 h-5 text-yellow-300" />
               <span className="font-bold">{coins.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Posting Box */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+        <div className="flex gap-3">
+          <Link to={`/user/${forumUser?.username}`} className="shrink-0">
+            {forumUser?.avatar_url ? (
+              <img 
+                src={forumUser.avatar_url} 
+                alt={forumUser.username}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+            )}
+          </Link>
+          <div className="flex-1">
+            <textarea
+              value={statusText}
+              onChange={(e) => setStatusText(e.target.value.slice(0, 280))}
+              placeholder="What's on your mind?"
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder:text-[hsl(var(--bc-text-muted))] resize-none focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+              rows={2}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-[hsl(var(--bc-text-muted))]">{statusText.length}/280</span>
+              <button
+                onClick={handlePostStatus}
+                disabled={postingStatus || !statusText.trim()}
+                className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2"
+              >
+                {postingStatus ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Post Status
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -600,6 +747,7 @@ export default function ForumDashboard() {
       </div>
 
       {/* Redeem Dialog */}
+      {/* Redeem Dialog */}
       <Dialog open={showRedeemDialog} onOpenChange={setShowRedeemDialog}>
         <DialogContent className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]">
           <DialogHeader>
@@ -645,6 +793,12 @@ export default function ForumDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
+
+      {/* Sidebar */}
+      <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+        <LeaderboardSidebar />
+      </div>
     </div>
   );
 }
