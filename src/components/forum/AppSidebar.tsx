@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   Heart,
   Award,
+  Plus,
+  Trophy,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -28,6 +30,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import LeaderboardSidebar from './LeaderboardSidebar';
 
 interface AppSidebarProps {
   forumUser?: {
@@ -155,6 +158,22 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
+                      to="/create"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/create')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Plus className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Create</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
                       to="/friends"
                       onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -201,6 +220,17 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Leaderboard - show when expanded */}
+        {!collapsed && (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupContent>
+              <div className="px-2">
+                <LeaderboardSidebar />
+              </div>
             </SidebarGroupContent>
           </SidebarGroup>
         )}

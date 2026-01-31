@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Award } from 'lucide-react';
 
 interface Achievement {
   id: string;
   name: string;
-  description: string | null;
   image_url: string | null;
   color: string;
   awarded_at: string;
@@ -30,7 +30,7 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
       .select(`
         awarded_at,
         achievement:achievement_id (
-          id, name, description, image_url, color
+          id, name, image_url, color
         )
       `)
       .eq('forum_user_id', forumUserId)
@@ -63,7 +63,7 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
 
   if (compact) {
     return (
-      <div className="flex flex-wrap gap-1">
+      <Link to="/achievements" className="flex flex-wrap gap-1 hover:opacity-80 transition">
         {achievements.slice(0, 5).map(achievement => (
           <div
             key={achievement.id}
@@ -94,43 +94,50 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
             +{achievements.length - 5}
           </div>
         )}
-      </div>
+      </Link>
     );
   }
 
   return (
     <div className="space-y-3">
-      <h3 className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
-        <Award className="w-4 h-4" />
-        Achievements ({achievements.length})
-      </h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+          <Award className="w-4 h-4" />
+          Achievements ({achievements.length})
+        </h3>
+        <Link 
+          to="/achievements"
+          className="text-sm text-[hsl(var(--bc-primary))] hover:underline"
+        >
+          View all
+        </Link>
+      </div>
+      <div className="flex flex-wrap gap-2">
         {achievements.map(achievement => (
-          <div
+          <Link
             key={achievement.id}
-            className="p-3 rounded-lg border border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-light))]"
+            to="/achievements"
+            className="group relative"
+            title={achievement.name}
           >
-            <div className="flex items-center gap-2 mb-1">
-              {achievement.image_url ? (
-                <img 
-                  src={achievement.image_url} 
-                  alt={achievement.name}
-                  className="w-8 h-8 rounded-lg object-cover"
-                />
-              ) : (
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ backgroundColor: `${achievement.color}20` }}
-                >
-                  <Award className="w-4 h-4" style={{ color: achievement.color }} />
-                </div>
-              )}
-              <span className="font-medium text-sm text-[hsl(var(--bc-text))]">{achievement.name}</span>
-            </div>
-            {achievement.description && (
-              <p className="text-xs text-[hsl(var(--bc-text-muted))]">{achievement.description}</p>
+            {achievement.image_url ? (
+              <img 
+                src={achievement.image_url} 
+                alt={achievement.name}
+                className="w-10 h-10 rounded-lg object-cover border border-[hsl(var(--bc-border))] hover:scale-105 transition"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center border border-[hsl(var(--bc-border))] hover:scale-105 transition"
+                style={{ backgroundColor: `${achievement.color}20` }}
+              >
+                <Award className="w-5 h-5" style={{ color: achievement.color }} />
+              </div>
             )}
-          </div>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-[hsl(var(--bc-bg-dark))] text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+              {achievement.name}
+            </div>
+          </Link>
         ))}
       </div>
     </div>

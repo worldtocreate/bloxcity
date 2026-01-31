@@ -89,5 +89,6 @@ export type AdminTab =
   | "reports"
   | "ads"
   | "achievements"
+  | "groups"
   | "maintenance"
   | "settings";
