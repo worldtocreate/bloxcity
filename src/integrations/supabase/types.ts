@@ -765,11 +765,15 @@ export type Database = {
           dm_encryption_pin_hash: string | null
           hide_threads: boolean | null
           id: string
+          is_self_disabled: boolean | null
           is_suspended: boolean | null
           is_verified: boolean | null
           last_post_at: string | null
           membership_tier: string | null
           post_count: number | null
+          self_disabled_at: string | null
+          self_disabled_reason: string | null
+          self_disabled_until: string | null
           signature: string | null
           social_discord: string | null
           social_x: string | null
@@ -786,11 +790,15 @@ export type Database = {
           dm_encryption_pin_hash?: string | null
           hide_threads?: boolean | null
           id?: string
+          is_self_disabled?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
           membership_tier?: string | null
           post_count?: number | null
+          self_disabled_at?: string | null
+          self_disabled_reason?: string | null
+          self_disabled_until?: string | null
           signature?: string | null
           social_discord?: string | null
           social_x?: string | null
@@ -807,11 +815,15 @@ export type Database = {
           dm_encryption_pin_hash?: string | null
           hide_threads?: boolean | null
           id?: string
+          is_self_disabled?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
           membership_tier?: string | null
           post_count?: number | null
+          self_disabled_at?: string | null
+          self_disabled_reason?: string | null
+          self_disabled_until?: string | null
           signature?: string | null
           social_discord?: string | null
           social_x?: string | null

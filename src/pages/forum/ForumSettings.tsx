@@ -131,6 +131,12 @@ export default function ForumSettings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
   
+  // Account disable states
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [disableReason, setDisableReason] = useState('');
+  const [disableDuration, setDisableDuration] = useState('7');
+  const [disabling, setDisabling] = useState(false);
+  
   // New states
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -371,6 +377,38 @@ export default function ForumSettings() {
       setDeleteConfirmText('');
     }
     setDeleting(false);
+  };
+
+  const handleDisableAccount = async () => {
+    if (!forumUser || !disableReason) return;
+    setDisabling(true);
+
+    let disabledUntil: string | null = null;
+    if (disableDuration !== 'permanent') {
+      const daysToAdd = parseInt(disableDuration);
+      disabledUntil = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString();
+    }
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({
+        is_self_disabled: true,
+        self_disabled_reason: disableReason,
+        self_disabled_until: disabledUntil,
+        self_disabled_at: new Date().toISOString()
+      })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to disable account');
+    } else {
+      toast.success('Account disabled. You can reactivate it when you log back in.');
+      setShowDisableModal(false);
+      // Sign out the user
+      await supabase.auth.signOut();
+      navigate('/login');
+    }
+    setDisabling(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1227,6 +1265,24 @@ export default function ForumSettings() {
         )}
       </div>
 
+      {/* Account Controls */}
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-yellow-700 dark:text-yellow-400 mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5" />
+          Take a Break
+        </h2>
+        <p className="text-yellow-600 dark:text-yellow-400 text-sm mb-4">
+          Need some time away? Disable your account temporarily. You can reactivate it anytime by logging in.
+        </p>
+        <button
+          onClick={() => setShowDisableModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition text-sm"
+        >
+          <Clock className="w-4 h-4" />
+          Disable Account
+        </button>
+      </div>
+
       {/* Danger Zone - Account Deletion */}
       <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
         <h2 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
@@ -1244,6 +1300,77 @@ export default function ForumSettings() {
           Delete Account
         </button>
       </div>
+
+      {/* Disable Account Modal */}
+      {showDisableModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Disable Account</h3>
+            <p className="text-[hsl(var(--bc-text-muted))] mb-4">
+              Your account will be temporarily disabled. You can reactivate it anytime by logging back in.
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Why are you taking a break?
+                </label>
+                <select
+                  value={disableReason}
+                  onChange={(e) => setDisableReason(e.target.value)}
+                  className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))]"
+                >
+                  <option value="">Select a reason...</option>
+                  <option value="need_a_break">I need a break from the forum</option>
+                  <option value="too_busy">I'm too busy right now</option>
+                  <option value="privacy_concerns">Privacy concerns</option>
+                  <option value="not_using">Not using the forum anymore</option>
+                  <option value="other">Other reason</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  How long?
+                </label>
+                <select
+                  value={disableDuration}
+                  onChange={(e) => setDisableDuration(e.target.value)}
+                  className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))]"
+                >
+                  <option value="7">1 week</option>
+                  <option value="14">2 weeks</option>
+                  <option value="30">1 month</option>
+                  <option value="90">3 months</option>
+                  <option value="180">6 months</option>
+                  <option value="permanent">Until I reactivate</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowDisableModal(false);
+                  setDisableReason('');
+                  setDisableDuration('7');
+                }}
+                className="px-4 py-2 text-[hsl(var(--bc-text-muted))] hover:opacity-80"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDisableAccount}
+                disabled={!disableReason || disabling}
+                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition"
+              >
+                {disabling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                Disable Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Account Modal */}
       {showDeleteModal && (
