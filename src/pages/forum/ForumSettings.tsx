@@ -23,16 +23,6 @@ export default function ForumSettings() {
     loading?: boolean;
   }>();
 
-  // Debug logging
-  console.log('[ForumSettings] Context:', { 
-    hasUser: !!user, 
-    userEmail: user?.email,
-    hasForumUser: !!forumUser, 
-    forumUserUsername: forumUser?.username,
-    isAdmin,
-    loading
-  });
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [signature, setSignature] = useState('');
   const [saving, setSaving] = useState(false);
@@ -162,9 +152,37 @@ export default function ForumSettings() {
   };
 
   // Redirect to login if not authenticated (loading is handled by ForumLayout)
-  if (!user || !forumUser) {
+  if (!user) {
     navigate('/forum/login');
     return null;
+  }
+
+  // Logged in, but no forum profile yet
+  if (!forumUser) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Forum Settings</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mt-2">
+            Your account is signed in, but you don’t have a forum profile yet.
+          </p>
+          <div className="mt-5 flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => navigate('/forum/register')}
+              className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
+            >
+              Create forum profile
+            </button>
+            <button
+              onClick={() => navigate('/forum')}
+              className="px-4 py-2 rounded-lg border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
+            >
+              Back to forums
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

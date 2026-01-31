@@ -385,6 +385,20 @@ export default function ForumThread() {
           <Lock className="w-6 h-6 text-red-500 mx-auto mb-2" />
           <p className="text-red-600">This thread is locked and cannot receive new replies.</p>
         </div>
+      ) : user ? (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
+          <p className="text-[hsl(var(--bc-text-muted))]">
+            You’re signed in, but you need a forum profile to reply.
+          </p>
+          <div className="mt-3">
+            <Link
+              to="/forum/register"
+              className="inline-flex items-center justify-center bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
+            >
+              Create forum profile
+            </Link>
+          </div>
+        </div>
       ) : (
         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
           <p className="text-[hsl(var(--bc-text-muted))]">

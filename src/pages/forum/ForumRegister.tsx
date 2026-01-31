@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import { z } from 'zod';
 
 declare global {
   interface Window {
@@ -20,6 +21,7 @@ export default function ForumRegister() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const [existingAuthUser, setExistingAuthUser] = useState<{ id: string; email?: string | null } | null>(null);
 
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -35,30 +37,51 @@ export default function ForumRegister() {
     }
   }, [siteKey]);
 
-  const validateUsername = (value: string) => {
-    if (value.length < 3 || value.length > 20) return 'Username must be 3-20 characters';
-    if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Username can only contain letters, numbers, and underscores';
-    return null;
-  };
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      const u = data.session?.user;
+      if (u) {
+        setExistingAuthUser({ id: u.id, email: u.email });
+        if (u.email) setEmail(u.email);
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const usernameSchema = z
+    .string()
+    .trim()
+    .min(3, 'Username must be 3-20 characters')
+    .max(20, 'Username must be 3-20 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const usernameError = validateUsername(username);
-    if (usernameError) {
-      setError(usernameError);
+    const parsedUsername = usernameSchema.safeParse(username);
+    if (!parsedUsername.success) {
+      setError(parsedUsername.error.issues[0]?.message || 'Invalid username');
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
+    const normalizedUsername = parsedUsername.data.toLowerCase();
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
+    // If the user is already signed in, we're just creating the missing forum profile
+    if (!existingAuthUser) {
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
     }
 
     setLoading(true);
@@ -72,7 +95,7 @@ export default function ForumRegister() {
       const verifyResponse = await supabase.functions.invoke('forum-register', {
         body: { 
           action: 'verify',
-          username,
+          username: normalizedUsername,
           recaptchaToken
         }
       });
@@ -83,29 +106,52 @@ export default function ForumRegister() {
         return;
       }
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/forum`
+      const userIdToUse = existingAuthUser?.id;
+
+      // If not signed in, create auth account first
+      if (!userIdToUse) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/forum`
+          }
+        });
+
+        if (authError) {
+          setError(authError.message);
+          setLoading(false);
+          return;
         }
-      });
 
-      if (authError) {
-        setError(authError.message);
+        if (!authData.user) {
+          setError('Failed to create account');
+          setLoading(false);
+          return;
+        }
+
+        // Create forum profile for newly created auth user
+        const { error: profileError } = await supabase.from('forum_users').insert({
+          user_id: authData.user.id,
+          username: normalizedUsername
+        });
+
+        if (profileError) {
+          setError('Username may already be taken');
+          setLoading(false);
+          return;
+        }
+
+        toast.success('Account created! Welcome to the forum.');
+        navigate('/forum');
         setLoading(false);
         return;
       }
 
-      if (!authData.user) {
-        setError('Failed to create account');
-        setLoading(false);
-        return;
-      }
-
+      // Signed in already: create missing forum profile
       const { error: profileError } = await supabase.from('forum_users').insert({
-        user_id: authData.user.id,
-        username: username.toLowerCase()
+        user_id: userIdToUse,
+        username: normalizedUsername
       });
 
       if (profileError) {
@@ -114,7 +160,7 @@ export default function ForumRegister() {
         return;
       }
 
-      toast.success('Account created! Welcome to the forum.');
+      toast.success('Forum profile created!');
       navigate('/forum');
     } catch (err) {
       setError('An unexpected error occurred');
@@ -129,8 +175,12 @@ export default function ForumRegister() {
         <div className="text-center mb-8">
           <Link to="/forum" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Create Account</h1>
-            <p className="text-[hsl(var(--bc-text-muted))]">Join the BLOX City community</p>
+            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">
+              {existingAuthUser ? 'Create Forum Profile' : 'Create Account'}
+            </h1>
+            <p className="text-[hsl(var(--bc-text-muted))]">
+              {existingAuthUser ? 'Pick a username to start posting' : 'Join the BLOX City community'}
+            </p>
           </Link>
         </div>
 
@@ -158,51 +208,55 @@ export default function ForumRegister() {
             <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">3-20 characters, letters, numbers, underscores only</p>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
+          {!existingAuthUser && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-                minLength={8}
-              />
-            </div>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a password"
+                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                    required
+                    minLength={8}
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Confirm Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your password"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           <button
             type="submit"
@@ -215,16 +269,18 @@ export default function ForumRegister() {
                 Creating account...
               </>
             ) : (
-              'Create Account'
+              existingAuthUser ? 'Create Forum Profile' : 'Create Account'
             )}
           </button>
 
-          <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
-            Already have an account?{' '}
-            <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">
-              Login here
-            </Link>
-          </p>
+          {!existingAuthUser && (
+            <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
+              Already have an account?{' '}
+              <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">
+                Login here
+              </Link>
+            </p>
+          )}
 
           <p className="text-xs text-[hsl(var(--bc-text-muted))] text-center">
             This site is protected by reCAPTCHA and the Google{' '}
