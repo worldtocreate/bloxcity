@@ -43,13 +43,13 @@ export default function WelcomeDialog({ isLoggedIn }: WelcomeDialogProps) {
           </DialogTitle>
           <DialogDescription className="text-[hsl(var(--bc-text-muted))] text-left space-y-3 pt-3">
             <p>
-              Before you proceed, please note that this forum has been set up to allow members to communicate with each other ahead of the main BLOX City site launch on <strong className="text-[hsl(var(--bc-text))]">March 6th, 2026</strong>.
+              You're accessing the <strong className="text-[hsl(var(--bc-text))]">Early Access Beta</strong> of BLOX City! This is a preview of what's to come before our full launch on <strong className="text-[hsl(var(--bc-text))]">March 6th, 2026</strong>.
             </p>
             <p>
-              Forum accounts will not transfer over to the main site; however, any usernames reserved here will be carried over.
+              During this beta period, features may change and some things might not work perfectly. Your feedback helps us improve!
             </p>
             <p>
-              Please make sure to follow the rules at all times to help keep the community safe and enjoyable for everyone.
+              Beta accounts will carry over to the main site at launch. Please follow the rules to keep our community safe and enjoyable for everyone.
             </p>
           </DialogDescription>
         </DialogHeader>
