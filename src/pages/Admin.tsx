@@ -22,6 +22,7 @@ import UpdatesTab from "@/components/admin/UpdatesTab";
 import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
+import GroupsTab from "@/components/admin/GroupsTab";
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -1016,6 +1017,9 @@ const Admin = () => {
 
         {/* Achievements Tab */}
         {activeTab === "achievements" && <AchievementsTab darkMode={darkMode} />}
+
+        {/* Groups Tab */}
+        {activeTab === "groups" && <GroupsTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (

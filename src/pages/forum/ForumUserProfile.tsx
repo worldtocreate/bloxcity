@@ -438,7 +438,6 @@ export default function ForumUserProfile() {
               <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
               {profile.is_verified && <VerifiedBadge size="lg" />}
               {profile.membership_tier && <MembershipBadge tier={profile.membership_tier} size="md" />}
-              <UserLevelBadge level={profile.level} xp={profile.xp} size="md" />
               {profile.is_suspended && (
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
               )}
