@@ -47,7 +47,7 @@ export default function UnreadBadge({ forumUserId }: UnreadBadgeProps) {
 
   return (
     <Link 
-      to="/forum/messages"
+      to="/messages"
       className="relative flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
     >
       <Mail className="w-5 h-5" />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, RotateCcw, Search, RefreshCw, Eye, MessageSquare, FileText, Clock, User } from 'lucide-react';
+import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DeletedPost {
@@ -29,18 +29,34 @@ interface DeletedThread {
   };
 }
 
+interface GroupMediaRequest {
+  id: string;
+  group_id: string;
+  media_type: 'icon' | 'cover';
+  image_url: string;
+  status: string;
+  created_at: string;
+  group: {
+    name: string;
+    slug: string;
+  };
+}
+
 interface ContentModerationTabProps {
   darkMode: boolean;
 }
 
 export default function ContentModerationTab({ darkMode }: ContentModerationTabProps) {
-  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'logs'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'group-media' | 'logs'>('posts');
   const [deletedPosts, setDeletedPosts] = useState<DeletedPost[]>([]);
   const [deletedThreads, setDeletedThreads] = useState<DeletedThread[]>([]);
+  const [groupMediaRequests, setGroupMediaRequests] = useState<GroupMediaRequest[]>([]);
   const [moderationLogs, setModerationLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [processing, setProcessing] = useState<string | null>(null);
+  const [denialReason, setDenialReason] = useState('');
+  const [showDenyModal, setShowDenyModal] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -65,6 +81,14 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         .order('deleted_at', { ascending: false });
       
       setDeletedThreads((data || []) as unknown as DeletedThread[]);
+    } else if (activeTab === 'group-media') {
+      const { data } = await supabase
+        .from('forum_group_media_requests')
+        .select('*, group:group_id (name, slug)')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      
+      setGroupMediaRequests((data || []) as unknown as GroupMediaRequest[]);
     } else if (activeTab === 'logs') {
       const { data } = await supabase
         .from('forum_moderation_logs')
@@ -98,6 +122,70 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
     setProcessing(null);
   };
 
+  const handleApproveGroupMedia = async (request: GroupMediaRequest) => {
+    setProcessing(request.id);
+    
+    try {
+      // Update the group with the new image
+      const updateField = request.media_type === 'icon' ? 'icon_url' : 'cover_url';
+      const { error: updateError } = await supabase
+        .from('forum_groups')
+        .update({ [updateField]: request.image_url })
+        .eq('id', request.group_id);
+
+      if (updateError) throw updateError;
+
+      // Mark request as approved
+      const { error: requestError } = await supabase
+        .from('forum_group_media_requests')
+        .update({ 
+          status: 'approved',
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', request.id);
+
+      if (requestError) throw requestError;
+
+      toast.success(`Group ${request.media_type} approved!`);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to approve');
+    }
+    
+    setProcessing(null);
+  };
+
+  const handleDenyGroupMedia = async (requestId: string) => {
+    if (!denialReason.trim()) {
+      toast.error('Please provide a reason');
+      return;
+    }
+
+    setProcessing(requestId);
+    
+    try {
+      const { error } = await supabase
+        .from('forum_group_media_requests')
+        .update({ 
+          status: 'denied',
+          denial_reason: denialReason.trim(),
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast.success('Request denied');
+      setShowDenyModal(null);
+      setDenialReason('');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to deny');
+    }
+    
+    setProcessing(null);
+  };
+
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900';
   const textClass = darkMode ? 'text-white' : 'text-gray-800';
@@ -108,7 +196,7 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
       <div className="flex items-center justify-between">
         <h2 className={`text-xl font-semibold ${textClass}`}>Content Moderation</h2>
         <div className="flex items-center gap-3">
-          {activeTab !== 'logs' && (
+          {activeTab !== 'logs' && activeTab !== 'group-media' && (
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -133,7 +221,7 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setActiveTab('posts')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
@@ -144,11 +232,6 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         >
           <MessageSquare className="w-4 h-4" />
           Deleted Posts
-          {deletedPosts.length > 0 && (
-            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-              {deletedPosts.length}
-            </span>
-          )}
         </button>
         <button
           onClick={() => setActiveTab('threads')}
@@ -160,9 +243,20 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         >
           <FileText className="w-4 h-4" />
           Deleted Threads
-          {deletedThreads.length > 0 && (
+        </button>
+        <button
+          onClick={() => setActiveTab('group-media')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeTab === 'group-media'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Image className="w-4 h-4" />
+          Group Media
+          {groupMediaRequests.length > 0 && (
             <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-              {deletedThreads.length}
+              {groupMediaRequests.length}
             </span>
           )}
         </button>
@@ -276,6 +370,69 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         </div>
       )}
 
+      {/* Group Media Requests */}
+      {activeTab === 'group-media' && (
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          {loading ? (
+            <div className={`p-8 text-center ${mutedClass}`}>Loading...</div>
+          ) : groupMediaRequests.length === 0 ? (
+            <div className={`p-8 text-center ${mutedClass}`}>
+              <Image className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending group media requests</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+              {groupMediaRequests.map(request => (
+                <div key={request.id} className={`border rounded-xl overflow-hidden ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <div className="relative">
+                    <img 
+                      src={request.image_url} 
+                      alt={`${request.group?.name} ${request.media_type}`}
+                      className={`w-full object-cover ${request.media_type === 'icon' ? 'h-32' : 'h-40'}`}
+                    />
+                    <span className={`absolute top-2 left-2 px-2 py-1 rounded text-xs font-medium ${
+                      request.media_type === 'icon' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-purple-600 text-white'
+                    }`}>
+                      {request.media_type === 'icon' ? 'Icon' : 'Cover'}
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <h4 className={`font-medium ${textClass} truncate`}>{request.group?.name}</h4>
+                    <p className={`text-xs ${mutedClass}`}>
+                      Submitted {new Date(request.created_at).toLocaleDateString()}
+                    </p>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleApproveGroupMedia(request)}
+                        disabled={processing === request.id}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
+                      >
+                        {processing === request.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => setShowDenyModal(request.id)}
+                        disabled={processing === request.id}
+                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition"
+                      >
+                        <X className="w-4 h-4" />
+                        Deny
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Moderation Logs */}
       {activeTab === 'logs' && (
         <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
@@ -318,6 +475,38 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Deny Modal */}
+      {showDenyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${cardClass} border rounded-xl p-6 max-w-md w-full`}>
+            <h3 className={`text-lg font-semibold ${textClass} mb-4`}>Deny Request</h3>
+            <textarea
+              value={denialReason}
+              onChange={(e) => setDenialReason(e.target.value)}
+              placeholder="Reason for denial..."
+              className={`w-full px-3 py-2 rounded-lg border ${inputClass}`}
+              rows={3}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => { setShowDenyModal(null); setDenialReason(''); }}
+                className={`flex-1 px-4 py-2 rounded-lg border ${darkMode ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-600'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDenyGroupMedia(showDenyModal)}
+                disabled={processing === showDenyModal}
+                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2"
+              >
+                {processing === showDenyModal && <Loader2 className="w-4 h-4 animate-spin" />}
+                Deny
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
