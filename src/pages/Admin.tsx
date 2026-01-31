@@ -203,6 +203,17 @@ const Admin = () => {
     setActionLoading(null);
   };
 
+  const handleRevertToPending = async (reservationId: string) => {
+    setActionLoading(reservationId);
+    const response = await supabase.functions.invoke('update-reservation-status', {
+      body: { reservationId, status: 'pending' }
+    });
+    if (response.data?.success) {
+      fetchReservations();
+    }
+    setActionLoading(null);
+  };
+
   const handleBulkAction = async (action: 'approve' | 'deny') => {
     if (selectedReservations.size === 0) return;
     
@@ -342,6 +353,7 @@ const Admin = () => {
     const labels: Record<string, string> = {
       'approve_reservation': 'Approved reservation',
       'deny_reservation': 'Denied reservation',
+      'revert_reservation_to_pending': 'Reverted reservation to pending',
       'add_banned_word': 'Added banned word',
       'delete_banned_word': 'Deleted banned word',
       'add_role': 'Added admin role',
@@ -647,26 +659,68 @@ const Admin = () => {
                             {reservation.ip_address || '-'}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            {reservation.status === 'pending' && (
-                              <div className="flex gap-2 justify-end">
-                                <button
-                                  onClick={() => handleApprove(reservation.id)}
-                                  disabled={actionLoading === reservation.id}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-                                >
-                                  <Check className="w-4 h-4" />
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => setShowDenialModal(reservation.id)}
-                                  disabled={actionLoading === reservation.id}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition disabled:opacity-50"
-                                >
-                                  <X className="w-4 h-4" />
-                                  Deny
-                                </button>
-                              </div>
-                            )}
+                            <div className="flex gap-2 justify-end">
+                              {reservation.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => handleApprove(reservation.id)}
+                                    disabled={actionLoading === reservation.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Approve
+                                  </button>
+                                  <button
+                                    onClick={() => setShowDenialModal(reservation.id)}
+                                    disabled={actionLoading === reservation.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    Deny
+                                  </button>
+                                </>
+                              )}
+                              {reservation.status === 'approved' && (
+                                <>
+                                  <button
+                                    onClick={() => handleRevertToPending(reservation.id)}
+                                    disabled={actionLoading === reservation.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition disabled:opacity-50"
+                                  >
+                                    <Clock className="w-4 h-4" />
+                                    Revert to Pending
+                                  </button>
+                                  <button
+                                    onClick={() => setShowDenialModal(reservation.id)}
+                                    disabled={actionLoading === reservation.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                                  >
+                                    <X className="w-4 h-4" />
+                                    Deny
+                                  </button>
+                                </>
+                              )}
+                              {reservation.status === 'denied' && (
+                                <>
+                                  <button
+                                    onClick={() => handleRevertToPending(reservation.id)}
+                                    disabled={actionLoading === reservation.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition disabled:opacity-50"
+                                  >
+                                    <Clock className="w-4 h-4" />
+                                    Revert to Pending
+                                  </button>
+                                  <button
+                                    onClick={() => handleApprove(reservation.id)}
+                                    disabled={actionLoading === reservation.id}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Approve
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
