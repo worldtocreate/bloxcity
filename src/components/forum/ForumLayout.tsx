@@ -18,6 +18,29 @@ export default function ForumLayout() {
 
   useEffect(() => {
     fetchAnnouncement();
+    
+    // Set forum-specific meta tags
+    document.title = 'BLOX City Forum - Community Discussions';
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    
+    const originalDescription = metaDescription?.getAttribute('content') || '';
+    const originalOgTitle = ogTitle?.getAttribute('content') || '';
+    const originalOgDescription = ogDescription?.getAttribute('content') || '';
+    
+    metaDescription?.setAttribute('content', 'Join the BLOX City community forum - discuss updates, share ideas, and connect with other players.');
+    ogTitle?.setAttribute('content', 'BLOX City Forum - Community Discussions');
+    ogDescription?.setAttribute('content', 'Join the BLOX City community forum - discuss updates, share ideas, and connect with other players.');
+    
+    return () => {
+      // Restore original meta tags when leaving forum
+      document.title = 'BLOX City - Reserve Your Username';
+      metaDescription?.setAttribute('content', originalDescription);
+      ogTitle?.setAttribute('content', originalOgTitle);
+      ogDescription?.setAttribute('content', originalOgDescription);
+    };
   }, []);
 
   const fetchAnnouncement = async () => {
