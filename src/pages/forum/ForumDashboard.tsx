@@ -414,9 +414,13 @@ export default function ForumDashboard() {
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar with Skyscraper Ad */}
+        <div className="hidden lg:block w-44 flex-shrink-0 space-y-4">
+          <UserAdBanner type="skyscraper" />
+        </div>
+        
+        {/* Right Sidebar */}
         <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
-          <UserAdBanner />
           <LeaderboardSidebar />
         </div>
       </div>
@@ -432,7 +436,11 @@ export default function ForumDashboard() {
   }
 
   return (
-    <div className="flex gap-6">
+    <div className="space-y-4">
+      {/* Top Banner Ad */}
+      <UserAdBanner type="banner" />
+      
+      <div className="flex gap-6">
       <div className="flex-1 space-y-6 min-w-0">
       {/* Welcome Header with Profile Picture */}
       <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] rounded-2xl p-6 text-white">
@@ -797,11 +805,16 @@ export default function ForumDashboard() {
       </Dialog>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar with Skyscraper Ad */}
+      <div className="hidden lg:block w-44 flex-shrink-0 space-y-4">
+        <UserAdBanner type="skyscraper" />
+      </div>
+      
+      {/* Right Sidebar */}
       <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
-        <UserAdBanner />
         <LeaderboardSidebar />
       </div>
+    </div>
     </div>
   );
 }
