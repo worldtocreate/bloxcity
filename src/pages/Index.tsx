@@ -308,8 +308,10 @@ const Index = () => {
         {/* Original BLOX City Notice */}
         <div className="original-notice">
           <p>
-            Looking for where the original BLOX City is now? Check out{" "}
+            Looking for the original BLOX City founders? Isaac is over at{" "}
             <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer">brickplanet.com</a>
+            {" "}& Kyle is over at{" "}
+            <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer">truworlds.net</a>
           </p>
         </div>
 
