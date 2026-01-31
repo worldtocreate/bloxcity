@@ -1,6 +1,6 @@
 import { 
   BarChart3, Users, Mail, Ban, Shield, Activity, 
-  Globe, Settings, MessageSquare, FileText 
+  Globe, Settings, MessageSquare, FileText, Wrench, UserCog 
 } from "lucide-react";
 import { AdminTab } from "./types";
 
@@ -18,8 +18,10 @@ const tabs: { id: AdminTab; label: string; icon: React.ComponentType<{ className
   { id: "ip-blocking", label: "IP Blocking", icon: Globe },
   { id: "forum-mod", label: "Forum Users", icon: MessageSquare },
   { id: "content-mod", label: "Content Mod", icon: FileText },
+  { id: "user-mgmt", label: "User Mgmt", icon: UserCog },
   { id: "admins", label: "Admin Users", icon: Shield },
   { id: "logs", label: "Activity Logs", icon: Activity },
+  { id: "maintenance", label: "Maintenance", icon: Wrench },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 

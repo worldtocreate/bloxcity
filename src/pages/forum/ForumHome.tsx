@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search } from 'lucide-react';
+import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search, Play } from 'lucide-react';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
 import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
-
+import teaserVideo from '@/assets/bloxcity-teaser.mp4';
 interface Category {
   id: string;
   name: string;
@@ -79,6 +79,25 @@ export default function ForumHome() {
       <div className="flex-1 space-y-6 min-w-0">
         {/* Welcome Dialog for non-logged-in users */}
         <WelcomeDialog isLoggedIn={isLoggedIn} />
+
+        {/* Teaser Video */}
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))] overflow-hidden">
+          <div className="relative">
+            <video 
+              className="w-full aspect-video object-cover"
+              controls
+              poster=""
+              preload="metadata"
+            >
+              <source src={teaserVideo} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            <div className="absolute top-3 left-3 flex items-center gap-2 bg-[hsl(var(--bc-bg-dark))]/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+              <Play className="w-4 h-4 text-[hsl(var(--bc-primary))]" />
+              <span className="text-sm font-medium text-[hsl(var(--bc-text))]">BLOX City Teaser</span>
+            </div>
+          </div>
+        </div>
 
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-4">

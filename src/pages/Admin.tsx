@@ -16,6 +16,8 @@ import SettingsTab from "@/components/admin/SettingsTab";
 import ExportButton from "@/components/admin/ExportButton";
 import ForumModTab from "@/components/admin/ForumModTab";
 import ContentModerationTab from "@/components/admin/ContentModerationTab";
+import UserManagementTab from "@/components/admin/UserManagementTab";
+import MaintenanceTab from "@/components/admin/MaintenanceTab";
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -992,6 +994,12 @@ const Admin = () => {
 
         {/* Content Moderation Tab */}
         {activeTab === "content-mod" && <ContentModerationTab darkMode={darkMode} />}
+
+        {/* User Management Tab */}
+        {activeTab === "user-mgmt" && <UserManagementTab />}
+
+        {/* Maintenance Tab */}
+        {activeTab === "maintenance" && <MaintenanceTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (

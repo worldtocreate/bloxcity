@@ -84,4 +84,6 @@ export type AdminTab =
   | "ip-blocking" 
   | "forum-mod"
   | "content-mod"
+  | "user-mgmt"
+  | "maintenance"
   | "settings";

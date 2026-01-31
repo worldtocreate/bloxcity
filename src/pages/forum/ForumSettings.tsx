@@ -156,6 +156,11 @@ export default function ForumSettings() {
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
   const [selectedAvatarEffect, setSelectedAvatarEffect] = useState<AvatarEffect>(null);
   const [savingEffect, setSavingEffect] = useState(false);
+  
+  // Username change
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [changingUsername, setChangingUsername] = useState(false);
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -677,6 +682,82 @@ export default function ForumSettings() {
     }
   };
 
+  const canChangeUsername = () => {
+    if (!forumUser) return false;
+    const lastChange = (forumUser as any).last_username_change_at;
+    if (!lastChange) return true;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return new Date(lastChange) < sevenDaysAgo;
+  };
+
+  const getNextUsernameChangeDate = () => {
+    if (!forumUser) return null;
+    const lastChange = (forumUser as any).last_username_change_at;
+    if (!lastChange) return null;
+    return new Date(new Date(lastChange).getTime() + 7 * 24 * 60 * 60 * 1000);
+  };
+
+  const handleChangeUsername = async () => {
+    if (!forumUser || !newUsername.trim()) return;
+    
+    const usernameRegex = /^[a-z0-9_]{3,20}$/;
+    if (!usernameRegex.test(newUsername.toLowerCase())) {
+      toast.error('Username must be 3-20 characters, lowercase letters, numbers, and underscores only');
+      return;
+    }
+
+    if (!canChangeUsername()) {
+      toast.error('You can only change your username once every 7 days');
+      return;
+    }
+
+    setChangingUsername(true);
+
+    // Check if username is already taken
+    const { data: existingUser } = await supabase
+      .from('forum_users')
+      .select('id')
+      .ilike('username', newUsername)
+      .neq('id', forumUser.id)
+      .single();
+
+    if (existingUser) {
+      toast.error('Username is already taken');
+      setChangingUsername(false);
+      return;
+    }
+
+    // Check banned words
+    const { data: profanityCheck, error: profanityError } = await supabase.functions.invoke('forum-check-profanity', {
+      body: { text: newUsername }
+    });
+
+    if (profanityCheck?.hasProfanity) {
+      toast.error('Username contains inappropriate words');
+      setChangingUsername(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({
+        username: newUsername.toLowerCase(),
+        last_username_change_at: new Date().toISOString()
+      })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to change username');
+    } else {
+      toast.success('Username changed successfully!');
+      setShowUsernameModal(false);
+      setNewUsername('');
+      // Reload the page to update the forumUser data
+      window.location.reload();
+    }
+    setChangingUsername(false);
+  };
+
   if (!user) {
     navigate('/login');
     return null;
@@ -780,6 +861,20 @@ export default function ForumSettings() {
                 {isAdmin && <Shield className="w-4 h-4 text-[hsl(var(--bc-accent))]" />}
                 {membershipTier && <MembershipBadge tier={membershipTier} size="sm" />}
               </div>
+              {canChangeUsername() ? (
+                <button
+                  onClick={() => setShowUsernameModal(true)}
+                  className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition mt-1"
+                >
+                  <Edit2 className="w-3 h-3" />
+                  Change Username
+                </button>
+              ) : (
+                <div className="text-xs text-[hsl(var(--bc-text-muted))] mt-1 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Next change available: {getNextUsernameChangeDate()?.toLocaleDateString()}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-sm text-[hsl(var(--bc-text-muted))]">Email</label>
@@ -1563,6 +1658,51 @@ export default function ForumSettings() {
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 Delete Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Username Change Modal */}
+      {showUsernameModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Change Username</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+              You can change your username once every 7 days. Choose wisely!
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm text-[hsl(var(--bc-text-muted))] mb-1">New Username</label>
+              <input
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value.toLowerCase())}
+                placeholder="Enter new username..."
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                maxLength={20}
+              />
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                3-20 characters, lowercase letters, numbers, and underscores only
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowUsernameModal(false);
+                  setNewUsername('');
+                }}
+                className="px-4 py-2 text-[hsl(var(--bc-text-muted))] hover:opacity-80"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeUsername}
+                disabled={!newUsername.trim() || changingUsername}
+                className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition"
+              >
+                {changingUsername ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Change Username
               </button>
             </div>
           </div>
