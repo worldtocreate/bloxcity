@@ -799,6 +799,50 @@ body {
   line-height: 1.7;
 }
 
+/* Newsletter Section */
+.newsletter-section {
+  background: hsl(var(--bc-bg-card));
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  text-align: center;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
+}
+
+.newsletter-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, hsl(var(--bc-blue)) 0%, hsl(var(--bc-primary)) 100%);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.newsletter-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--bc-text));
+  margin-bottom: 0.5rem;
+}
+
+.newsletter-section > p {
+  color: hsl(var(--bc-text-muted));
+  margin-bottom: 1.5rem;
+}
+
+.newsletter-form {
+  display: flex;
+  gap: 1rem;
+  max-width: 500px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 /* Social Section */
 .social-section {
   margin-bottom: 3rem;

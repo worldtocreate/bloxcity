@@ -1,4 +1,4 @@
-import { Globe, Calendar, ArrowRight, Users, Target, Info, HelpCircle } from "lucide-react";
+import { Globe, Calendar, ArrowRight, Users, Target, Info, HelpCircle, Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -13,6 +13,12 @@ const Index = () => {
   const [errorType, setErrorType] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [totalReservations, setTotalReservations] = useState<number | null>(null);
+  
+  // Newsletter state
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
+  const [newsletterError, setNewsletterError] = useState("");
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -89,7 +95,52 @@ const Index = () => {
     setLoading(false);
   };
 
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
 
+    setNewsletterLoading(true);
+    setNewsletterError("");
+
+    try {
+      const response = await supabase.functions.invoke("newsletter-subscribe", {
+        body: { email: newsletterEmail.trim() },
+      });
+
+      if (response.error) {
+        const anyError = response.error as any;
+        const failedResponse: Response | undefined = anyError?.context?.response;
+        if (failedResponse && typeof failedResponse.json === "function") {
+          try {
+            const payload = (await failedResponse.json()) as { error?: string };
+            if (payload?.error) {
+              setNewsletterError(payload.error);
+              setNewsletterLoading(false);
+              return;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        setNewsletterError("Failed to subscribe. Please try again.");
+        setNewsletterLoading(false);
+        return;
+      }
+
+      const data = response.data as { error?: string; success?: boolean };
+      if (data.error) {
+        setNewsletterError(data.error);
+        setNewsletterLoading(false);
+        return;
+      }
+
+      setNewsletterSubmitted(true);
+    } catch (err) {
+      setNewsletterError("Failed to subscribe. Please try again.");
+    }
+
+    setNewsletterLoading(false);
+  };
   return (
     <div className="maintenance-container">
       <div className="maintenance-content">
@@ -291,6 +342,45 @@ const Index = () => {
           </Accordion>
         </div>
 
+        {/* Newsletter Section */}
+        <div className="newsletter-section">
+          <div className="newsletter-icon">
+            <Mail className="w-8 h-8" />
+          </div>
+          <h3>Stay Updated</h3>
+          <p>Subscribe to our newsletter for launch updates and exclusive news!</p>
+          {!newsletterSubmitted ? (
+            <>
+              <form onSubmit={handleNewsletterSubscribe} className="newsletter-form">
+                <input
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className="reservation-input"
+                  required
+                  disabled={newsletterLoading}
+                />
+                <button type="submit" className="reservation-button" disabled={newsletterLoading}>
+                  {newsletterLoading ? "Subscribing..." : "Subscribe"}
+                </button>
+              </form>
+              {newsletterError && (
+                <div className="reservation-error">{newsletterError}</div>
+              )}
+            </>
+          ) : (
+            <div className="reservation-success">
+              <div className="success-header">
+                <span>📧</span> Subscribed!
+              </div>
+              <p className="success-message">
+                Thank you for subscribing! Check your inbox for a confirmation email.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Social Links */}
         <div className="social-section">
           <h3>Follow Our Progress</h3>
@@ -308,7 +398,7 @@ const Index = () => {
         {/* Original BLOX City Notice */}
         <div className="original-notice">
           <p>
-            Looking for the original BLOX City founders? Isaac is over at{" "}
+            Looking for where BLOX City is now? Isaac is over at{" "}
             <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer">brickplanet.com</a>
             {" "}& Kyle is over at{" "}
             <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer">truworlds.net</a>
