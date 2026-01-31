@@ -766,11 +766,16 @@ export type Database = {
           dm_encryption_pin_hash: string | null
           hide_threads: boolean | null
           id: string
+          is_locked: boolean | null
           is_self_disabled: boolean | null
           is_suspended: boolean | null
           is_verified: boolean | null
           last_post_at: string | null
+          last_username_change_at: string | null
           level: number | null
+          locked_at: string | null
+          locked_by: string | null
+          locked_reason: string | null
           membership_tier: string | null
           post_count: number | null
           self_disabled_at: string | null
@@ -795,11 +800,16 @@ export type Database = {
           dm_encryption_pin_hash?: string | null
           hide_threads?: boolean | null
           id?: string
+          is_locked?: boolean | null
           is_self_disabled?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
+          last_username_change_at?: string | null
           level?: number | null
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_reason?: string | null
           membership_tier?: string | null
           post_count?: number | null
           self_disabled_at?: string | null
@@ -824,11 +834,16 @@ export type Database = {
           dm_encryption_pin_hash?: string | null
           hide_threads?: boolean | null
           id?: string
+          is_locked?: boolean | null
           is_self_disabled?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
+          last_username_change_at?: string | null
           level?: number | null
+          locked_at?: string | null
+          locked_by?: string | null
+          locked_reason?: string | null
           membership_tier?: string | null
           post_count?: number | null
           self_disabled_at?: string | null
@@ -931,6 +946,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      purged_usernames: {
+        Row: {
+          id: string
+          original_reservation_id: string | null
+          purged_at: string
+          purged_by: string
+          reason: string | null
+          reverted_at: string | null
+          reverted_by: string | null
+          username: string
+        }
+        Insert: {
+          id?: string
+          original_reservation_id?: string | null
+          purged_at?: string
+          purged_by: string
+          reason?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          username: string
+        }
+        Update: {
+          id?: string
+          original_reservation_id?: string | null
+          purged_at?: string
+          purged_by?: string
+          reason?: string | null
+          reverted_at?: string | null
+          reverted_by?: string | null
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purged_usernames_original_reservation_id_fkey"
+            columns: ["original_reservation_id"]
+            isOneToOne: false
+            referencedRelation: "reserved_usernames"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reserved_usernames: {
         Row: {
