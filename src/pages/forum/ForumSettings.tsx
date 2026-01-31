@@ -10,6 +10,7 @@ import MembershipBadge from '@/components/forum/MembershipBadge';
 import { useTheme } from '@/contexts/ThemeContext';
 import UserAvatar, { AVATAR_EFFECTS, AvatarEffect } from '@/components/forum/UserAvatar';
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
+import ImageCropper from '@/components/forum/ImageCropper';
 
 interface CoverRequest {
   id: string;
@@ -165,6 +166,11 @@ export default function ForumSettings() {
   // Clear avatar/cover
   const [clearingAvatar, setClearingAvatar] = useState(false);
   const [clearingCover, setClearingCover] = useState(false);
+  
+  // Image cropper
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [cropperType, setCropperType] = useState<'avatar' | 'cover'>('avatar');
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -425,7 +431,7 @@ export default function ForumSettings() {
     setDisabling(false);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !forumUser || !user) return;
 
@@ -439,46 +445,109 @@ export default function ForumSettings() {
       return;
     }
 
-    setUploadingAvatar(true);
-
-    try {
-      const filePath = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
-        .from('forum-avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        toast.error('Failed to upload avatar');
-        setUploadingAvatar(false);
-        return;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('forum-avatars')
-        .getPublicUrl(filePath);
-
-      const { error: requestError } = await supabase
-        .from('forum_avatar_requests')
-        .insert({
-          forum_user_id: forumUser.id,
-          image_url: urlData.publicUrl,
-          status: 'pending'
-        });
-
-      if (requestError) {
-        toast.error('Failed to submit avatar for review');
-      } else {
-        toast.success('Avatar submitted for admin approval!');
-        fetchPendingAvatar();
-      }
-    } catch (err) {
-      toast.error('Failed to upload avatar');
+    // Create a URL for the cropper
+    const imageUrl = URL.createObjectURL(file);
+    setCropperImage(imageUrl);
+    setCropperType('avatar');
+    setPendingFile(file);
+    
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
-
-    setUploadingAvatar(false);
   };
 
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!forumUser || !user) return;
+    
+    setCropperImage(null);
+    
+    if (cropperType === 'avatar') {
+      setUploadingAvatar(true);
+      try {
+        const filePath = `${user.id}/${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('forum-avatars')
+          .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
+
+        if (uploadError) {
+          toast.error('Failed to upload avatar');
+          setUploadingAvatar(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('forum-avatars')
+          .getPublicUrl(filePath);
+
+        const { error: requestError } = await supabase
+          .from('forum_avatar_requests')
+          .insert({
+            forum_user_id: forumUser.id,
+            image_url: urlData.publicUrl,
+            status: 'pending'
+          });
+
+        if (requestError) {
+          toast.error('Failed to submit avatar for review');
+        } else {
+          toast.success('Avatar submitted for admin approval!');
+          fetchPendingAvatar();
+        }
+      } catch (err) {
+        toast.error('Failed to upload avatar');
+      }
+      setUploadingAvatar(false);
+    } else {
+      setUploadingCover(true);
+      try {
+        const filePath = `covers/${user.id}/${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('forum-avatars')
+          .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
+
+        if (uploadError) {
+          toast.error('Failed to upload cover');
+          setUploadingCover(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('forum-avatars')
+          .getPublicUrl(filePath);
+
+        const { error: requestError } = await supabase
+          .from('forum_cover_requests')
+          .insert({
+            forum_user_id: forumUser.id,
+            image_url: urlData.publicUrl,
+            status: 'pending'
+          });
+
+        if (requestError) {
+          toast.error('Failed to submit cover for review');
+        } else {
+          toast.success('Cover photo submitted for admin approval!');
+          fetchPendingCover();
+        }
+      } catch (err) {
+        toast.error('Failed to upload cover');
+      }
+      setUploadingCover(false);
+    }
+    
+    setPendingFile(null);
+  };
+
+  const handleCropCancel = () => {
+    if (cropperImage) {
+      URL.revokeObjectURL(cropperImage);
+    }
+    setCropperImage(null);
+    setPendingFile(null);
+  };
+
+  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !forumUser || !user) return;
 
@@ -492,46 +561,16 @@ export default function ForumSettings() {
       return;
     }
 
-    setUploadingCover(true);
-
-    try {
-      const filePath = `covers/${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError, data: uploadData } = await supabase.storage
-        .from('forum-avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        console.error('Cover upload error:', uploadError);
-        toast.error(`Failed to upload cover: ${uploadError.message}`);
-        setUploadingCover(false);
-        return;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('forum-avatars')
-        .getPublicUrl(filePath);
-
-      const { error: requestError } = await supabase
-        .from('forum_cover_requests')
-        .insert({
-          forum_user_id: forumUser.id,
-          image_url: urlData.publicUrl,
-          status: 'pending'
-        });
-
-      if (requestError) {
-        console.error('Cover request error:', requestError);
-        toast.error(`Failed to submit cover for review: ${requestError.message}`);
-      } else {
-        toast.success('Cover photo submitted for admin approval!');
-        fetchPendingCover();
-      }
-    } catch (err: any) {
-      console.error('Cover upload exception:', err);
-      toast.error(`Failed to upload cover: ${err.message || 'Unknown error'}`);
+    // Create a URL for the cropper
+    const imageUrl = URL.createObjectURL(file);
+    setCropperImage(imageUrl);
+    setCropperType('cover');
+    setPendingFile(file);
+    
+    // Reset the input
+    if (coverInputRef.current) {
+      coverInputRef.current.value = '';
     }
-
-    setUploadingCover(false);
   };
 
   const handleSaveAvatarEffect = async (effect: AvatarEffect) => {
@@ -860,7 +899,7 @@ export default function ForumSettings() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleAvatarUpload}
+              onChange={handleAvatarSelect}
               className="hidden"
             />
             {pendingAvatar?.status === 'pending' ? (
@@ -1062,7 +1101,7 @@ export default function ForumSettings() {
           ref={coverInputRef}
           type="file"
           accept="image/*"
-          onChange={handleCoverUpload}
+          onChange={handleCoverSelect}
           className="hidden"
         />
 
@@ -1781,6 +1820,17 @@ export default function ForumSettings() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Image Cropper Modal */}
+      {cropperImage && (
+        <ImageCropper
+          imageUrl={cropperImage}
+          aspectRatio={cropperType === 'avatar' ? 1 : 3}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          type={cropperType}
+        />
       )}
     </div>
   );
