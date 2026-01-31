@@ -195,6 +195,30 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
     if (userError) {
       toast.error('Failed to update user verification');
     } else {
+      // Send notification email to the user
+      try {
+        // Get user's email
+        const { data: forumUserData } = await supabase
+          .from('forum_users')
+          .select('user_id, username')
+          .eq('id', request.forum_user_id)
+          .single();
+        
+        if (forumUserData) {
+          // Get auth user email
+          const { data } = await supabase.functions.invoke('send-verification-notification', {
+            body: {
+              forumUserId: request.forum_user_id,
+              email: '', // Will be fetched server-side
+              username: forumUserData.username
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't block the success flow
+      }
+      
       toast.success('User verified!');
       fetchVerificationRequests();
       fetchForumUsers();
