@@ -13,6 +13,7 @@ import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
 import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
+import UserAdBanner from '@/components/forum/UserAdBanner';
 
 interface FriendStatus {
   id: string;
@@ -415,6 +416,7 @@ export default function ForumDashboard() {
 
         {/* Sidebar */}
         <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+          <UserAdBanner />
           <LeaderboardSidebar />
         </div>
       </div>
@@ -797,6 +799,7 @@ export default function ForumDashboard() {
 
       {/* Sidebar */}
       <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+        <UserAdBanner />
         <LeaderboardSidebar />
       </div>
     </div>
