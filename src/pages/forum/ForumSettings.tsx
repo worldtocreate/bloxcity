@@ -23,6 +23,16 @@ export default function ForumSettings() {
     loading?: boolean;
   }>();
 
+  // Debug logging
+  console.log('[ForumSettings] Context:', { 
+    hasUser: !!user, 
+    userEmail: user?.email,
+    hasForumUser: !!forumUser, 
+    forumUserUsername: forumUser?.username,
+    isAdmin,
+    loading
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [signature, setSignature] = useState('');
   const [saving, setSaving] = useState(false);

@@ -39,6 +39,15 @@ export default function ForumCategory() {
     forumUser: ForumUser | null;
     isAdmin: boolean;
   }>();
+
+  // Debug logging
+  console.log('[ForumCategory] Context:', { 
+    hasUser: !!user, 
+    hasForumUser: !!forumUser, 
+    forumUserUsername: forumUser?.username,
+    isAdmin,
+    slug
+  });
   
   const [category, setCategory] = useState<Category | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
