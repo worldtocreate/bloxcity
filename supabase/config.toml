@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.admin-get-activity-logs]
 verify_jwt = false
+
+[functions.admin-manage-blocked-ips]
+verify_jwt = false
+
+[functions.admin-export-data]
+verify_jwt = false

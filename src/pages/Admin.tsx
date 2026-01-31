@@ -3,80 +3,28 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { 
-  LogOut, Check, X, Clock, RefreshCw, Users, Mail, Send, Image, 
-  BarChart3, Ban, Trash2, Plus, CheckSquare, Square, Shield, Activity,
-  UserPlus, UserMinus, Search
+  Check, X, Clock, RefreshCw, Mail, Send, Image, 
+  Ban, Trash2, Plus, CheckSquare, Square,
+  UserPlus, UserMinus, Search, Download
 } from "lucide-react";
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
-interface Reservation {
-  id: string;
-  username: string;
-  email: string;
-  status: string;
-  created_at: string;
-  ip_address: string | null;
-}
-
-interface NewsletterSubscriber {
-  id: string;
-  email: string;
-  subscribed_at: string;
-  is_active: boolean;
-}
-
-interface BannedWord {
-  id: string;
-  word: string;
-  reason: string | null;
-  created_at: string;
-}
-
-interface AdminUser {
-  id: string;
-  user_id: string;
-  role: string;
-  email: string;
-  created_at: string;
-}
-
-interface ActivityLog {
-  id: string;
-  admin_user_id: string;
-  admin_email: string | null;
-  action: string;
-  target_type: string;
-  target_id: string | null;
-  details: Record<string, unknown>;
-  created_at: string;
-}
-
-interface Stats {
-  reservations: {
-    total: number;
-    pending: number;
-    approved: number;
-    denied: number;
-    todayCount: number;
-    weekCount: number;
-    approvalRate: number;
-  };
-  newsletter: {
-    total: number;
-    active: number;
-    todayCount: number;
-  };
-  bannedWords: number;
-}
+import AdminHeader from "@/components/admin/AdminHeader";
+import AdminTabs from "@/components/admin/AdminTabs";
+import DashboardTab from "@/components/admin/DashboardTab";
+import IPBlockingTab from "@/components/admin/IPBlockingTab";
+import SettingsTab from "@/components/admin/SettingsTab";
+import ExportButton from "@/components/admin/ExportButton";
+import { 
+  Reservation, NewsletterSubscriber, BannedWord, 
+  AdminUser, ActivityLog, AdminTab 
+} from "@/components/admin/types";
 
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "reservations" | "newsletter" | "banned" | "admins" | "logs">("dashboard");
-  
-  // Stats state
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [darkMode, setDarkMode] = useState(false);
   
   // Reservations state
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -88,6 +36,7 @@ const Admin = () => {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [showBulkDenialModal, setShowBulkDenialModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
   
   // Newsletter state
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
@@ -96,12 +45,14 @@ const Admin = () => {
   const [newsletterImageUrl, setNewsletterImageUrl] = useState("");
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
   const [newsletterResult, setNewsletterResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [subscriberSearch, setSubscriberSearch] = useState("");
   
   // Banned words state
   const [bannedWords, setBannedWords] = useState<BannedWord[]>([]);
   const [newBannedWord, setNewBannedWord] = useState("");
   const [newBannedReason, setNewBannedReason] = useState("");
   const [addingWord, setAddingWord] = useState(false);
+  const [bannedWordSearch, setBannedWordSearch] = useState("");
 
   // Admin users state
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -113,8 +64,21 @@ const Admin = () => {
   // Activity logs state
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [logFilter, setLogFilter] = useState<string>("all");
+  const [logSearch, setLogSearch] = useState("");
   
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load dark mode preference
+    const savedDarkMode = localStorage.getItem('adminDarkMode');
+    if (savedDarkMode) {
+      setDarkMode(JSON.parse(savedDarkMode));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('adminDarkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -157,9 +121,7 @@ const Admin = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      if (activeTab === "dashboard") {
-        fetchStats();
-      } else if (activeTab === "reservations") {
+      if (activeTab === "reservations") {
         fetchReservations();
       } else if (activeTab === "newsletter") {
         fetchSubscribers();
@@ -172,13 +134,6 @@ const Admin = () => {
       }
     }
   }, [isAdmin, filter, activeTab, logFilter]);
-
-  const fetchStats = async () => {
-    const response = await supabase.functions.invoke('admin-get-stats');
-    if (response.data?.stats) {
-      setStats(response.data.stats);
-    }
-  };
 
   const fetchReservations = async () => {
     const response = await supabase.functions.invoke('admin-get-reservations', {
@@ -231,7 +186,6 @@ const Admin = () => {
     });
     if (response.data?.success) {
       fetchReservations();
-      fetchStats();
     }
     setActionLoading(null);
   };
@@ -243,7 +197,6 @@ const Admin = () => {
     });
     if (response.data?.success) {
       fetchReservations();
-      fetchStats();
       setShowDenialModal(null);
       setDenialReason("");
     }
@@ -264,7 +217,6 @@ const Admin = () => {
     
     if (response.data?.success) {
       fetchReservations();
-      fetchStats();
       setSelectedReservations(new Set());
       setShowBulkDenialModal(false);
       setDenialReason("");
@@ -273,7 +225,7 @@ const Admin = () => {
   };
 
   const toggleSelectAll = () => {
-    const pendingReservations = reservations.filter(r => r.status === 'pending');
+    const pendingReservations = filteredReservations.filter(r => r.status === 'pending');
     if (selectedReservations.size === pendingReservations.length) {
       setSelectedReservations(new Set());
     } else {
@@ -332,7 +284,6 @@ const Admin = () => {
     
     if (response.data?.success) {
       fetchBannedWords();
-      fetchStats();
       setNewBannedWord("");
       setNewBannedReason("");
     }
@@ -346,7 +297,6 @@ const Admin = () => {
     
     if (response.data?.success) {
       fetchBannedWords();
-      fetchStats();
     }
   };
 
@@ -399,6 +349,9 @@ const Admin = () => {
       'send_newsletter': 'Sent newsletter',
       'bulk_approve': 'Bulk approved',
       'bulk_deny': 'Bulk denied',
+      'block_ip': 'Blocked IP',
+      'unblock_ip': 'Unblocked IP',
+      'export_data': 'Exported data',
     };
     return labels[action] || action;
   };
@@ -408,26 +361,82 @@ const Admin = () => {
     navigate("/");
   };
 
+  // Filter reservations
+  const filteredReservations = reservations.filter(r => {
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      if (!r.username.toLowerCase().includes(query) && 
+          !r.email.toLowerCase().includes(query) &&
+          !(r.ip_address && r.ip_address.toLowerCase().includes(query))) {
+        return false;
+      }
+    }
+    
+    // Date filter
+    if (dateFilter !== 'all') {
+      const date = new Date(r.created_at);
+      const now = new Date();
+      if (dateFilter === 'today') {
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (date < today) return false;
+      } else if (dateFilter === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        if (date < weekAgo) return false;
+      } else if (dateFilter === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        if (date < monthAgo) return false;
+      }
+    }
+    
+    return true;
+  });
+  
+  const pendingReservations = filteredReservations.filter(r => r.status === 'pending');
+
+  // Filter subscribers
+  const filteredSubscribers = subscribers.filter(s => 
+    subscriberSearch.trim() === '' || s.email.toLowerCase().includes(subscriberSearch.toLowerCase())
+  );
+
+  // Filter banned words
+  const filteredBannedWords = bannedWords.filter(w => 
+    bannedWordSearch.trim() === '' || 
+    w.word.toLowerCase().includes(bannedWordSearch.toLowerCase()) ||
+    (w.reason && w.reason.toLowerCase().includes(bannedWordSearch.toLowerCase()))
+  );
+
+  // Filter activity logs
+  const filteredLogs = activityLogs.filter(l => 
+    logSearch.trim() === '' || 
+    l.action.toLowerCase().includes(logSearch.toLowerCase()) ||
+    (l.admin_email && l.admin_email.toLowerCase().includes(logSearch.toLowerCase())) ||
+    (l.details?.username && String(l.details.username).toLowerCase().includes(logSearch.toLowerCase()))
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className={`w-8 h-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'} animate-spin`} />
+          <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading admin panel...</div>
+        </div>
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center">
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center p-4`}>
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-lg p-8 max-w-md text-center`}>
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h1>
-          <p className="text-gray-500 mb-6">
+          <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2`}>Access Denied</h1>
+          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-6`}>
             You don't have admin privileges. Contact an administrator to get access.
           </p>
-          <p className="text-sm text-gray-400 mb-4">Logged in as: {user?.email}</p>
+          <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'} mb-4`}>Logged in as: {user?.email}</p>
           <button
             onClick={handleLogout}
             className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition"
@@ -440,229 +449,63 @@ const Admin = () => {
   }
 
   const activeSubscribers = subscribers.filter(s => s.is_active).length;
-  
-  // Filter reservations by search query
-  const filteredReservations = reservations.filter(r => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return r.username.toLowerCase().includes(query) || 
-           r.email.toLowerCase().includes(query) ||
-           (r.ip_address && r.ip_address.toLowerCase().includes(query));
-  });
-  
-  const pendingReservations = filteredReservations.filter(r => r.status === 'pending');
+
+  const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900';
+  const textClass = darkMode ? 'text-white' : 'text-gray-800';
+  const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-500';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={bloxcityLogo} alt="BLOX City" className="w-10 h-10 rounded-lg" />
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Admin Dashboard</h1>
-              <p className="text-sm text-gray-500">BLOX City Management</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">{user?.email}</span>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      <AdminHeader 
+        user={user} 
+        onLogout={handleLogout} 
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode(!darkMode)}
+      />
+      
+      <AdminTabs 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        darkMode={darkMode}
+      />
 
-      {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-1 overflow-x-auto">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
-                activeTab === "dashboard"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab("reservations")}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
-                activeTab === "reservations"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              Reservations
-            </button>
-            <button
-              onClick={() => setActiveTab("newsletter")}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
-                activeTab === "newsletter"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Mail className="w-4 h-4" />
-              Newsletter
-            </button>
-            <button
-              onClick={() => setActiveTab("banned")}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
-                activeTab === "banned"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Ban className="w-4 h-4" />
-              Banned Words
-            </button>
-            <button
-              onClick={() => setActiveTab("admins")}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
-                activeTab === "admins"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Shield className="w-4 h-4" />
-              Admin Users
-            </button>
-            <button
-              onClick={() => setActiveTab("logs")}
-              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
-                activeTab === "logs"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <Activity className="w-4 h-4" />
-              Activity Logs
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto p-6">
         {/* Dashboard Tab */}
-        {activeTab === "dashboard" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-800">Overview</h2>
-              <button
-                onClick={fetchStats}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition border border-gray-200"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
-            </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <span className="text-gray-500 font-medium">Total Reservations</span>
-                </div>
-                <div className="text-3xl font-bold text-gray-800">{stats?.reservations.total || 0}</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  +{stats?.reservations.todayCount || 0} today
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <span className="text-gray-500 font-medium">Pending Review</span>
-                </div>
-                <div className="text-3xl font-bold text-gray-800">{stats?.reservations.pending || 0}</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Awaiting approval
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Check className="w-5 h-5 text-green-600" />
-                  </div>
-                  <span className="text-gray-500 font-medium">Approval Rate</span>
-                </div>
-                <div className="text-3xl font-bold text-gray-800">{stats?.reservations.approvalRate || 0}%</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  {stats?.reservations.approved || 0} approved, {stats?.reservations.denied || 0} denied
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <span className="text-gray-500 font-medium">Newsletter Subs</span>
-                </div>
-                <div className="text-3xl font-bold text-gray-800">{stats?.newsletter.active || 0}</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  +{stats?.newsletter.todayCount || 0} today
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">This Week</h3>
-                <div className="text-2xl font-bold text-gray-800">{stats?.reservations.weekCount || 0}</div>
-                <div className="text-sm text-gray-500">new reservations</div>
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Banned Words</h3>
-                <div className="text-2xl font-bold text-gray-800">{stats?.bannedWords || 0}</div>
-                <div className="text-sm text-gray-500">blocked terms</div>
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Total Subscribers</h3>
-                <div className="text-2xl font-bold text-gray-800">{stats?.newsletter.total || 0}</div>
-                <div className="text-sm text-gray-500">{(stats?.newsletter.total || 0) - (stats?.newsletter.active || 0)} unsubscribed</div>
-              </div>
-            </div>
-          </div>
-        )}
+        {activeTab === "dashboard" && <DashboardTab darkMode={darkMode} />}
 
         {/* Reservations Tab */}
         {activeTab === "reservations" && (
           <>
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-2 mb-6">
-              {(['pending', 'approved', 'denied', 'all'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setFilter(tab)}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    filter === tab
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+            {/* Filter Controls */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex gap-2">
+                {(['pending', 'approved', 'denied', 'all'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setFilter(tab)}
+                    className={`px-4 py-2 rounded-lg font-medium transition ${
+                      filter === tab
+                        ? 'bg-blue-600 text-white'
+                        : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+              
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)}
+                className={`px-4 py-2 border rounded-lg outline-none ${inputClass}`}
+              >
+                <option value="all">All time</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+              </select>
+              
               <div className="flex items-center gap-2 ml-auto">
                 <div className="relative">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -671,12 +514,15 @@ const Admin = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search username, email, or IP..."
-                    className="pl-9 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                    className={`pl-9 pr-4 py-2 w-64 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm ${inputClass}`}
                   />
                 </div>
+                <ExportButton type="reservations" filter={filter} darkMode={darkMode} />
                 <button
                   onClick={fetchReservations}
-                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
+                    darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-200'
+                  }`}
                 >
                   <RefreshCw className="w-4 h-4" />
                   Refresh
@@ -685,24 +531,26 @@ const Admin = () => {
             </div>
 
             {/* Search Results Info */}
-            {searchQuery.trim() && (
-              <div className="mb-4 text-sm text-gray-600">
-                Found {filteredReservations.length} result{filteredReservations.length !== 1 ? 's' : ''} for "{searchQuery}"
+            {(searchQuery.trim() || dateFilter !== 'all') && (
+              <div className={`mb-4 text-sm ${mutedClass}`}>
+                Found {filteredReservations.length} result{filteredReservations.length !== 1 ? 's' : ''}
+                {searchQuery.trim() && ` for "${searchQuery}"`}
+                {dateFilter !== 'all' && ` (${dateFilter})`}
                 <button 
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => { setSearchQuery(""); setDateFilter('all'); }}
                   className="ml-2 text-blue-600 hover:underline"
                 >
-                  Clear search
+                  Clear filters
                 </button>
               </div>
             )}
 
             {/* Bulk Actions */}
             {filter === 'pending' && pendingReservations.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex flex-wrap items-center gap-4">
+              <div className={`${darkMode ? 'bg-blue-900/30 border-blue-800' : 'bg-blue-50 border-blue-200'} border rounded-xl p-4 mb-4 flex flex-wrap items-center gap-4`}>
                 <button
                   onClick={toggleSelectAll}
-                  className="flex items-center gap-2 text-blue-700 hover:text-blue-800"
+                  className={`flex items-center gap-2 ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-700 hover:text-blue-800'}`}
                 >
                   {selectedReservations.size === pendingReservations.length ? (
                     <CheckSquare className="w-5 h-5" />
@@ -714,7 +562,7 @@ const Admin = () => {
                 
                 {selectedReservations.size > 0 && (
                   <>
-                    <span className="text-blue-700">{selectedReservations.size} selected</span>
+                    <span className={darkMode ? 'text-blue-400' : 'text-blue-700'}>{selectedReservations.size} selected</span>
                     <button
                       onClick={() => handleBulkAction('approve')}
                       disabled={bulkLoading}
@@ -737,32 +585,32 @@ const Admin = () => {
             )}
 
             {/* Reservations Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <tr>
                       {filter === 'pending' && (
                         <th className="w-10 px-4 py-4"></th>
                       )}
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Username</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Email</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Status</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Date</th>
-                      <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">IP</th>
-                      <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600">Actions</th>
+                      <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Username</th>
+                      <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Email</th>
+                      <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Status</th>
+                      <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Date</th>
+                      <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>IP</th>
+                      <th className={`text-right px-6 py-4 text-sm font-semibold ${mutedClass}`}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredReservations.length === 0 ? (
                       <tr>
-                        <td colSpan={filter === 'pending' ? 7 : 6} className="px-6 py-12 text-center text-gray-500">
-                          {searchQuery.trim() ? 'No matching reservations found' : 'No reservations found'}
+                        <td colSpan={filter === 'pending' ? 7 : 6} className={`px-6 py-12 text-center ${mutedClass}`}>
+                          {searchQuery.trim() || dateFilter !== 'all' ? 'No matching reservations found' : 'No reservations found'}
                         </td>
                       </tr>
                     ) : (
                       filteredReservations.map((reservation) => (
-                        <tr key={reservation.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <tr key={reservation.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
                           {filter === 'pending' && (
                             <td className="px-4 py-4">
                               {reservation.status === 'pending' && (
@@ -770,21 +618,21 @@ const Admin = () => {
                                   {selectedReservations.has(reservation.id) ? (
                                     <CheckSquare className="w-5 h-5 text-blue-600" />
                                   ) : (
-                                    <Square className="w-5 h-5 text-gray-400" />
+                                    <Square className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                                   )}
                                 </button>
                               )}
                             </td>
                           )}
                           <td className="px-6 py-4">
-                            <span className="font-semibold text-gray-800">{reservation.username}</span>
+                            <span className={`font-semibold ${textClass}`}>{reservation.username}</span>
                           </td>
-                          <td className="px-6 py-4 text-gray-600">{reservation.email}</td>
+                          <td className={`px-6 py-4 ${mutedClass}`}>{reservation.email}</td>
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                              reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              reservation.status === 'approved' ? 'bg-green-100 text-green-700' :
-                              'bg-red-100 text-red-700'
+                              reservation.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                              reservation.status === 'approved' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                             }`}>
                               {reservation.status === 'pending' && <Clock className="w-3 h-3" />}
                               {reservation.status === 'approved' && <Check className="w-3 h-3" />}
@@ -792,10 +640,10 @@ const Admin = () => {
                               {reservation.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-gray-500 text-sm">
+                          <td className={`px-6 py-4 text-sm ${mutedClass}`}>
                             {new Date(reservation.created_at).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4 text-gray-500 text-sm font-mono">
+                          <td className={`px-6 py-4 text-sm font-mono ${mutedClass}`}>
                             {reservation.ip_address || '-'}
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -834,53 +682,68 @@ const Admin = () => {
         {activeTab === "newsletter" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Subscribers List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+              <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800">Newsletter Subscribers</h2>
-                  <p className="text-sm text-gray-500">
+                  <h2 className={`text-lg font-semibold ${textClass}`}>Newsletter Subscribers</h2>
+                  <p className={`text-sm ${mutedClass}`}>
                     {activeSubscribers} active, {subscribers.length - activeSubscribers} unsubscribed
                   </p>
                 </div>
-                <button
-                  onClick={fetchSubscribers}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  <ExportButton type="subscribers" darkMode={darkMode} />
+                  <button
+                    onClick={fetchSubscribers}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:opacity-80 transition ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+              <div className={`px-6 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={subscriberSearch}
+                    onChange={(e) => setSubscriberSearch(e.target.value)}
+                    placeholder="Search subscribers..."
+                    className={`w-full pl-9 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm ${inputClass}`}
+                  />
+                </div>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                  <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} sticky top-0`}>
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Email</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Date</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Status</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Email</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Status</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Subscribed</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {subscribers.length === 0 ? (
+                    {filteredSubscribers.length === 0 ? (
                       <tr>
-                        <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
-                          No subscribers yet
+                        <td colSpan={3} className={`px-6 py-8 text-center ${mutedClass}`}>
+                          {subscriberSearch ? 'No matching subscribers' : 'No subscribers yet'}
                         </td>
                       </tr>
                     ) : (
-                      subscribers.map((subscriber) => (
-                        <tr key={subscriber.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="px-6 py-3 text-sm text-gray-800">{subscriber.email}</td>
-                          <td className="px-6 py-3 text-sm text-gray-500">
-                            {new Date(subscriber.subscribed_at).toLocaleDateString()}
-                          </td>
+                      filteredSubscribers.map((subscriber) => (
+                        <tr key={subscriber.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                          <td className={`px-6 py-3 text-sm ${textClass}`}>{subscriber.email}</td>
                           <td className="px-6 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                               subscriber.is_active
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-gray-100 text-gray-500'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
                             }`}>
                               {subscriber.is_active ? 'Active' : 'Unsubscribed'}
                             </span>
+                          </td>
+                          <td className={`px-6 py-3 text-sm ${mutedClass}`}>
+                            {new Date(subscriber.subscribed_at).toLocaleDateString()}
                           </td>
                         </tr>
                       ))
@@ -891,67 +754,64 @@ const Admin = () => {
             </div>
 
             {/* Send Newsletter */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <Send className="w-5 h-5" />
+            <div className={`rounded-xl shadow-sm border p-6 ${cardClass}`}>
+              <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${textClass}`}>
+                <Send className="w-5 h-5 text-purple-500" />
                 Send Newsletter
               </h2>
-              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>Subject</label>
                   <input
                     type="text"
                     value={newsletterSubject}
                     onChange={(e) => setNewsletterSubject(e.target.value)}
-                    placeholder="Newsletter subject line"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="Newsletter subject..."
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none ${inputClass}`}
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                  <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>Content</label>
                   <textarea
                     value={newsletterContent}
                     onChange={(e) => setNewsletterContent(e.target.value)}
                     placeholder="Write your newsletter content here..."
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none resize-none ${inputClass}`}
                     rows={6}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-                    <Image className="w-4 h-4" />
-                    Image URL (optional)
+                  <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>
+                    <span className="flex items-center gap-1">
+                      <Image className="w-4 h-4" />
+                      Image URL (optional)
+                    </span>
                   </label>
                   <input
                     type="url"
                     value={newsletterImageUrl}
                     onChange={(e) => setNewsletterImageUrl(e.target.value)}
                     placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none ${inputClass}`}
                   />
                 </div>
-
-                {newsletterResult && (
-                  <div className={`p-3 rounded-lg ${
-                    newsletterResult.success
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
-                    {newsletterResult.message}
-                  </div>
-                )}
-                
                 <button
                   onClick={handleSendNewsletter}
                   disabled={sendingNewsletter || !newsletterSubject.trim() || !newsletterContent.trim()}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 font-medium"
                 >
                   <Send className="w-4 h-4" />
                   {sendingNewsletter ? "Sending..." : `Send to ${activeSubscribers} subscribers`}
                 </button>
+                {newsletterResult && (
+                  <div className={`p-3 rounded-lg text-sm ${
+                    newsletterResult.success 
+                      ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' 
+                      : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                  }`}>
+                    {newsletterResult.message}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -959,83 +819,101 @@ const Admin = () => {
 
         {/* Banned Words Tab */}
         {activeTab === "banned" && (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Add New Word */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <Plus className="w-5 h-5" />
+            <div className={`rounded-xl shadow-sm border p-6 ${cardClass}`}>
+              <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${textClass}`}>
+                <Plus className="w-5 h-5 text-red-500" />
                 Add Banned Word
               </h2>
-              <div className="flex flex-wrap gap-4">
-                <input
-                  type="text"
-                  value={newBannedWord}
-                  onChange={(e) => setNewBannedWord(e.target.value)}
-                  placeholder="Word or phrase"
-                  className="flex-1 min-w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-                <input
-                  type="text"
-                  value={newBannedReason}
-                  onChange={(e) => setNewBannedReason(e.target.value)}
-                  placeholder="Reason (optional)"
-                  className="flex-1 min-w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>Word or Phrase</label>
+                  <input
+                    type="text"
+                    value={newBannedWord}
+                    onChange={(e) => setNewBannedWord(e.target.value)}
+                    placeholder="Enter word to ban..."
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none ${inputClass}`}
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${mutedClass}`}>Reason (optional)</label>
+                  <input
+                    type="text"
+                    value={newBannedReason}
+                    onChange={(e) => setNewBannedReason(e.target.value)}
+                    placeholder="Why is this word banned?"
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none ${inputClass}`}
+                  />
+                </div>
                 <button
                   onClick={handleAddBannedWord}
                   disabled={addingWord || !newBannedWord.trim()}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50"
                 >
                   <Ban className="w-4 h-4" />
-                  {addingWord ? "Adding..." : "Add Word"}
+                  {addingWord ? "Adding..." : "Add to Blocklist"}
                 </button>
               </div>
             </div>
 
             {/* Banned Words List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+              <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800">Banned Words List</h2>
-                  <p className="text-sm text-gray-500">{bannedWords.length} words blocked</p>
+                  <h2 className={`text-lg font-semibold ${textClass}`}>Blocked Words</h2>
+                  <p className={`text-sm ${mutedClass}`}>{bannedWords.length} words blocked</p>
                 </div>
                 <button
                   onClick={fetchBannedWords}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition"
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:opacity-80 transition ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
                 >
                   <RefreshCw className="w-4 h-4" />
                   Refresh
                 </button>
               </div>
+              <div className={`px-6 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={bannedWordSearch}
+                    onChange={(e) => setBannedWordSearch(e.target.value)}
+                    placeholder="Search banned words..."
+                    className={`w-full pl-9 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm ${inputClass}`}
+                  />
+                </div>
+              </div>
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                  <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} sticky top-0`}>
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Word</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Reason</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Added</th>
-                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Word</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Reason</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Added</th>
+                      <th className={`text-right px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {bannedWords.length === 0 ? (
+                    {filteredBannedWords.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                          No banned words yet
+                        <td colSpan={4} className={`px-6 py-8 text-center ${mutedClass}`}>
+                          {bannedWordSearch ? 'No matching words' : 'No banned words yet'}
                         </td>
                       </tr>
                     ) : (
-                      bannedWords.map((word) => (
-                        <tr key={word.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="px-6 py-3 font-mono text-sm text-gray-800">{word.word}</td>
-                          <td className="px-6 py-3 text-sm text-gray-500">{word.reason || '-'}</td>
-                          <td className="px-6 py-3 text-sm text-gray-500">
+                      filteredBannedWords.map((word) => (
+                        <tr key={word.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                          <td className={`px-6 py-3 font-mono text-sm ${textClass}`}>{word.word}</td>
+                          <td className={`px-6 py-3 text-sm ${mutedClass}`}>{word.reason || '-'}</td>
+                          <td className={`px-6 py-3 text-sm ${mutedClass}`}>
                             {new Date(word.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-3 text-right">
                             <button
                               onClick={() => handleDeleteBannedWord(word.id)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                              className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1050,12 +928,15 @@ const Admin = () => {
           </div>
         )}
 
+        {/* IP Blocking Tab */}
+        {activeTab === "ip-blocking" && <IPBlockingTab darkMode={darkMode} />}
+
         {/* Admin Users Tab */}
         {activeTab === "admins" && (
           <div className="space-y-6">
             {/* Add New Admin */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <div className={`rounded-xl shadow-sm border p-6 ${cardClass}`}>
+              <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${textClass}`}>
                 <UserPlus className="w-5 h-5" />
                 Add Admin User
               </h2>
@@ -1065,12 +946,12 @@ const Admin = () => {
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                   placeholder="User email address"
-                  className="flex-1 min-w-64 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className={`flex-1 min-w-64 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${inputClass}`}
                 />
                 <select
                   value={newAdminRole}
                   onChange={(e) => setNewAdminRole(e.target.value as "admin" | "moderator")}
-                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${inputClass}`}
                 >
                   <option value="admin">Admin</option>
                   <option value="moderator">Moderator</option>
@@ -1085,25 +966,25 @@ const Admin = () => {
                 </button>
               </div>
               {adminError && (
-                <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800">
                   {adminError}
                 </div>
               )}
-              <p className="mt-3 text-sm text-gray-500">
+              <p className={`mt-3 text-sm ${mutedClass}`}>
                 The user must have already signed up before you can add them as an admin.
               </p>
             </div>
 
             {/* Admin Users List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+              <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800">Admin Users</h2>
-                  <p className="text-sm text-gray-500">{adminUsers.length} users with elevated privileges</p>
+                  <h2 className={`text-lg font-semibold ${textClass}`}>Admin Users</h2>
+                  <p className={`text-sm ${mutedClass}`}>{adminUsers.length} users with elevated privileges</p>
                 </div>
                 <button
                   onClick={fetchAdminUsers}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition"
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg hover:opacity-80 transition ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
                 >
                   <RefreshCw className="w-4 h-4" />
                   Refresh
@@ -1111,49 +992,49 @@ const Admin = () => {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Email</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Role</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Added</th>
-                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Email</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Role</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Added</th>
+                      <th className={`text-right px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {adminUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan={4} className={`px-6 py-8 text-center ${mutedClass}`}>
                           No admin users found
                         </td>
                       </tr>
                     ) : (
                       adminUsers.map((adminUser) => (
-                        <tr key={adminUser.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="px-6 py-3 text-sm text-gray-800">{adminUser.email}</td>
+                        <tr key={adminUser.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                          <td className={`px-6 py-3 text-sm ${textClass}`}>{adminUser.email}</td>
                           <td className="px-6 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                               adminUser.role === 'admin'
-                                ? 'bg-purple-100 text-purple-700'
-                                : 'bg-blue-100 text-blue-700'
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                             }`}>
                               {adminUser.role}
                             </span>
                           </td>
-                          <td className="px-6 py-3 text-sm text-gray-500">
+                          <td className={`px-6 py-3 text-sm ${mutedClass}`}>
                             {new Date(adminUser.created_at).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-3 text-right">
                             {adminUser.user_id !== user?.id && (
                               <button
                                 onClick={() => handleRemoveAdmin(adminUser.user_id, adminUser.role)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition ml-auto"
+                                className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition ml-auto"
                               >
                                 <UserMinus className="w-4 h-4" />
                                 Remove
                               </button>
                             )}
                             {adminUser.user_id === user?.id && (
-                              <span className="text-sm text-gray-400">(You)</span>
+                              <span className={`text-sm ${mutedClass}`}>(You)</span>
                             )}
                           </td>
                         </tr>
@@ -1170,72 +1051,89 @@ const Admin = () => {
         {activeTab === "logs" && (
           <div className="space-y-6">
             <div className="flex flex-wrap gap-2 mb-6">
-              {['all', 'approve_reservation', 'deny_reservation', 'add_banned_word', 'add_role', 'remove_role'].map((action) => (
+              {['all', 'approve_reservation', 'deny_reservation', 'add_banned_word', 'add_role', 'remove_role', 'block_ip', 'export_data'].map((action) => (
                 <button
                   key={action}
                   onClick={() => setLogFilter(action)}
                   className={`px-4 py-2 rounded-lg font-medium transition text-sm ${
                     logFilter === action
                       ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                      : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100'
                   }`}
                 >
                   {action === 'all' ? 'All' : getActionLabel(action)}
                 </button>
               ))}
-              <button
-                onClick={fetchActivityLogs}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
+              <div className="flex items-center gap-2 ml-auto">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={logSearch}
+                    onChange={(e) => setLogSearch(e.target.value)}
+                    placeholder="Search logs..."
+                    className={`pl-9 pr-4 py-2 w-48 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm ${inputClass}`}
+                  />
+                </div>
+                <ExportButton type="logs" darkMode={darkMode} />
+                <button
+                  onClick={fetchActivityLogs}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100'}`}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-800">Activity History</h2>
-                <p className="text-sm text-gray-500">Recent admin actions (last 100)</p>
+            <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+              <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <h2 className={`text-lg font-semibold ${textClass}`}>Activity History</h2>
+                <p className={`text-sm ${mutedClass}`}>Recent admin actions (last 100)</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                     <tr>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Action</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Admin</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Details</th>
-                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Date</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Action</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Admin</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Details</th>
+                      <th className={`text-left px-6 py-3 text-xs font-semibold uppercase ${mutedClass}`}>Date</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {activityLogs.length === 0 ? (
+                    {filteredLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                          No activity logs found
+                        <td colSpan={4} className={`px-6 py-8 text-center ${mutedClass}`}>
+                          {logSearch ? 'No matching logs' : 'No activity logs found'}
                         </td>
                       </tr>
                     ) : (
-                      activityLogs.map((log) => (
-                        <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      filteredLogs.map((log) => (
+                        <tr key={log.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
                           <td className="px-6 py-3">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              log.action.includes('approve') ? 'bg-green-100 text-green-700' :
-                              log.action.includes('deny') ? 'bg-red-100 text-red-700' :
-                              log.action.includes('add') ? 'bg-blue-100 text-blue-700' :
-                              log.action.includes('remove') || log.action.includes('delete') ? 'bg-orange-100 text-orange-700' :
-                              'bg-gray-100 text-gray-700'
+                              log.action.includes('approve') ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                              log.action.includes('deny') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                              log.action.includes('add') ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                              log.action.includes('remove') || log.action.includes('delete') ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                              log.action.includes('block') ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                              log.action.includes('export') ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                              darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
                             }`}>
                               {getActionLabel(log.action)}
                             </span>
                           </td>
-                          <td className="px-6 py-3 text-sm text-gray-600">{log.admin_email || 'Unknown'}</td>
-                          <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
+                          <td className={`px-6 py-3 text-sm ${mutedClass}`}>{log.admin_email || 'Unknown'}</td>
+                          <td className={`px-6 py-3 text-sm ${mutedClass} max-w-xs truncate`}>
                             {log.details?.username && <span className="font-mono">@{String(log.details.username)}</span>}
                             {log.details?.email && <span>{String(log.details.email)}</span>}
                             {log.details?.word && <span className="font-mono">{String(log.details.word)}</span>}
                             {log.details?.role && <span className="capitalize">{String(log.details.role)}</span>}
+                            {log.details?.ip_address && <span className="font-mono">{String(log.details.ip_address)}</span>}
+                            {log.details?.type && <span className="capitalize">{String(log.details.type)}</span>}
                           </td>
-                          <td className="px-6 py-3 text-sm text-gray-500">
+                          <td className={`px-6 py-3 text-sm ${mutedClass}`}>
                             {new Date(log.created_at).toLocaleString()}
                           </td>
                         </tr>
@@ -1247,21 +1145,24 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {/* Settings Tab */}
+        {activeTab === "settings" && <SettingsTab darkMode={darkMode} />}
       </main>
 
       {/* Denial Modal */}
       {showDenialModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Deny Reservation</h2>
-            <p className="text-gray-600 mb-4">
+          <div className={`rounded-2xl p-6 max-w-md w-full ${cardClass}`}>
+            <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Deny Reservation</h2>
+            <p className={`mb-4 ${mutedClass}`}>
               Optionally provide a reason for denial. This will be included in the email to the user.
             </p>
             <textarea
               value={denialReason}
               onChange={(e) => setDenialReason(e.target.value)}
               placeholder="Reason for denial (optional)"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none ${inputClass}`}
               rows={3}
             />
             <div className="flex gap-3 mt-4">
@@ -1270,7 +1171,7 @@ const Admin = () => {
                   setShowDenialModal(null);
                   setDenialReason("");
                 }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                className={`flex-1 px-4 py-2 rounded-lg transition ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               >
                 Cancel
               </button>
@@ -1289,16 +1190,16 @@ const Admin = () => {
       {/* Bulk Denial Modal */}
       {showBulkDenialModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Deny {selectedReservations.size} Reservations</h2>
-            <p className="text-gray-600 mb-4">
+          <div className={`rounded-2xl p-6 max-w-md w-full ${cardClass}`}>
+            <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Deny {selectedReservations.size} Reservations</h2>
+            <p className={`mb-4 ${mutedClass}`}>
               Optionally provide a reason for denial. This will be included in emails to all users.
             </p>
             <textarea
               value={denialReason}
               onChange={(e) => setDenialReason(e.target.value)}
               placeholder="Reason for denial (optional)"
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none ${inputClass}`}
               rows={3}
             />
             <div className="flex gap-3 mt-4">
@@ -1307,7 +1208,7 @@ const Admin = () => {
                   setShowBulkDenialModal(false);
                   setDenialReason("");
                 }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                className={`flex-1 px-4 py-2 rounded-lg transition ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               >
                 Cancel
               </button>
