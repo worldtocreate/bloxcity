@@ -69,7 +69,6 @@ export default function ForumCategory() {
       .order('is_pinned', { ascending: false })
       .order('last_post_at', { ascending: false });
 
-    // Fetch authors for each thread
     if (threadData) {
       const threadsWithAuthors = await Promise.all(
         threadData.map(async (thread) => {
@@ -96,10 +95,10 @@ export default function ForumCategory() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-800 rounded w-1/3" />
-        <div className="h-4 bg-gray-800 rounded w-1/2" />
+        <div className="h-8 bg-[hsl(var(--bc-bg-card))] rounded w-1/3 border border-[hsl(var(--bc-border))]" />
+        <div className="h-4 bg-[hsl(var(--bc-bg-card))] rounded w-1/2 border border-[hsl(var(--bc-border))]" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-20 bg-gray-800 rounded-xl" />
+          <div key={i} className="h-20 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
         ))}
       </div>
     );
@@ -112,23 +111,23 @@ export default function ForumCategory() {
         <div>
           <Link 
             to="/forum" 
-            className="flex items-center gap-1 text-gray-400 hover:text-white transition mb-2"
+            className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-2"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Forums
           </Link>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2">
             {category?.name}
             {category?.is_admin_only && (
-              <Shield className="w-5 h-5 text-yellow-400" />
+              <Shield className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
             )}
           </h1>
-          <p className="text-gray-400">{category?.description}</p>
+          <p className="text-[hsl(var(--bc-text-muted))]">{category?.description}</p>
         </div>
         {canCreateThread && (
           <Link
             to={`/forum/category/${slug}/new`}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition font-medium"
+            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
           >
             <Plus className="w-4 h-4" />
             New Thread
@@ -139,16 +138,16 @@ export default function ForumCategory() {
       {/* Threads */}
       <div className="space-y-2">
         {threads.length === 0 ? (
-          <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-12 text-center">
-            <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No threads yet. Be the first to create one!</p>
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-12 text-center">
+            <MessageSquare className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
+            <p className="text-[hsl(var(--bc-text-muted))]">No threads yet. Be the first to create one!</p>
           </div>
         ) : (
           threads.map((thread) => (
             <Link
               key={thread.id}
               to={`/forum/thread/${thread.id}`}
-              className="block bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl p-4 transition group"
+              className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
             >
               <div className="flex items-center gap-4">
                 {/* Author Avatar */}
@@ -160,7 +159,7 @@ export default function ForumCategory() {
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
                       <User className="w-5 h-5 text-white" />
                     </div>
                   )}
@@ -169,13 +168,13 @@ export default function ForumCategory() {
                 {/* Thread Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    {thread.is_pinned && <Pin className="w-4 h-4 text-yellow-400" />}
-                    {thread.is_locked && <Lock className="w-4 h-4 text-red-400" />}
-                    <h3 className="text-white font-medium group-hover:text-blue-400 transition truncate">
+                    {thread.is_pinned && <Pin className="w-4 h-4 text-[hsl(var(--bc-accent))]" />}
+                    {thread.is_locked && <Lock className="w-4 h-4 text-[hsl(var(--bc-secondary))]" />}
+                    <h3 className="text-[hsl(var(--bc-text))] font-medium group-hover:text-[hsl(var(--bc-primary))] transition truncate">
                       {thread.title}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-gray-400">
+                  <div className="flex items-center gap-3 text-sm text-[hsl(var(--bc-text-muted))]">
                     <span>{thread.author?.username}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1">
@@ -187,11 +186,11 @@ export default function ForumCategory() {
 
                 {/* Stats */}
                 <div className="text-right hidden sm:block">
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm text-[hsl(var(--bc-text-muted))]">
                     {thread.reply_count} replies • {thread.view_count} views
                   </div>
                   {thread.last_poster && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-[hsl(var(--bc-text-muted))]">
                       Last: {thread.last_poster.username}
                     </div>
                   )}
