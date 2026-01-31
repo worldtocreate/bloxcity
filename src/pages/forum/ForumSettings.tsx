@@ -56,11 +56,12 @@ function maskEmail(email: string): string {
 
 export default function ForumSettings() {
   const navigate = useNavigate();
-  const { user, forumUser, isAdmin, loading } = useOutletContext<{
+  const { user, forumUser, isAdmin, loading, emailVerified } = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
     isAdmin: boolean;
     loading?: boolean;
+    emailVerified?: boolean;
   }>();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -484,7 +485,14 @@ export default function ForumSettings() {
             </div>
             <div>
               <label className="text-sm text-[hsl(var(--bc-text-muted))]">Email</label>
-              <div className="text-[hsl(var(--bc-text))]">{maskEmail(user.email || '')}</div>
+              <div className="text-[hsl(var(--bc-text))] flex items-center gap-2">
+                {maskEmail(user.email || '')}
+                {emailVerified ? (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Verified</span>
+                ) : (
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Not Verified</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -542,7 +550,7 @@ export default function ForumSettings() {
       )}
 
       {/* Two-Factor Authentication */}
-      <TwoFactorSetup forumUserId={forumUser.id} />
+      <TwoFactorSetup forumUserId={forumUser.id} emailVerified={emailVerified} />
 
       {/* Encryption PIN */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">

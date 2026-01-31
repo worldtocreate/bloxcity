@@ -25,6 +25,7 @@ export function useForumAuth() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +46,9 @@ export function useForumAuth() {
         .single();
       
       if (isMounted) setForumUser(forumData as ForumUser | null);
+      
+      // Set email verification status
+      if (isMounted) setEmailVerified(!!authUser.email_confirmed_at);
     };
 
     const initializeAuth = async () => {
@@ -53,6 +57,9 @@ export function useForumAuth() {
         
         if (isMounted) {
           setUser(session?.user ?? null);
+          if (session?.user) {
+            setEmailVerified(!!session.user.email_confirmed_at);
+          }
         }
 
         if (session?.user) {
@@ -72,6 +79,11 @@ export function useForumAuth() {
       if (!isMounted) return;
       
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setEmailVerified(!!session.user.email_confirmed_at);
+      } else {
+        setEmailVerified(null);
+      }
       
       if (session?.user) {
         // Don't await - let it update in background
@@ -98,5 +110,13 @@ export function useForumAuth() {
     setForumUser(data as ForumUser | null);
   };
 
-  return { user, forumUser, isAdmin, loading, refreshForumUser };
+  const refreshEmailVerification = async () => {
+    const { data: { user: freshUser } } = await supabase.auth.getUser();
+    if (freshUser) {
+      setUser(freshUser);
+      setEmailVerified(!!freshUser.email_confirmed_at);
+    }
+  };
+
+  return { user, forumUser, isAdmin, loading, emailVerified, refreshForumUser, refreshEmailVerification };
 }
