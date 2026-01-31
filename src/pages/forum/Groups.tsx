@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Search, Loader2, Users, Plus, Shield, CheckCircle, 
-  ChevronLeft, ChevronRight, Crown 
+  ChevronLeft, ChevronRight, Crown, Upload, X
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -46,6 +46,9 @@ export default function Groups() {
   const [creating, setCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
+  const [groupIconFile, setGroupIconFile] = useState<File | null>(null);
+  const [groupIconPreview, setGroupIconPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -111,6 +114,20 @@ export default function Groups() {
     }
   };
 
+  const handleIconSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Image must be less than 2MB');
+        return;
+      }
+      setGroupIconFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setGroupIconPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!forumUser || !newGroupName.trim()) return;
     
@@ -121,7 +138,7 @@ export default function Groups() {
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Create the group
+      // Create the group first
       const { data: group, error } = await supabase
         .from('forum_groups')
         .insert({
@@ -143,6 +160,31 @@ export default function Groups() {
         return;
       }
 
+      // Upload icon if selected - submit for admin review
+      if (groupIconFile) {
+        const fileExt = groupIconFile.name.split('.').pop();
+        const filePath = `group-icons/${group.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('forum-avatars')
+          .upload(filePath, groupIconFile);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('forum-avatars')
+            .getPublicUrl(filePath);
+
+          // Submit for review
+          await supabase
+            .from('forum_group_media_requests')
+            .insert({
+              group_id: group.id,
+              media_type: 'icon',
+              image_url: publicUrl
+            });
+        }
+      }
+
       // Create default "Member" role
       await supabase
         .from('forum_group_roles')
@@ -161,10 +203,12 @@ export default function Groups() {
           forum_user_id: forumUser.id
         });
 
-      toast.success('Group created! Pending review for logo.');
+      toast.success(groupIconFile ? 'Group created! Icon pending review.' : 'Group created!');
       setShowCreateModal(false);
       setNewGroupName('');
       setNewGroupDescription('');
+      setGroupIconFile(null);
+      setGroupIconPreview(null);
       navigate(`/group/${slug}`);
     } catch {
       toast.error('Failed to create group');
@@ -283,10 +327,55 @@ export default function Groups() {
       {/* Create Group Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Create New Group</h2>
             
             <div className="space-y-4">
+              {/* Group Icon Upload */}
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Group Icon
+                </label>
+                <div className="flex items-center gap-4">
+                  {groupIconPreview ? (
+                    <div className="relative">
+                      <img 
+                        src={groupIconPreview} 
+                        alt="Preview" 
+                        className="w-20 h-20 rounded-xl object-cover"
+                      />
+                      <button
+                        onClick={() => {
+                          setGroupIconFile(null);
+                          setGroupIconPreview(null);
+                        }}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-20 h-20 rounded-xl border-2 border-dashed border-[hsl(var(--bc-border))] flex flex-col items-center justify-center gap-1 hover:border-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-bg-light))] transition"
+                    >
+                      <Upload className="w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                      <span className="text-xs text-[hsl(var(--bc-text-muted))]">Upload</span>
+                    </button>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleIconSelect}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                    Optional. Max 2MB. Requires admin approval.
+                  </p>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
                   Group Name
@@ -323,7 +412,11 @@ export default function Groups() {
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setGroupIconFile(null);
+                    setGroupIconPreview(null);
+                  }}
                   className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
                 >
                   Cancel

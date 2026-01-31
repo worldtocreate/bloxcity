@@ -3,11 +3,12 @@ import { useParams, useOutletContext, useNavigate, Link } from 'react-router-dom
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, Settings, Loader2, Save, Users, Shield, 
-  Trash2, Crown, Plus, X, AlertTriangle
+  Trash2, Crown, Plus, X, AlertTriangle, UserCheck, Edit2
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TwoFactorVerify from '@/components/forum/TwoFactorVerify';
 
 interface GroupData {
   id: string;
@@ -30,6 +31,18 @@ interface GroupRole {
   rank: number;
   is_default: boolean;
   permissions: any;
+}
+
+interface GroupMember {
+  id: string;
+  forum_user_id: string;
+  joined_at: string;
+  role_id: string | null;
+  user: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  };
 }
 
 interface JoinRequest {
@@ -62,6 +75,7 @@ export default function GroupSettings() {
 
   const [group, setGroup] = useState<GroupData | null>(null);
   const [roles, setRoles] = useState<GroupRole[]>([]);
+  const [members, setMembers] = useState<GroupMember[]>([]);
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const [blockedWords, setBlockedWords] = useState<BlockedWord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,11 +88,46 @@ export default function GroupSettings() {
   const [requireApproval, setRequireApproval] = useState(false);
   const [newBlockedWord, setNewBlockedWord] = useState('');
 
+  // Role creation
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleColor, setNewRoleColor] = useState('#6b7280');
+  const [newRoleRank, setNewRoleRank] = useState(1);
+  const [creatingRole, setCreatingRole] = useState(false);
+
+  // Member role assignment
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<GroupMember | null>(null);
+  const [assigningRole, setAssigningRole] = useState(false);
+
+  // Ownership transfer
+  const [showOwnershipModal, setShowOwnershipModal] = useState(false);
+  const [selectedNewOwner, setSelectedNewOwner] = useState<GroupMember | null>(null);
+  const [show2FAVerify, setShow2FAVerify] = useState(false);
+  const [has2FAEnabled, setHas2FAEnabled] = useState(false);
+  const [transferring, setTransferring] = useState(false);
+
   useEffect(() => {
     if (slug) {
       fetchGroup();
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (forumUser) {
+      check2FAStatus();
+    }
+  }, [forumUser]);
+
+  const check2FAStatus = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('forum_2fa_settings')
+      .select('is_enabled')
+      .eq('forum_user_id', forumUser.id)
+      .single();
+    setHas2FAEnabled(data?.is_enabled ?? false);
+  };
 
   const fetchGroup = async () => {
     setLoading(true);
@@ -114,6 +163,20 @@ export default function GroupSettings() {
 
     if (rolesData) {
       setRoles(rolesData);
+    }
+
+    // Fetch members
+    const { data: membersData } = await supabase
+      .from('forum_group_members')
+      .select(`
+        id, forum_user_id, joined_at, role_id,
+        user:forum_user_id (id, username, avatar_url)
+      `)
+      .eq('group_id', groupData.id)
+      .order('joined_at', { ascending: true });
+
+    if (membersData) {
+      setMembers(membersData as unknown as GroupMember[]);
     }
 
     // Fetch pending join requests
@@ -271,6 +334,117 @@ export default function GroupSettings() {
     }
   };
 
+  const handleCreateRole = async () => {
+    if (!group || !newRoleName.trim()) return;
+
+    setCreatingRole(true);
+    const { error } = await supabase
+      .from('forum_group_roles')
+      .insert({
+        group_id: group.id,
+        name: newRoleName.trim(),
+        color: newRoleColor,
+        rank: newRoleRank,
+        is_default: false
+      });
+
+    if (error) {
+      toast.error('Failed to create role');
+    } else {
+      toast.success('Role created!');
+      setShowRoleModal(false);
+      setNewRoleName('');
+      setNewRoleColor('#6b7280');
+      setNewRoleRank(1);
+      fetchGroup();
+    }
+    setCreatingRole(false);
+  };
+
+  const handleDeleteRole = async (roleId: string) => {
+    if (!confirm('Delete this role? Members will be moved to no role.')) return;
+
+    const { error } = await supabase
+      .from('forum_group_roles')
+      .delete()
+      .eq('id', roleId);
+
+    if (error) {
+      toast.error('Failed to delete role');
+    } else {
+      toast.success('Role deleted');
+      fetchGroup();
+    }
+  };
+
+  const handleAssignRole = async (roleId: string | null) => {
+    if (!selectedMember || !group) return;
+
+    setAssigningRole(true);
+    const { error } = await supabase
+      .from('forum_group_members')
+      .update({ role_id: roleId })
+      .eq('id', selectedMember.id);
+
+    if (error) {
+      toast.error('Failed to assign role');
+    } else {
+      toast.success('Role assigned!');
+      setShowMemberModal(false);
+      setSelectedMember(null);
+      fetchGroup();
+    }
+    setAssigningRole(false);
+  };
+
+  const handleOwnershipTransfer = async () => {
+    if (!selectedNewOwner || !group || !forumUser) return;
+
+    if (!has2FAEnabled) {
+      toast.error('You must enable 2FA to transfer ownership');
+      return;
+    }
+
+    setShow2FAVerify(true);
+  };
+
+  const handle2FAVerified = async () => {
+    if (!selectedNewOwner || !group) return;
+
+    setTransferring(true);
+    try {
+      // Update group owner
+      const { error } = await supabase
+        .from('forum_groups')
+        .update({ owner_id: selectedNewOwner.forum_user_id })
+        .eq('id', group.id);
+
+      if (error) {
+        toast.error('Failed to transfer ownership');
+      } else {
+        // Log the action
+        await supabase
+          .from('forum_group_audit_logs')
+          .insert({
+            group_id: group.id,
+            actor_id: forumUser?.id,
+            action: 'ownership_transfer',
+            target_id: selectedNewOwner.forum_user_id,
+            target_type: 'member',
+            details: { new_owner_username: selectedNewOwner.user.username }
+          });
+
+        toast.success('Ownership transferred!');
+        navigate(`/group/${slug}`);
+      }
+    } catch {
+      toast.error('Failed to transfer ownership');
+    }
+    setTransferring(false);
+    setShow2FAVerify(false);
+    setShowOwnershipModal(false);
+  };
+
   const handleDeleteGroup = async () => {
     if (!group || !isOwner) return;
 
@@ -309,6 +483,11 @@ export default function GroupSettings() {
     );
   }
 
+  const getMemberRole = (roleId: string | null) => {
+    if (!roleId) return null;
+    return roles.find(r => r.id === roleId);
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -326,7 +505,7 @@ export default function GroupSettings() {
       </div>
 
       <Tabs defaultValue="general">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="general" className="flex items-center gap-1">
             <Settings className="w-4 h-4" />
             General
@@ -335,14 +514,24 @@ export default function GroupSettings() {
             <Shield className="w-4 h-4" />
             Roles
           </TabsTrigger>
-          <TabsTrigger value="requests" className="flex items-center gap-1">
+          <TabsTrigger value="members" className="flex items-center gap-1">
             <Users className="w-4 h-4" />
+            Members
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="flex items-center gap-1">
+            <UserCheck className="w-4 h-4" />
             Requests ({joinRequests.length})
           </TabsTrigger>
           <TabsTrigger value="moderation" className="flex items-center gap-1">
             <AlertTriangle className="w-4 h-4" />
             Moderation
           </TabsTrigger>
+          {isOwner && (
+            <TabsTrigger value="ownership" className="flex items-center gap-1">
+              <Crown className="w-4 h-4" />
+              Ownership
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* General Settings */}
@@ -406,9 +595,9 @@ export default function GroupSettings() {
 
           {/* Danger Zone */}
           {isOwner && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-              <h3 className="font-semibold text-red-600 mb-2">Danger Zone</h3>
-              <p className="text-sm text-red-600 mb-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+              <h3 className="font-semibold text-red-600 dark:text-red-400 mb-2">Danger Zone</h3>
+              <p className="text-sm text-red-600 dark:text-red-400 mb-4">
                 Deleting your group is permanent and cannot be undone.
               </p>
               <button
@@ -425,10 +614,19 @@ export default function GroupSettings() {
         {/* Roles */}
         <TabsContent value="roles" className="mt-6">
           <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Roles</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Roles</h2>
+              <button
+                onClick={() => setShowRoleModal(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition"
+              >
+                <Plus className="w-4 h-4" />
+                Create Role
+              </button>
+            </div>
             
             {roles.length === 0 ? (
-              <p className="text-[hsl(var(--bc-text-muted))]">No custom roles yet.</p>
+              <p className="text-[hsl(var(--bc-text-muted))]">No roles yet. Create one to organize your members.</p>
             ) : (
               <div className="space-y-2">
                 {roles.map((role) => (
@@ -448,11 +646,77 @@ export default function GroupSettings() {
                         </span>
                       )}
                     </div>
-                    <span className="text-sm text-[hsl(var(--bc-text-muted))]">Rank {role.rank}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-[hsl(var(--bc-text-muted))]">Rank {role.rank}</span>
+                      {!role.is_default && (
+                        <button
+                          onClick={() => handleDeleteRole(role.id)}
+                          className="text-red-500 hover:text-red-600 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+        </TabsContent>
+
+        {/* Members */}
+        <TabsContent value="members" className="mt-6">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">
+              Manage Members ({members.length})
+            </h2>
+            
+            <div className="space-y-2">
+              {members.map((member) => {
+                const memberRole = getMemberRole(member.role_id);
+                const isGroupOwner = member.forum_user_id === group.owner_id;
+                
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      {member.user.avatar_url ? (
+                        <img src={member.user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                          <Users className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-[hsl(var(--bc-text))] flex items-center gap-2">
+                          {member.user.username}
+                          {isGroupOwner && <Crown className="w-4 h-4 text-yellow-500" />}
+                        </p>
+                        {memberRole ? (
+                          <p className="text-sm" style={{ color: memberRole.color }}>{memberRole.name}</p>
+                        ) : (
+                          <p className="text-sm text-[hsl(var(--bc-text-muted))]">No role</p>
+                        )}
+                      </div>
+                    </div>
+                    {!isGroupOwner && (
+                      <button
+                        onClick={() => {
+                          setSelectedMember(member);
+                          setShowMemberModal(true);
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-card))] transition"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Assign Role
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </TabsContent>
 
@@ -554,7 +818,240 @@ export default function GroupSettings() {
             )}
           </div>
         </TabsContent>
+
+        {/* Ownership Transfer */}
+        {isOwner && (
+          <TabsContent value="ownership" className="mt-6">
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Transfer Ownership</h2>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+                Transfer group ownership to another member. This action requires 2FA verification.
+              </p>
+
+              {!has2FAEnabled ? (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    You must enable Two-Factor Authentication before you can transfer ownership.
+                  </p>
+                  <Link
+                    to="/settings"
+                    className="text-sm text-[hsl(var(--bc-primary))] hover:underline mt-2 inline-block"
+                  >
+                    Go to Settings → Security
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowOwnershipModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition"
+                >
+                  <Crown className="w-4 h-4" />
+                  Transfer Ownership
+                </button>
+              )}
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
+
+      {/* Create Role Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Create Role</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Role Name
+                </label>
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value.slice(0, 30))}
+                  placeholder="e.g., Moderator"
+                  className="w-full px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Color
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={newRoleColor}
+                    onChange={(e) => setNewRoleColor(e.target.value)}
+                    className="w-12 h-10 rounded cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={newRoleColor}
+                    onChange={(e) => setNewRoleColor(e.target.value)}
+                    className="flex-1 px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  Rank (higher = more important)
+                </label>
+                <input
+                  type="number"
+                  value={newRoleRank}
+                  onChange={(e) => setNewRoleRank(parseInt(e.target.value) || 0)}
+                  min={0}
+                  max={100}
+                  className="w-full px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRoleModal(false)}
+                  className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateRole}
+                  disabled={creatingRole || !newRoleName.trim()}
+                  className="flex-1 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  {creatingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Role Modal */}
+      {showMemberModal && selectedMember && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">
+              Assign Role to {selectedMember.user.username}
+            </h2>
+            
+            <div className="space-y-2 mb-4">
+              <button
+                onClick={() => handleAssignRole(null)}
+                disabled={assigningRole}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition ${
+                  !selectedMember.role_id 
+                    ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10' 
+                    : 'border-[hsl(var(--bc-border))] hover:bg-[hsl(var(--bc-bg-light))]'
+                }`}
+              >
+                <div className="w-4 h-4 rounded-full bg-gray-400" />
+                <span className="text-[hsl(var(--bc-text))]">No Role</span>
+              </button>
+              
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleAssignRole(role.id)}
+                  disabled={assigningRole}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition ${
+                    selectedMember.role_id === role.id 
+                      ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10' 
+                      : 'border-[hsl(var(--bc-border))] hover:bg-[hsl(var(--bc-bg-light))]'
+                  }`}
+                >
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: role.color }} />
+                  <span className="text-[hsl(var(--bc-text))]">{role.name}</span>
+                  {role.is_default && (
+                    <span className="text-xs text-[hsl(var(--bc-text-muted))]">(Default)</span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowMemberModal(false);
+                setSelectedMember(null);
+              }}
+              className="w-full px-4 py-2 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Ownership Modal */}
+      {showOwnershipModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Transfer Ownership</h2>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+              Select a member to transfer ownership to. This cannot be undone.
+            </p>
+            
+            <div className="space-y-2 mb-4">
+              {members.filter(m => m.forum_user_id !== group.owner_id).map((member) => (
+                <button
+                  key={member.id}
+                  onClick={() => setSelectedNewOwner(member)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition ${
+                    selectedNewOwner?.id === member.id 
+                      ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10' 
+                      : 'border-[hsl(var(--bc-border))] hover:bg-[hsl(var(--bc-bg-light))]'
+                  }`}
+                >
+                  {member.user.avatar_url ? (
+                    <img src={member.user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                  )}
+                  <span className="text-[hsl(var(--bc-text))]">{member.user.username}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowOwnershipModal(false);
+                  setSelectedNewOwner(null);
+                }}
+                className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleOwnershipTransfer}
+                disabled={!selectedNewOwner || transferring}
+                className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg transition flex items-center justify-center gap-2"
+              >
+                {transferring ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crown className="w-4 h-4" />}
+                Transfer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2FA Verification Modal */}
+      {show2FAVerify && forumUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md">
+            <TwoFactorVerify
+              email={context?.user?.email || ''}
+              method="totp"
+              onVerified={handle2FAVerified}
+              onCancel={() => setShow2FAVerify(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
