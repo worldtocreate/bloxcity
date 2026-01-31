@@ -16,6 +16,18 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@bloxcitynet" />
     <meta name="twitter:image" content="https://bloxcity.net/favicon.jpg" />
+    
+    <!-- Prevent theme flash - apply theme before React loads -->
+    <script>
+      (function() {
+        var theme = localStorage.getItem('bloxcity-theme');
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
   </head>
 
   <body>
