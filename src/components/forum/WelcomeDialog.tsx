@@ -11,8 +11,6 @@ import { Button } from '@/components/ui/button';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import { Sparkles } from 'lucide-react';
 
-const WELCOME_SHOWN_KEY = 'bloxcity_forum_welcome_shown';
-
 interface WelcomeDialogProps {
   isLoggedIn: boolean;
 }
@@ -21,17 +19,15 @@ export default function WelcomeDialog({ isLoggedIn }: WelcomeDialogProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    // Only show for non-logged-in users who haven't seen it
+    // Show for non-logged-in users every time they visit
     if (!isLoggedIn) {
-      const hasSeenWelcome = localStorage.getItem(WELCOME_SHOWN_KEY);
-      if (!hasSeenWelcome) {
-        setOpen(true);
-      }
+      setOpen(true);
+    } else {
+      setOpen(false);
     }
   }, [isLoggedIn]);
 
   const handleClose = () => {
-    localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
     setOpen(false);
   };
 

@@ -315,7 +315,7 @@ export default function ForumUserProfile() {
                 )}
                 {profile.social_x && (
                   <a
-                    href={profile.social_x.startsWith('http') ? profile.social_x : `https://${profile.social_x}`}
+                    href={`https://x.com/${profile.social_x}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-sm text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] px-3 py-1.5 rounded-full hover:bg-[hsl(var(--bc-border))] transition"
@@ -323,6 +323,7 @@ export default function ForumUserProfile() {
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                     </svg>
+                    @{profile.social_x}
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 )}
