@@ -9,7 +9,11 @@ interface MaintenanceSettings {
   message: string;
 }
 
-export default function MaintenanceTab() {
+interface MaintenanceTabProps {
+  darkMode: boolean;
+}
+
+export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   const [settings, setSettings] = useState<MaintenanceSettings>({
     enabled: false,
     password: 'admin123',
@@ -86,31 +90,36 @@ export default function MaintenanceTab() {
     );
   }
 
+  const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900';
+  const textClass = darkMode ? 'text-white' : 'text-gray-800';
+  const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-500';
+
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg border p-6 space-y-6">
+      <div className={`rounded-lg border p-6 space-y-6 ${cardClass}`}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-amber-900/30' : 'bg-amber-100'}`}>
             <Wrench className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Maintenance Mode</h2>
-            <p className="text-gray-600">Enable maintenance mode to restrict access to the site</p>
+            <h2 className={`text-xl font-semibold ${textClass}`}>Maintenance Mode</h2>
+            <p className={mutedClass}>Enable maintenance mode to restrict access to the site</p>
           </div>
         </div>
 
         {/* Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className={`flex items-center justify-between p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
           <div>
-            <div className="font-medium text-gray-900">Maintenance Mode</div>
-            <div className="text-sm text-gray-600">
+            <div className={`font-medium ${textClass}`}>Maintenance Mode</div>
+            <div className={`text-sm ${mutedClass}`}>
               {settings.enabled ? 'Site is currently in maintenance mode' : 'Site is accessible to all users'}
             </div>
           </div>
           <button
             onClick={() => setSettings({ ...settings, enabled: !settings.enabled })}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              settings.enabled ? 'bg-amber-600' : 'bg-gray-300'
+              settings.enabled ? 'bg-amber-600' : darkMode ? 'bg-gray-500' : 'bg-gray-300'
             }`}
           >
             <span
@@ -123,21 +132,21 @@ export default function MaintenanceTab() {
 
         {/* Message */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>
             Maintenance Message
           </label>
           <textarea
             value={settings.message}
             onChange={(e) => setSettings({ ...settings, message: e.target.value })}
             rows={3}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${inputClass}`}
             placeholder="Message to display during maintenance..."
           />
         </div>
 
         {/* Password */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>
             Staff Bypass Password
           </label>
           <div className="relative">
@@ -145,18 +154,18 @@ export default function MaintenanceTab() {
               type={showPassword ? 'text' : 'password'}
               value={settings.password}
               onChange={(e) => setSettings({ ...settings, password: e.target.value })}
-              className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${inputClass}`}
               placeholder="Password to bypass maintenance..."
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className={`absolute right-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className={`text-sm mt-1 ${mutedClass}`}>
             Staff can enter this password on the maintenance page to access the site
           </p>
         </div>
