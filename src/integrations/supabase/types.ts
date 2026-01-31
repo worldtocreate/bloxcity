@@ -259,6 +259,110 @@ export type Database = {
           },
         ]
       }
+      forum_ad_clicks: {
+        Row: {
+          ad_id: string
+          clicker_forum_user_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          ad_id: string
+          clicker_forum_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          ad_id?: string
+          clicker_forum_user_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_ad_clicks_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "forum_ads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_ad_clicks_clicker_forum_user_id_fkey"
+            columns: ["clicker_forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_ads: {
+        Row: {
+          click_count: number | null
+          coins_earned: number | null
+          created_at: string
+          denial_reason: string | null
+          description: string | null
+          destination_url: string
+          expires_at: string | null
+          forum_user_id: string
+          id: string
+          image_url: string
+          last_ad_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          click_count?: number | null
+          coins_earned?: number | null
+          created_at?: string
+          denial_reason?: string | null
+          description?: string | null
+          destination_url: string
+          expires_at?: string | null
+          forum_user_id: string
+          id?: string
+          image_url: string
+          last_ad_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          click_count?: number | null
+          coins_earned?: number | null
+          created_at?: string
+          denial_reason?: string | null
+          description?: string | null
+          destination_url?: string
+          expires_at?: string | null
+          forum_user_id?: string
+          id?: string
+          image_url?: string
+          last_ad_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_ads_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_avatar_requests: {
         Row: {
           created_at: string
@@ -742,6 +846,45 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_profile_views: {
+        Row: {
+          created_at: string
+          id: string
+          viewed_user_id: string
+          viewer_ip: string | null
+          viewer_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          viewed_user_id: string
+          viewer_ip?: string | null
+          viewer_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          viewed_user_id?: string
+          viewer_ip?: string | null
+          viewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_profile_views_viewed_user_id_fkey"
+            columns: ["viewed_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_profile_views_viewer_user_id_fkey"
+            columns: ["viewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
         ]
@@ -1325,7 +1468,12 @@ export type Database = {
       }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
+      can_submit_ad: { Args: never; Returns: boolean }
       claim_daily_coins: { Args: never; Returns: number }
+      click_ad: {
+        Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
+        Returns: Json
+      }
       get_reservation_count: { Args: never; Returns: number }
       has_pending_verification_request: {
         Args: { _forum_user_id: string }

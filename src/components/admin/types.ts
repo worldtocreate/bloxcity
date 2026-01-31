@@ -87,5 +87,6 @@ export type AdminTab =
   | "user-mgmt"
   | "updates"
   | "reports"
+  | "ads"
   | "maintenance"
   | "settings";

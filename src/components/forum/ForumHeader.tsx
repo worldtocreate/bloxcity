@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone, Gamepad2, ShoppingBag, Users, ArrowLeftRight, LayoutDashboard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -41,6 +41,38 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
           </Link>
           
           <Link 
+            to="/games"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <Gamepad2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Games</span>
+          </Link>
+          
+          <Link 
+            to="/market"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span className="hidden sm:inline">Market</span>
+          </Link>
+          
+          <Link 
+            to="/character"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <Users className="w-4 h-4" />
+            <span className="hidden sm:inline">Character</span>
+          </Link>
+          
+          <Link 
+            to="/trading"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+            <span className="hidden sm:inline">Trading</span>
+          </Link>
+          
+          <Link 
             to="/faq"
             className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
           >
@@ -59,7 +91,16 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
           {user ? (
             <>
               {forumUser && (
-                <UnreadBadge forumUserId={forumUser.id} />
+                <>
+                  <UnreadBadge forumUserId={forumUser.id} />
+                  <Link 
+                    to="/dashboard"
+                    className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+                  >
+                    <LayoutDashboard className="w-4 h-4" />
+                    <span className="hidden sm:inline">Dashboard</span>
+                  </Link>
+                </>
               )}
               <Link 
                 to="/reserve"
