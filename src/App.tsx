@@ -22,6 +22,8 @@ import ForumLogin from "./pages/forum/ForumLogin";
 import ForumRegister from "./pages/forum/ForumRegister";
 import ForumForgotPassword from "./pages/forum/ForumForgotPassword";
 import ForumSettings from "./pages/forum/ForumSettings";
+import ForumUserProfile from "./pages/forum/ForumUserProfile";
+import ForumMessages from "./pages/forum/ForumMessages";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +49,8 @@ const App = () => (
             <Route path="category/:slug/new" element={<ForumNewThread />} />
             <Route path="thread/:threadId" element={<ForumThread />} />
             <Route path="settings" element={<ForumSettings />} />
+            <Route path="user/:username" element={<ForumUserProfile />} />
+            <Route path="messages" element={<ForumMessages />} />
           </Route>
           <Route path="/forum/login" element={<ForumLogin />} />
           <Route path="/forum/register" element={<ForumRegister />} />

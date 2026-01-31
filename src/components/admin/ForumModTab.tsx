@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image } from 'lucide-react';
+import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ForumUserData {
@@ -9,6 +9,7 @@ interface ForumUserData {
   username: string;
   avatar_url: string | null;
   is_suspended: boolean;
+  is_verified: boolean;
   suspension_reason: string | null;
   suspension_ends_at: string | null;
   post_count: number;
@@ -26,6 +27,19 @@ interface AvatarRequest {
   };
 }
 
+interface VerificationRequest {
+  id: string;
+  forum_user_id: string;
+  status: string;
+  reason: string | null;
+  denial_reason: string | null;
+  created_at: string;
+  forum_user?: {
+    username: string;
+    avatar_url: string | null;
+  };
+}
+
 interface ForumModTabProps {
   darkMode: boolean;
 }
@@ -33,21 +47,27 @@ interface ForumModTabProps {
 export default function ForumModTab({ darkMode }: ForumModTabProps) {
   const [forumUsers, setForumUsers] = useState<ForumUserData[]>([]);
   const [avatarRequests, setAvatarRequests] = useState<AvatarRequest[]>([]);
+  const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAvatars, setLoadingAvatars] = useState(true);
+  const [loadingVerifications, setLoadingVerifications] = useState(true);
   const [search, setSearch] = useState('');
   const [showSuspendModal, setShowSuspendModal] = useState<string | null>(null);
   const [suspensionReason, setSuspensionReason] = useState('');
   const [suspensionDays, setSuspensionDays] = useState('7');
   const [suspending, setSuspending] = useState(false);
-  const [activeSection, setActiveSection] = useState<'users' | 'avatars'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'avatars' | 'verification'>('users');
   const [processingAvatar, setProcessingAvatar] = useState<string | null>(null);
+  const [processingVerification, setProcessingVerification] = useState<string | null>(null);
   const [denyReason, setDenyReason] = useState('');
   const [showDenyModal, setShowDenyModal] = useState<string | null>(null);
+  const [showDenyVerificationModal, setShowDenyVerificationModal] = useState<string | null>(null);
+  const [verifyDenyReason, setVerifyDenyReason] = useState('');
 
   useEffect(() => {
     fetchForumUsers();
     fetchAvatarRequests();
+    fetchVerificationRequests();
   }, []);
 
   const fetchForumUsers = async () => {
@@ -75,6 +95,20 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
       setAvatarRequests(data as AvatarRequest[]);
     }
     setLoadingAvatars(false);
+  };
+
+  const fetchVerificationRequests = async () => {
+    setLoadingVerifications(true);
+    const { data } = await supabase
+      .from('forum_verification_requests')
+      .select('*, forum_user:forum_user_id (username, avatar_url)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setVerificationRequests(data as VerificationRequest[]);
+    }
+    setLoadingVerifications(false);
   };
 
   const handleApproveAvatar = async (request: AvatarRequest) => {
@@ -132,6 +166,77 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
       setDenyReason('');
     }
     setProcessingAvatar(null);
+  };
+
+  const handleApproveVerification = async (request: VerificationRequest) => {
+    setProcessingVerification(request.id);
+
+    // Update verification request status
+    const { error: updateError } = await supabase
+      .from('forum_verification_requests')
+      .update({ 
+        status: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (updateError) {
+      toast.error('Failed to approve verification');
+      setProcessingVerification(null);
+      return;
+    }
+
+    // Update user's verified status
+    const { error: userError } = await supabase
+      .from('forum_users')
+      .update({ is_verified: true })
+      .eq('id', request.forum_user_id);
+
+    if (userError) {
+      toast.error('Failed to update user verification');
+    } else {
+      toast.success('User verified!');
+      fetchVerificationRequests();
+      fetchForumUsers();
+    }
+    setProcessingVerification(null);
+  };
+
+  const handleDenyVerification = async (requestId: string) => {
+    setProcessingVerification(requestId);
+
+    const { error } = await supabase
+      .from('forum_verification_requests')
+      .update({ 
+        status: 'denied',
+        denial_reason: verifyDenyReason || 'Does not meet verification criteria',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to deny verification');
+    } else {
+      toast.success('Verification request denied');
+      fetchVerificationRequests();
+      setShowDenyVerificationModal(null);
+      setVerifyDenyReason('');
+    }
+    setProcessingVerification(null);
+  };
+
+  const handleRemoveVerification = async (userId: string) => {
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ is_verified: false })
+      .eq('id', userId);
+
+    if (error) {
+      toast.error('Failed to remove verification');
+    } else {
+      toast.success('Verification removed');
+      fetchForumUsers();
+    }
   };
 
   const handleSuspend = async (userId: string) => {
@@ -208,7 +313,7 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
             </div>
           )}
           <button
-            onClick={() => { fetchForumUsers(); fetchAvatarRequests(); }}
+            onClick={() => { fetchForumUsers(); fetchAvatarRequests(); fetchVerificationRequests(); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
               darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-200'
             }`}
@@ -245,6 +350,22 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
           {avatarRequests.length > 0 && (
             <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
               {avatarRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveSection('verification')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'verification'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <BadgeCheck className="w-4 h-4" />
+          Verification
+          {verificationRequests.length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {verificationRequests.length}
             </span>
           )}
         </button>
@@ -331,7 +452,12 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
                                 <User className="w-5 h-5 text-white" />
                               </div>
                             )}
-                            <span className={`font-medium ${textClass}`}>{user.username}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`font-medium ${textClass}`}>{user.username}</span>
+                              {user.is_verified && (
+                                <BadgeCheck className="w-4 h-4 text-blue-500" />
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -359,23 +485,35 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
                           {new Date(user.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {user.is_suspended ? (
-                            <button
-                              onClick={() => handleUnsuspend(user.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition ml-auto"
-                            >
-                              <Check className="w-4 h-4" />
-                              Unsuspend
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => setShowSuspendModal(user.id)}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition ml-auto"
-                            >
-                              <Ban className="w-4 h-4" />
-                              Suspend
-                            </button>
-                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            {user.is_verified && (
+                              <button
+                                onClick={() => handleRemoveVerification(user.id)}
+                                className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs rounded transition"
+                                title="Remove verification"
+                              >
+                                <X className="w-3 h-3" />
+                                Unverify
+                              </button>
+                            )}
+                            {user.is_suspended ? (
+                              <button
+                                onClick={() => handleUnsuspend(user.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
+                              >
+                                <Check className="w-4 h-4" />
+                                Unsuspend
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setShowSuspendModal(user.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition"
+                              >
+                                <Ban className="w-4 h-4" />
+                                Suspend
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -385,7 +523,7 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
             </div>
           </div>
         </>
-      ) : (
+      ) : activeSection === 'avatars' ? (
         /* Avatar Requests Section */
         <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
           {loadingAvatars ? (
@@ -440,7 +578,66 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
             </div>
           )}
         </div>
-      )}
+      ) : activeSection === 'verification' ? (
+        /* Verification Requests Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          {loadingVerifications ? (
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>Loading...</div>
+          ) : verificationRequests.length === 0 ? (
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>
+              <BadgeCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending verification requests</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {verificationRequests.map((request) => (
+                <div key={request.id} className="p-4 flex items-start gap-4">
+                  {request.forum_user?.avatar_url ? (
+                    <img 
+                      src={request.forum_user.avatar_url} 
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className={`font-medium ${textClass}`}>
+                      {request.forum_user?.username || 'Unknown User'}
+                    </div>
+                    <div className={`text-sm mt-1 ${mutedClass}`}>
+                      <strong>Reason:</strong> {request.reason || 'No reason provided'}
+                    </div>
+                    <div className={`text-xs mt-1 ${mutedClass}`}>
+                      Submitted: {new Date(request.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveVerification(request)}
+                      disabled={processingVerification === request.id}
+                      className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                    >
+                      <Check className="w-4 h-4" />
+                      Verify
+                    </button>
+                    <button
+                      onClick={() => setShowDenyVerificationModal(request.id)}
+                      disabled={processingVerification === request.id}
+                      className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                    >
+                      <X className="w-4 h-4" />
+                      Deny
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Suspend Modal */}
       {showSuspendModal && (
@@ -524,6 +721,43 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
               <button
                 onClick={() => handleDenyAvatar(showDenyModal)}
                 disabled={processingAvatar === showDenyModal}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+                Deny Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deny Verification Modal */}
+      {showDenyVerificationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${cardClass} border rounded-2xl p-6 w-full max-w-md`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Verification Request</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Reason (optional)</label>
+              <textarea
+                value={verifyDenyReason}
+                onChange={(e) => setVerifyDenyReason(e.target.value)}
+                placeholder="Reason for denial..."
+                className={`w-full px-4 py-2 border rounded-lg resize-none ${inputClass}`}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowDenyVerificationModal(null); setVerifyDenyReason(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDenyVerification(showDenyVerificationModal)}
+                disabled={processingVerification === showDenyVerificationModal}
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
               >
                 <X className="w-4 h-4" />

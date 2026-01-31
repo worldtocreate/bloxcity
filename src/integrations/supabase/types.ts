@@ -205,6 +205,129 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          participant_1: string
+          participant_2: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          participant_1: string
+          participant_2: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          participant_1?: string
+          participant_2?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_conversations_participant_1_fkey"
+            columns: ["participant_1"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_conversations_participant_2_fkey"
+            columns: ["participant_2"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_direct_messages: {
+        Row: {
+          created_at: string
+          encrypted_content: string
+          id: string
+          is_read: boolean | null
+          iv: string
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_content: string
+          id?: string
+          is_read?: boolean | null
+          iv: string
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_content?: string
+          id?: string
+          is_read?: boolean | null
+          iv?: string
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_direct_messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_direct_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_pinned_threads: {
+        Row: {
+          forum_user_id: string
+          id: string
+          pinned_at: string
+          thread_id: string
+        }
+        Insert: {
+          forum_user_id: string
+          id?: string
+          pinned_at?: string
+          thread_id: string
+        }
+        Update: {
+          forum_user_id?: string
+          id?: string
+          pinned_at?: string
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_pinned_threads_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_pinned_threads_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_posts: {
         Row: {
           author_id: string
@@ -326,10 +449,14 @@ export type Database = {
       }
       forum_users: {
         Row: {
+          allow_dms: boolean | null
           avatar_url: string | null
           created_at: string | null
+          dm_encryption_pin_hash: string | null
+          hide_threads: boolean | null
           id: string
           is_suspended: boolean | null
+          is_verified: boolean | null
           last_post_at: string | null
           post_count: number | null
           signature: string | null
@@ -339,10 +466,14 @@ export type Database = {
           username: string
         }
         Insert: {
+          allow_dms?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
+          dm_encryption_pin_hash?: string | null
+          hide_threads?: boolean | null
           id?: string
           is_suspended?: boolean | null
+          is_verified?: boolean | null
           last_post_at?: string | null
           post_count?: number | null
           signature?: string | null
@@ -352,10 +483,14 @@ export type Database = {
           username: string
         }
         Update: {
+          allow_dms?: boolean | null
           avatar_url?: string | null
           created_at?: string | null
+          dm_encryption_pin_hash?: string | null
+          hide_threads?: boolean | null
           id?: string
           is_suspended?: boolean | null
+          is_verified?: boolean | null
           last_post_at?: string | null
           post_count?: number | null
           signature?: string | null
@@ -365,6 +500,47 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      forum_verification_requests: {
+        Row: {
+          created_at: string
+          denial_reason: string | null
+          forum_user_id: string
+          id: string
+          reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          denial_reason?: string | null
+          forum_user_id: string
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          denial_reason?: string | null
+          forum_user_id?: string
+          id?: string
+          reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_verification_requests_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       newsletter_subscribers: {
         Row: {

@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, BadgeCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import UnreadBadge from './UnreadBadge';
 
 interface ForumHeaderProps {
   user: any;
@@ -40,6 +41,9 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
 
           {user ? (
             <>
+              {forumUser && (
+                <UnreadBadge forumUserId={forumUser.id} />
+              )}
               {isAdmin && (
                 <Link 
                   to="/admin"
@@ -68,9 +72,10 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
                     <User className="w-4 h-4 text-white" />
                   </div>
                 )}
-                <span className="text-[hsl(var(--bc-text))] font-medium hidden sm:inline">
+                <span className="text-[hsl(var(--bc-text))] font-medium hidden sm:inline flex items-center gap-1">
                   {forumUser?.username || 'User'}
-                  {isAdmin && <Shield className="w-3 h-3 text-[hsl(var(--bc-accent))] inline ml-1" />}
+                  {forumUser?.is_verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                  {isAdmin && <Shield className="w-3 h-3 text-[hsl(var(--bc-accent))]" />}
                 </span>
               </div>
               <button
