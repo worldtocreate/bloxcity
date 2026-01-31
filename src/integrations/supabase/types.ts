@@ -290,7 +290,10 @@ export type Database = {
       forum_conversations: {
         Row: {
           created_at: string
+          encryption_key_p1: string | null
+          encryption_key_p2: string | null
           id: string
+          key_iv: string | null
           last_message_at: string | null
           last_message_preview: string | null
           participant_1: string
@@ -298,7 +301,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          encryption_key_p1?: string | null
+          encryption_key_p2?: string | null
           id?: string
+          key_iv?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
           participant_1: string
@@ -306,7 +312,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          encryption_key_p1?: string | null
+          encryption_key_p2?: string | null
           id?: string
+          key_iv?: string | null
           last_message_at?: string | null
           last_message_preview?: string | null
           participant_1?: string
