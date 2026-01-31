@@ -288,18 +288,14 @@ export default function ForumSettings() {
     if (!forumUser) return;
     setSavingSocial(true);
 
-    // Validate X.com URL if provided
-    if (socialX && !socialX.includes('x.com/') && !socialX.includes('twitter.com/')) {
-      toast.error('X link should be a valid x.com or twitter.com URL');
-      setSavingSocial(false);
-      return;
-    }
+    // Clean up X username (remove @ if present)
+    const cleanX = socialX.trim().replace(/^@/, '');
 
     const { error } = await supabase
       .from('forum_users')
       .update({ 
         social_discord: socialDiscord.trim() || null,
-        social_x: socialX.trim() || null
+        social_x: cleanX || null
       })
       .eq('id', forumUser.id);
 
@@ -779,15 +775,18 @@ export default function ForumSettings() {
             />
           </div>
           <div>
-            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">X (Twitter) Profile</label>
-            <input
-              type="text"
-              value={socialX}
-              onChange={(e) => setSocialX(e.target.value)}
-              placeholder="https://x.com/username"
-              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))]"
-              maxLength={200}
-            />
+            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">X (Twitter) Username</label>
+            <div className="flex items-center">
+              <span className="bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] px-3 py-3 rounded-l-lg border border-r-0 border-[hsl(var(--bc-border))]">@</span>
+              <input
+                type="text"
+                value={socialX}
+                onChange={(e) => setSocialX(e.target.value.replace(/^@/, ''))}
+                placeholder="username"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-r-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))]"
+                maxLength={50}
+              />
+            </div>
           </div>
         </div>
 
