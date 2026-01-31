@@ -109,8 +109,12 @@ export default function ForumStaff() {
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                      <Shield className="w-7 h-7 text-white" />
+                    <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-blue-500/30">
+                      <img 
+                        src="https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/2bd1f84a-34e7-4ded-a57b-8c6350427649/1769863888597.jpg" 
+                        alt="BLOX City"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
