@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Award, Plus, Search, Trash2, UserPlus, X, Loader2, Star, MessageSquare, CheckCircle, Heart, Trophy, Crown } from 'lucide-react';
+import { Award, Plus, Search, Trash2, UserPlus, X, Loader2, Upload, Image } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Achievement {
   id: string;
   name: string;
   description: string | null;
-  icon: string;
+  image_url: string | null;
   color: string;
-  rarity: string;
   created_at: string;
 }
 
@@ -27,22 +26,6 @@ interface AchievementsTabProps {
   darkMode: boolean;
 }
 
-const iconOptions = [
-  { value: 'star', label: 'Star', icon: Star },
-  { value: 'message-square', label: 'Message', icon: MessageSquare },
-  { value: 'check-circle', label: 'Check', icon: CheckCircle },
-  { value: 'heart', label: 'Heart', icon: Heart },
-  { value: 'trophy', label: 'Trophy', icon: Trophy },
-  { value: 'crown', label: 'Crown', icon: Crown },
-];
-
-const rarityColors: Record<string, string> = {
-  'common': 'bg-gray-100 text-gray-800',
-  'rare': 'bg-blue-100 text-blue-800',
-  'epic': 'bg-purple-100 text-purple-800',
-  'legendary': 'bg-amber-100 text-amber-800',
-};
-
 export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,10 +37,12 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
   // Create form state
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newIcon, setNewIcon] = useState('star');
   const [newColor, setNewColor] = useState('#FFD700');
-  const [newRarity, setNewRarity] = useState('common');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Award form state
   const [userSearch, setUserSearch] = useState('');
@@ -76,9 +61,50 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
       .order('created_at', { ascending: false });
 
     if (data) {
-      setAchievements(data);
+      setAchievements(data as Achievement[]);
     }
     setLoading(false);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be under 2MB');
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = (e) => setImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+
+    setUploading(true);
+    const fileExt = imageFile.name.split('.').pop();
+    const fileName = `achievement_${Date.now()}.${fileExt}`;
+    const filePath = `achievements/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('forum-avatars')
+      .upload(filePath, imageFile);
+
+    if (error) {
+      toast.error('Failed to upload image');
+      setUploading(false);
+      return null;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('forum-avatars')
+      .getPublicUrl(filePath);
+
+    setUploading(false);
+    return urlData.publicUrl;
   };
 
   const handleCreate = async () => {
@@ -88,14 +114,20 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
     }
 
     setCreating(true);
+    
+    // Upload image if selected
+    let imageUrl: string | null = null;
+    if (imageFile) {
+      imageUrl = await uploadImage();
+    }
+
     const { error } = await supabase
       .from('forum_achievements')
       .insert({
         name: newName.trim(),
         description: newDescription.trim() || null,
-        icon: newIcon,
-        color: newColor,
-        rarity: newRarity
+        image_url: imageUrl,
+        color: newColor
       });
 
     if (error) {
@@ -103,14 +135,18 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
     } else {
       toast.success('Achievement created!');
       setShowCreateModal(false);
-      setNewName('');
-      setNewDescription('');
-      setNewIcon('star');
-      setNewColor('#FFD700');
-      setNewRarity('common');
+      resetCreateForm();
       fetchAchievements();
     }
     setCreating(false);
+  };
+
+  const resetCreateForm = () => {
+    setNewName('');
+    setNewDescription('');
+    setNewColor('#FFD700');
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -133,7 +169,6 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
     setSelectedAchievement(achievement);
     setShowAwardModal(true);
     
-    // Fetch users who have this achievement
     const { data } = await supabase
       .from('forum_user_achievements')
       .select(`
@@ -163,7 +198,6 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
       .limit(10);
 
     if (data) {
-      // Filter out users who already have this achievement
       const awardedIds = new Set(awardedUsers.map(u => u.forum_user.id));
       setSearchResults(data.filter(u => !awardedIds.has(u.id)));
     }
@@ -189,7 +223,7 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
       }
     } else {
       toast.success('Achievement awarded!');
-      handleOpenAward(selectedAchievement); // Refresh the list
+      handleOpenAward(selectedAchievement);
       setUserSearch('');
       setSearchResults([]);
     }
@@ -243,45 +277,47 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
 
       {/* Achievements Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {achievements.map(achievement => {
-          const IconComponent = iconOptions.find(i => i.value === achievement.icon)?.icon || Award;
-          return (
-            <div key={achievement.id} className={`${cardClass} border rounded-xl p-4`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
+        {achievements.map(achievement => (
+          <div key={achievement.id} className={`${cardClass} border rounded-xl p-4`}>
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                {achievement.image_url ? (
+                  <img 
+                    src={achievement.image_url} 
+                    alt={achievement.name}
+                    className="w-10 h-10 rounded-lg object-cover"
+                  />
+                ) : (
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: `${achievement.color}20` }}
                   >
-                    <IconComponent className="w-5 h-5" style={{ color: achievement.color }} />
+                    <Award className="w-5 h-5" style={{ color: achievement.color }} />
                   </div>
-                  <div>
-                    <h3 className={`font-semibold ${textClass}`}>{achievement.name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${rarityColors[achievement.rarity]}`}>
-                      {achievement.rarity}
-                    </span>
-                  </div>
+                )}
+                <div>
+                  <h3 className={`font-semibold ${textClass}`}>{achievement.name}</h3>
                 </div>
-                <button
-                  onClick={() => handleDelete(achievement.id)}
-                  className="text-red-500 hover:text-red-600 p-1"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
-              {achievement.description && (
-                <p className={`text-sm ${mutedClass} mb-3`}>{achievement.description}</p>
-              )}
               <button
-                onClick={() => handleOpenAward(achievement)}
-                className="flex items-center gap-2 text-sm text-blue-500 hover:text-blue-600"
+                onClick={() => handleDelete(achievement.id)}
+                className="text-red-500 hover:text-red-600 p-1"
               >
-                <UserPlus className="w-4 h-4" />
-                Award to User
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
-          );
-        })}
+            {achievement.description && (
+              <p className={`text-sm ${mutedClass} mb-3`}>{achievement.description}</p>
+            )}
+            <button
+              onClick={() => handleOpenAward(achievement)}
+              className="flex items-center gap-2 text-sm text-blue-500 hover:text-blue-600"
+            >
+              <UserPlus className="w-4 h-4" />
+              Award to User
+            </button>
+          </div>
+        ))}
       </div>
 
       {achievements.length === 0 && (
@@ -297,7 +333,7 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
           <div className={`${cardClass} border rounded-xl p-6 max-w-md w-full`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className={`text-lg font-semibold ${textClass}`}>Create Achievement</h3>
-              <button onClick={() => setShowCreateModal(false)} className={mutedClass}>
+              <button onClick={() => { setShowCreateModal(false); resetCreateForm(); }} className={mutedClass}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -325,51 +361,60 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={`block text-sm font-medium ${textClass} mb-1`}>Icon</label>
-                  <select
-                    value={newIcon}
-                    onChange={(e) => setNewIcon(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border ${inputClass}`}
+              {/* Image Upload */}
+              <div>
+                <label className={`block text-sm font-medium ${textClass} mb-1`}>Badge Image</label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                {imagePreview ? (
+                  <div className="relative w-20 h-20">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-20 h-20 rounded-lg object-cover border-2 border-dashed border-blue-400"
+                    />
+                    <button
+                      onClick={() => { setImageFile(null); setImagePreview(null); }}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`w-full py-4 border-2 border-dashed rounded-lg flex flex-col items-center gap-2 hover:bg-opacity-50 transition ${darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-300 hover:bg-gray-50'}`}
                   >
-                    {iconOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={`block text-sm font-medium ${textClass} mb-1`}>Color</label>
-                  <input
-                    type="color"
-                    value={newColor}
-                    onChange={(e) => setNewColor(e.target.value)}
-                    className="w-full h-10 rounded-lg cursor-pointer"
-                  />
-                </div>
+                    <Upload className={`w-6 h-6 ${mutedClass}`} />
+                    <span className={`text-sm ${mutedClass}`}>Click to upload image</span>
+                    <span className={`text-xs ${mutedClass}`}>Max 2MB</span>
+                  </button>
+                )}
               </div>
 
               <div>
-                <label className={`block text-sm font-medium ${textClass} mb-1`}>Rarity</label>
-                <select
-                  value={newRarity}
-                  onChange={(e) => setNewRarity(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border ${inputClass}`}
-                >
-                  <option value="common">Common</option>
-                  <option value="rare">Rare</option>
-                  <option value="epic">Epic</option>
-                  <option value="legendary">Legendary</option>
-                </select>
+                <label className={`block text-sm font-medium ${textClass} mb-1`}>Fallback Color</label>
+                <input
+                  type="color"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  className="w-full h-10 rounded-lg cursor-pointer"
+                />
+                <p className={`text-xs ${mutedClass} mt-1`}>Used if no image is uploaded</p>
               </div>
 
               <button
                 onClick={handleCreate}
-                disabled={creating}
+                disabled={creating || uploading}
                 className="w-full py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition flex items-center justify-center gap-2"
               >
-                {creating && <Loader2 className="w-4 h-4 animate-spin" />}
-                Create Achievement
+                {(creating || uploading) && <Loader2 className="w-4 h-4 animate-spin" />}
+                {uploading ? 'Uploading...' : 'Create Achievement'}
               </button>
             </div>
           </div>
