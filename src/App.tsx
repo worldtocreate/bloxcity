@@ -37,6 +37,7 @@ import Players from "./pages/forum/Players";
 import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
 import GroupSettings from "./pages/forum/GroupSettings";
+import Friends from "./pages/forum/Friends";
 
 const queryClient = new QueryClient();
 
@@ -75,7 +76,11 @@ const App = () => (
               <Route path="reserve" element={<ForumReserve />} />
               <Route path="check-status" element={<ForumCheckStatus />} />
               <Route path="faq" element={<ForumFAQ />} />
+              <Route path="friends" element={<Friends />} />
             </Route>
+
+            {/* Admin Route - outside ForumLayout */}
+            <Route path="/admin" element={<Admin />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

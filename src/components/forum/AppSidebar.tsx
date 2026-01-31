@@ -11,6 +11,7 @@ import {
   Settings,
   Mail,
   ChevronLeft,
+  Heart,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -149,6 +150,22 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
             )}
             <SidebarGroupContent>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/friends"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/friends')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Heart className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Friends</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
