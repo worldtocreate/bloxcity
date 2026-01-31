@@ -285,7 +285,7 @@ export default function ForumLayout() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]">
+      <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg))]">
         <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
         
         <div className="flex-1 flex flex-col min-w-0">
@@ -362,21 +362,17 @@ export default function ForumLayout() {
             )}
           </main>
           
-          <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-auto">
-            <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
-              <div className="flex items-center justify-center gap-4 text-sm">
-                <Link to="/users" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Members</Link>
-                <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Staff</Link>
-                <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">FAQ</Link>
+          <footer className="border-t border-[hsl(var(--bc-border))] py-4 mt-auto bg-[hsl(var(--bc-bg-card))]">
+            <div className="max-w-6xl mx-auto px-4 text-center">
+              <div className="flex items-center justify-center gap-4 text-xs text-[hsl(var(--bc-text-muted))]">
+                <Link to="/users" className="hover:text-[hsl(var(--bc-link))] hover:underline">Members</Link>
+                <span>•</span>
+                <Link to="/staff" className="hover:text-[hsl(var(--bc-link))] hover:underline">Staff</Link>
+                <span>•</span>
+                <Link to="/faq" className="hover:text-[hsl(var(--bc-link))] hover:underline">FAQ</Link>
               </div>
-              <p className="text-[hsl(var(--bc-text-muted))] text-sm">
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-2">
                 © 2026 BLOX City, Inc. All rights reserved.
-              </p>
-              <p className="text-xs text-[hsl(var(--bc-text-muted))]">
-                Looking for where BLOX City is now? Isaac is over at{" "}
-                <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">brickplanet.com</a>
-                {" "}& Kyle is over at{" "}
-                <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">truworlds.net</a>
               </p>
             </div>
           </footer>

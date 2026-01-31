@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Trophy, MessageSquare, FileText, Star } from 'lucide-react';
-import UserAvatar from './UserAvatar';
 
 interface LeaderboardUser {
   id: string;
@@ -12,8 +11,6 @@ interface LeaderboardUser {
   thread_count: number;
   xp: number;
   level: number;
-  membership_tier: string | null;
-  avatar_effect: string | null;
 }
 
 type LeaderboardType = 'posts' | 'threads' | 'xp';
@@ -36,10 +33,10 @@ export default function LeaderboardSidebar() {
     
     const { data } = await supabase
       .from('forum_users')
-      .select('id, username, avatar_url, post_count, thread_count, xp, level, membership_tier, avatar_effect')
+      .select('id, username, avatar_url, post_count, thread_count, xp, level')
       .eq('is_suspended', false)
       .order(orderColumn, { ascending: false })
-      .limit(5);
+      .limit(10);
     
     if (data) {
       setUsers(data as LeaderboardUser[]);
@@ -48,9 +45,9 @@ export default function LeaderboardSidebar() {
   };
 
   const tabs: { key: LeaderboardType; label: string; icon: React.ReactNode }[] = [
-    { key: 'xp', label: 'XP', icon: <Star className="w-3.5 h-3.5" /> },
-    { key: 'posts', label: 'Posts', icon: <MessageSquare className="w-3.5 h-3.5" /> },
-    { key: 'threads', label: 'Threads', icon: <FileText className="w-3.5 h-3.5" /> },
+    { key: 'xp', label: 'XP', icon: <Star className="w-3 h-3" /> },
+    { key: 'posts', label: 'Posts', icon: <MessageSquare className="w-3 h-3" /> },
+    { key: 'threads', label: 'Threads', icon: <FileText className="w-3 h-3" /> },
   ];
 
   const getValue = (user: LeaderboardUser) => {
@@ -59,29 +56,23 @@ export default function LeaderboardSidebar() {
     return user.xp;
   };
 
-  const getLabel = () => {
-    if (activeTab === 'posts') return 'posts';
-    if (activeTab === 'threads') return 'threads';
-    return 'XP';
-  };
-
   return (
-    <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))] overflow-hidden">
+    <div className="rounded border border-[hsl(var(--bc-border))] overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
-        <h3 className="font-semibold text-[hsl(var(--bc-text))]">Leaderboard</h3>
+      <div className="bg-[hsl(var(--bc-table-header))] text-white px-3 py-2 text-sm font-medium flex items-center gap-2">
+        <Trophy className="w-4 h-4" />
+        Leaderboard
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[hsl(var(--bc-border))]">
+      <div className="flex bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-medium transition ${
               activeTab === tab.key
-                ? 'text-[hsl(var(--bc-primary))] border-b-2 border-[hsl(var(--bc-primary))] bg-[hsla(var(--bc-primary),0.05)]'
+                ? 'text-[hsl(var(--bc-primary))] border-b-2 border-[hsl(var(--bc-primary))] -mb-px'
                 : 'text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
             }`}
           >
@@ -92,56 +83,46 @@ export default function LeaderboardSidebar() {
       </div>
 
       {/* Content */}
-      <div className="p-3">
+      <div className="bg-[hsl(var(--bc-bg-card))] divide-y divide-[hsl(var(--bc-border))]">
         {loading ? (
-          <div className="space-y-3">
+          <div className="p-3 space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex items-center gap-3 animate-pulse">
-                <div className="w-5 h-5 bg-[hsl(var(--bc-bg-light))] rounded" />
-                <div className="w-8 h-8 bg-[hsl(var(--bc-bg-light))] rounded-full" />
-                <div className="flex-1 h-4 bg-[hsl(var(--bc-bg-light))] rounded" />
-              </div>
+              <div key={i} className="h-6 bg-[hsl(var(--bc-bg))] rounded animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="space-y-2">
-            {users.map((user, index) => (
-              <Link
-                key={user.id}
-                to={`/user/${user.username}`}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
-              >
-                <span className={`w-5 text-center font-bold text-sm ${
-                  index === 0 ? 'text-[hsl(var(--bc-accent))]' :
-                  index === 1 ? 'text-gray-400' :
-                  index === 2 ? 'text-amber-600' :
-                  'text-[hsl(var(--bc-text-muted))]'
-                }`}>
-                  #{index + 1}
-                </span>
-                <UserAvatar
-                  avatarUrl={user.avatar_url}
-                  username={user.username}
-                  size="sm"
-                  effect={user.avatar_effect}
-                  membershipTier={user.membership_tier as any}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-primary))] transition">
-                      {user.username}
-                    </span>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))]">
-                      Lv.{user.level}
-                    </span>
-                  </div>
+          users.map((user, index) => (
+            <Link
+              key={user.id}
+              to={`/user/${user.username}`}
+              className="flex items-center gap-2 px-3 py-2 hover:bg-[hsl(var(--bc-bg))] transition text-sm"
+            >
+              <span className={`w-5 text-center text-xs font-bold ${
+                index === 0 ? 'text-yellow-500' :
+                index === 1 ? 'text-gray-400' :
+                index === 2 ? 'text-amber-600' :
+                'text-[hsl(var(--bc-text-muted))]'
+              }`}>
+                {index + 1}
+              </span>
+              
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="w-6 h-6 rounded object-cover" />
+              ) : (
+                <div className="w-6 h-6 rounded bg-[hsl(var(--bc-primary))] flex items-center justify-center text-white text-xs font-bold">
+                  {user.username.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-xs font-medium text-[hsl(var(--bc-text-muted))]">
-                  {getValue(user).toLocaleString()} {getLabel()}
-                </span>
-              </Link>
-            ))}
-          </div>
+              )}
+              
+              <span className="flex-1 truncate text-[hsl(var(--bc-link))]">
+                {user.username}
+              </span>
+              
+              <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                {getValue(user).toLocaleString()}
+              </span>
+            </Link>
+          ))
         )}
       </div>
     </div>

@@ -2,32 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BLOX City Maintenance Page Styles */
+/* 2017 BLOX City Classic Theme */
 
 :root {
-  --bc-red: 4 80% 55%;
-  --bc-yellow: 45 95% 55%;
-  --bc-green: 145 65% 42%;
-  --bc-blue: 217 70% 60%;
-  --bc-primary: 217 70% 55%;
-  --bc-primary-dark: 217 70% 45%;
-  --bc-secondary: 4 80% 55%;
-  --bc-accent: 45 95% 55%;
-  --bc-bg-light: 0 0% 100%;
-  --bc-bg-card: 0 0% 98%;
-  --bc-text: 220 15% 20%;
-  --bc-text-muted: 220 10% 45%;
-  --bc-border: 220 15% 88%;
-  --bc-glow: 217 70% 60%;
+  /* Classic 2017 Colors */
+  --bc-teal: 190 85% 42%;           /* #00acd8 - Primary teal/cyan */
+  --bc-teal-dark: 190 85% 35%;      /* Darker teal for hover */
+  --bc-red: 0 65% 42%;              /* #a44 - Classic link/accent red */
+  --bc-yellow: 45 95% 55%;          /* Warning/accent yellow */
+  --bc-green: 145 65% 42%;          /* Success green */
+  --bc-blue: 205 70% 50%;           /* Secondary blue */
+  
+  /* Semantic Colors */
+  --bc-primary: 190 85% 42%;        /* Teal - main brand color */
+  --bc-primary-dark: 190 85% 35%;   /* Darker teal */
+  --bc-secondary: 0 65% 42%;        /* Red/maroon accent */
+  --bc-accent: 45 95% 55%;          /* Yellow accent */
+  
+  /* Light Mode - Classic 2017 Look */
+  --bc-bg: 30 5% 91%;               /* #e8e8e8 - Classic gray background */
+  --bc-bg-light: 30 5% 91%;         /* Same gray */
+  --bc-bg-card: 0 0% 100%;          /* Pure white cards */
+  --bc-bg-dark: 220 15% 20%;        /* Dark backgrounds */
+  --bc-text: 0 0% 25%;              /* Dark gray text #404040 */
+  --bc-text-muted: 0 0% 45%;        /* Muted gray #737373 */
+  --bc-border: 0 0% 82%;            /* #d1d1d1 borders */
+  --bc-link: 0 65% 42%;             /* Maroon links */
+  --bc-glow: 190 85% 42%;           /* Teal glow */
+  
+  /* Table/Forum specific */
+  --bc-table-header: 190 85% 42%;   /* Teal header bars */
+  --bc-table-alt: 0 0% 97%;         /* Alternating row color */
 }
 
-/* Dark mode overrides */
+/* Dark mode - adapted classic theme */
 .dark {
-  --bc-bg-light: 220 15% 10%;
-  --bc-bg-card: 220 15% 13%;
-  --bc-text: 220 15% 90%;
-  --bc-text-muted: 220 10% 60%;
+  --bc-bg: 220 15% 12%;
+  --bc-bg-light: 220 15% 12%;
+  --bc-bg-card: 220 15% 16%;
+  --bc-bg-dark: 220 15% 8%;
+  --bc-text: 0 0% 90%;
+  --bc-text-muted: 0 0% 60%;
   --bc-border: 220 15% 25%;
+  --bc-link: 190 85% 55%;
+  --bc-table-header: 190 85% 35%;
+  --bc-table-alt: 220 15% 18%;
 }
 
 * {
@@ -37,10 +56,20 @@
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: hsl(var(--bc-bg-light));
+  font-family: Arial, Helvetica, 'Segoe UI', system-ui, sans-serif;
+  background: hsl(var(--bc-bg));
   color: hsl(var(--bc-text));
   min-height: 100vh;
+  font-size: 13px;
+}
+
+/* Classic Link Styling */
+a {
+  color: hsl(var(--bc-link));
+}
+
+a:hover {
+  text-decoration: underline;
 }
 
 .maintenance-container {
