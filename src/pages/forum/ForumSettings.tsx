@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 
@@ -12,6 +12,22 @@ interface BlockedUser {
     username: string;
     avatar_url: string | null;
   };
+}
+
+interface AvatarRequest {
+  id: string;
+  status: string;
+  created_at: string;
+  denial_reason: string | null;
+}
+
+// Mask email: show first char + *** + @domain
+function maskEmail(email: string): string {
+  if (!email) return '';
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const maskedLocal = local.charAt(0) + '***';
+  return `${maskedLocal}@${domain}`;
 }
 
 export default function ForumSettings() {
@@ -30,6 +46,7 @@ export default function ForumSettings() {
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loadingBlocked, setLoadingBlocked] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [pendingAvatar, setPendingAvatar] = useState<AvatarRequest | null>(null);
 
   // Initialize signature when forumUser loads
   useEffect(() => {
@@ -40,7 +57,10 @@ export default function ForumSettings() {
   }, [forumUser, initialized]);
 
   useEffect(() => {
-    if (forumUser) fetchBlockedUsers();
+    if (forumUser) {
+      fetchBlockedUsers();
+      fetchPendingAvatar();
+    }
   }, [forumUser]);
 
   const fetchBlockedUsers = async () => {
@@ -52,6 +72,23 @@ export default function ForumSettings() {
     
     setBlockedUsers((data || []) as any);
     setLoadingBlocked(false);
+  };
+
+  const fetchPendingAvatar = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('forum_avatar_requests')
+      .select('*')
+      .eq('forum_user_id', forumUser.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (data && (data.status === 'pending' || data.status === 'denied')) {
+      setPendingAvatar(data as AvatarRequest);
+    } else {
+      setPendingAvatar(null);
+    }
   };
 
   const handleSaveSignature = async () => {
@@ -87,20 +124,8 @@ export default function ForumSettings() {
 
     setUploadingAvatar(true);
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-
-      const moderationResult = await supabase.functions.invoke('forum-moderate-avatar', {
-        body: { imageBase64: base64 }
-      });
-
-      if (moderationResult.data?.inappropriate) {
-        toast.error('This image is not appropriate for a profile picture. Please choose another.');
-        setUploadingAvatar(false);
-        return;
-      }
-
+    try {
+      // Upload to storage first
       const filePath = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
       const { error: uploadError } = await supabase.storage
         .from('forum-avatars')
@@ -116,22 +141,26 @@ export default function ForumSettings() {
         .from('forum-avatars')
         .getPublicUrl(filePath);
 
-      const { error: updateError } = await supabase
-        .from('forum_users')
-        .update({ avatar_url: urlData.publicUrl })
-        .eq('id', forumUser.id);
+      // Create avatar request for admin approval
+      const { error: requestError } = await supabase
+        .from('forum_avatar_requests')
+        .insert({
+          forum_user_id: forumUser.id,
+          image_url: urlData.publicUrl,
+          status: 'pending'
+        });
 
-      if (updateError) {
-        toast.error('Failed to update profile');
+      if (requestError) {
+        toast.error('Failed to submit avatar for review');
       } else {
-        toast.success('Avatar updated!');
-        window.location.reload();
+        toast.success('Avatar submitted for admin approval!');
+        fetchPendingAvatar();
       }
+    } catch (err) {
+      toast.error('Failed to upload avatar');
+    }
 
-      setUploadingAvatar(false);
-    };
-
-    reader.readAsDataURL(file);
+    setUploadingAvatar(false);
   };
 
   const handleUnblock = async (blockedId: string) => {
@@ -217,18 +246,41 @@ export default function ForumSettings() {
               onChange={handleAvatarUpload}
               className="hidden"
             />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition"
-            >
-              {uploadingAvatar ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Upload className="w-4 h-4" />
-              )}
-              {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
-            </button>
+            {pendingAvatar?.status === 'pending' ? (
+              <div className="flex items-center gap-1 text-sm text-yellow-500">
+                <Clock className="w-4 h-4" />
+                Pending review
+              </div>
+            ) : pendingAvatar?.status === 'denied' ? (
+              <div className="text-center">
+                <div className="text-xs text-red-400 mb-1">Denied: {pendingAvatar.denial_reason || 'Not appropriate'}</div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition"
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  {uploadingAvatar ? 'Uploading...' : 'Try Again'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition"
+              >
+                {uploadingAvatar ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+              </button>
+            )}
           </div>
 
           {/* Info */}
@@ -242,7 +294,7 @@ export default function ForumSettings() {
             </div>
             <div>
               <label className="text-sm text-[hsl(var(--bc-text-muted))]">Email</label>
-              <div className="text-[hsl(var(--bc-text))]">{user.email}</div>
+              <div className="text-[hsl(var(--bc-text))]">{maskEmail(user.email || '')}</div>
             </div>
           </div>
         </div>

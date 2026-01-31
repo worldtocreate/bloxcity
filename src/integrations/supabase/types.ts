@@ -98,6 +98,47 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_avatar_requests: {
+        Row: {
+          created_at: string
+          denial_reason: string | null
+          forum_user_id: string
+          id: string
+          image_url: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          denial_reason?: string | null
+          forum_user_id: string
+          id?: string
+          image_url: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          denial_reason?: string | null
+          forum_user_id?: string
+          id?: string
+          image_url?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_avatar_requests_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_blocked_users: {
         Row: {
           blocked_id: string
