@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { 
   LogOut, Check, X, Clock, RefreshCw, Users, Mail, Send, Image, 
-  BarChart3, Ban, Trash2, Plus, CheckSquare, Square
+  BarChart3, Ban, Trash2, Plus, CheckSquare, Square, Shield, Activity,
+  UserPlus, UserMinus
 } from "lucide-react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
@@ -31,6 +32,25 @@ interface BannedWord {
   created_at: string;
 }
 
+interface AdminUser {
+  id: string;
+  user_id: string;
+  role: string;
+  email: string;
+  created_at: string;
+}
+
+interface ActivityLog {
+  id: string;
+  admin_user_id: string;
+  admin_email: string | null;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
 interface Stats {
   reservations: {
     total: number;
@@ -53,7 +73,7 @@ const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "reservations" | "newsletter" | "banned">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "reservations" | "newsletter" | "banned" | "admins" | "logs">("dashboard");
   
   // Stats state
   const [stats, setStats] = useState<Stats | null>(null);
@@ -81,6 +101,17 @@ const Admin = () => {
   const [newBannedWord, setNewBannedWord] = useState("");
   const [newBannedReason, setNewBannedReason] = useState("");
   const [addingWord, setAddingWord] = useState(false);
+
+  // Admin users state
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminRole, setNewAdminRole] = useState<"admin" | "moderator">("admin");
+  const [addingAdmin, setAddingAdmin] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+
+  // Activity logs state
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [logFilter, setLogFilter] = useState<string>("all");
   
   const navigate = useNavigate();
 
@@ -133,9 +164,13 @@ const Admin = () => {
         fetchSubscribers();
       } else if (activeTab === "banned") {
         fetchBannedWords();
+      } else if (activeTab === "admins") {
+        fetchAdminUsers();
+      } else if (activeTab === "logs") {
+        fetchActivityLogs();
       }
     }
-  }, [isAdmin, filter, activeTab]);
+  }, [isAdmin, filter, activeTab, logFilter]);
 
   const fetchStats = async () => {
     const response = await supabase.functions.invoke('admin-get-stats');
@@ -167,6 +202,24 @@ const Admin = () => {
     });
     if (response.data?.words) {
       setBannedWords(response.data.words);
+    }
+  };
+
+  const fetchAdminUsers = async () => {
+    const response = await supabase.functions.invoke('admin-manage-users', {
+      body: { action: 'list' }
+    });
+    if (response.data?.users) {
+      setAdminUsers(response.data.users);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    const response = await supabase.functions.invoke('admin-get-activity-logs', {
+      body: { filter: logFilter, limit: 100 }
+    });
+    if (response.data?.logs) {
+      setActivityLogs(response.data.logs);
     }
   };
 
@@ -296,6 +349,59 @@ const Admin = () => {
     }
   };
 
+  const handleAddAdmin = async () => {
+    if (!newAdminEmail.trim()) return;
+    
+    setAddingAdmin(true);
+    setAdminError(null);
+    
+    const response = await supabase.functions.invoke('admin-manage-users', {
+      body: { action: 'add', email: newAdminEmail.trim(), role: newAdminRole }
+    });
+    
+    if (response.data?.success) {
+      fetchAdminUsers();
+      setNewAdminEmail("");
+    } else if (response.data?.error) {
+      setAdminError(response.data.error);
+    } else if (response.error) {
+      setAdminError("Failed to add admin");
+    }
+    setAddingAdmin(false);
+  };
+
+  const handleRemoveAdmin = async (targetUserId: string, role: string) => {
+    if (targetUserId === user?.id) {
+      setAdminError("You cannot remove your own admin role");
+      return;
+    }
+    
+    const response = await supabase.functions.invoke('admin-manage-users', {
+      body: { action: 'remove', targetUserId, role }
+    });
+    
+    if (response.data?.success) {
+      fetchAdminUsers();
+    } else if (response.data?.error) {
+      setAdminError(response.data.error);
+    }
+  };
+
+  const getActionLabel = (action: string) => {
+    const labels: Record<string, string> = {
+      'approve_reservation': 'Approved reservation',
+      'deny_reservation': 'Denied reservation',
+      'add_banned_word': 'Added banned word',
+      'delete_banned_word': 'Deleted banned word',
+      'add_role': 'Added admin role',
+      'remove_role': 'Removed admin role',
+      'send_newsletter': 'Sent newsletter',
+      'bulk_approve': 'Bulk approved',
+      'bulk_deny': 'Bulk denied',
+    };
+    return labels[action] || action;
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
@@ -407,6 +513,28 @@ const Admin = () => {
             >
               <Ban className="w-4 h-4" />
               Banned Words
+            </button>
+            <button
+              onClick={() => setActiveTab("admins")}
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
+                activeTab === "admins"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              Admin Users
+            </button>
+            <button
+              onClick={() => setActiveTab("logs")}
+              className={`flex items-center gap-2 px-4 py-3 border-b-2 font-medium transition whitespace-nowrap ${
+                activeTab === "logs"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              Activity Logs
             </button>
           </div>
         </div>
@@ -875,6 +1003,204 @@ const Admin = () => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Admin Users Tab */}
+        {activeTab === "admins" && (
+          <div className="space-y-6">
+            {/* Add New Admin */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <UserPlus className="w-5 h-5" />
+                Add Admin User
+              </h2>
+              <div className="flex flex-wrap gap-4">
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  placeholder="User email address"
+                  className="flex-1 min-w-64 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+                <select
+                  value={newAdminRole}
+                  onChange={(e) => setNewAdminRole(e.target.value as "admin" | "moderator")}
+                  className="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="moderator">Moderator</option>
+                </select>
+                <button
+                  onClick={handleAddAdmin}
+                  disabled={addingAdmin || !newAdminEmail.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {addingAdmin ? "Adding..." : "Add User"}
+                </button>
+              </div>
+              {adminError && (
+                <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg border border-red-200">
+                  {adminError}
+                </div>
+              )}
+              <p className="mt-3 text-sm text-gray-500">
+                The user must have already signed up before you can add them as an admin.
+              </p>
+            </div>
+
+            {/* Admin Users List */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">Admin Users</h2>
+                  <p className="text-sm text-gray-500">{adminUsers.length} users with elevated privileges</p>
+                </div>
+                <button
+                  onClick={fetchAdminUsers}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Email</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Role</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Added</th>
+                      <th className="text-right px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                          No admin users found
+                        </td>
+                      </tr>
+                    ) : (
+                      adminUsers.map((adminUser) => (
+                        <tr key={adminUser.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="px-6 py-3 text-sm text-gray-800">{adminUser.email}</td>
+                          <td className="px-6 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              adminUser.role === 'admin'
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {adminUser.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-sm text-gray-500">
+                            {new Date(adminUser.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            {adminUser.user_id !== user?.id && (
+                              <button
+                                onClick={() => handleRemoveAdmin(adminUser.user_id, adminUser.role)}
+                                className="flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition ml-auto"
+                              >
+                                <UserMinus className="w-4 h-4" />
+                                Remove
+                              </button>
+                            )}
+                            {adminUser.user_id === user?.id && (
+                              <span className="text-sm text-gray-400">(You)</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Logs Tab */}
+        {activeTab === "logs" && (
+          <div className="space-y-6">
+            <div className="flex flex-wrap gap-2 mb-6">
+              {['all', 'approve_reservation', 'deny_reservation', 'add_banned_word', 'add_role', 'remove_role'].map((action) => (
+                <button
+                  key={action}
+                  onClick={() => setLogFilter(action)}
+                  className={`px-4 py-2 rounded-lg font-medium transition text-sm ${
+                    logFilter === action
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {action === 'all' ? 'All' : getActionLabel(action)}
+                </button>
+              ))}
+              <button
+                onClick={fetchActivityLogs}
+                className="ml-auto flex items-center gap-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-800">Activity History</h2>
+                <p className="text-sm text-gray-500">Recent admin actions (last 100)</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Action</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Admin</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Details</th>
+                      <th className="text-left px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activityLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                          No activity logs found
+                        </td>
+                      </tr>
+                    ) : (
+                      activityLogs.map((log) => (
+                        <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="px-6 py-3">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              log.action.includes('approve') ? 'bg-green-100 text-green-700' :
+                              log.action.includes('deny') ? 'bg-red-100 text-red-700' :
+                              log.action.includes('add') ? 'bg-blue-100 text-blue-700' :
+                              log.action.includes('remove') || log.action.includes('delete') ? 'bg-orange-100 text-orange-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {getActionLabel(log.action)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-3 text-sm text-gray-600">{log.admin_email || 'Unknown'}</td>
+                          <td className="px-6 py-3 text-sm text-gray-500 max-w-xs truncate">
+                            {log.details?.username && <span className="font-mono">@{String(log.details.username)}</span>}
+                            {log.details?.email && <span>{String(log.details.email)}</span>}
+                            {log.details?.word && <span className="font-mono">{String(log.details.word)}</span>}
+                            {log.details?.role && <span className="capitalize">{String(log.details.role)}</span>}
+                          </td>
+                          <td className="px-6 py-3 text-sm text-gray-500">
+                            {new Date(log.created_at).toLocaleString()}
                           </td>
                         </tr>
                       ))

@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.admin-bulk-action]
 verify_jwt = false
+
+[functions.admin-manage-users]
+verify_jwt = false
+
+[functions.admin-get-activity-logs]
+verify_jwt = false

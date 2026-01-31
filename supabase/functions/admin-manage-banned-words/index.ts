@@ -6,6 +6,30 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Helper to log admin activity
+async function logActivity(
+  supabaseAdmin: any,
+  adminUserId: string,
+  adminEmail: string | undefined,
+  action: string,
+  targetType: string,
+  targetId: string | null,
+  details: Record<string, unknown>
+) {
+  try {
+    await supabaseAdmin.from("admin_activity_logs").insert({
+      admin_user_id: adminUserId,
+      admin_email: adminEmail,
+      action,
+      target_type: targetType,
+      target_id: targetId,
+      details,
+    });
+  } catch (e) {
+    console.error("Failed to log activity:", e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -91,6 +115,7 @@ Deno.serve(async (req) => {
         throw error;
       }
 
+      await logActivity(supabaseAdmin, user.id, user.email, "add_banned_word", "banned_word", null, { word: word.toLowerCase().trim(), reason });
       console.log(`Banned word added: ${word}`);
 
       return new Response(
@@ -114,6 +139,7 @@ Deno.serve(async (req) => {
 
       if (error) throw error;
 
+      await logActivity(supabaseAdmin, user.id, user.email, "delete_banned_word", "banned_word", wordId, {});
       console.log(`Banned word deleted: ${wordId}`);
 
       return new Response(
