@@ -13,6 +13,10 @@ export interface ForumUser {
   suspension_ends_at: string | null;
   post_count: number;
   created_at: string;
+  is_verified: boolean;
+  dm_encryption_pin_hash: string | null;
+  allow_dms: boolean;
+  hide_threads: boolean;
 }
 
 export function useForumAuth() {
