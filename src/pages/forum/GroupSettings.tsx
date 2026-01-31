@@ -95,11 +95,20 @@ export default function GroupSettings() {
   const [depositAmount, setDepositAmount] = useState('');
   const [newBlockedWord, setNewBlockedWord] = useState('');
 
-  // Role creation
+  // Role creation/editing
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<GroupRole | null>(null);
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleColor, setNewRoleColor] = useState('#6b7280');
   const [newRoleRank, setNewRoleRank] = useState(1);
+  const [newRolePermissions, setNewRolePermissions] = useState({
+    can_post_wall: true,
+    can_delete_posts: false,
+    can_kick_members: false,
+    can_manage_roles: false,
+    can_manage_events: false,
+    can_manage_settings: false,
+  });
   const [creatingRole, setCreatingRole] = useState(false);
 
   // Member role assignment
@@ -363,6 +372,7 @@ export default function GroupSettings() {
         name: newRoleName.trim(),
         color: newRoleColor,
         rank: newRoleRank,
+        permissions: newRolePermissions,
         is_default: false
       });
 
@@ -370,13 +380,66 @@ export default function GroupSettings() {
       toast.error('Failed to create role');
     } else {
       toast.success('Role created!');
-      setShowRoleModal(false);
-      setNewRoleName('');
-      setNewRoleColor('#6b7280');
-      setNewRoleRank(1);
+      resetRoleForm();
       fetchGroup();
     }
     setCreatingRole(false);
+  };
+
+  const handleUpdateRole = async () => {
+    if (!group || !editingRole || !newRoleName.trim()) return;
+
+    setCreatingRole(true);
+    const { error } = await supabase
+      .from('forum_group_roles')
+      .update({
+        name: newRoleName.trim(),
+        color: newRoleColor,
+        rank: newRoleRank,
+        permissions: newRolePermissions,
+      })
+      .eq('id', editingRole.id);
+
+    if (error) {
+      toast.error('Failed to update role');
+    } else {
+      toast.success('Role updated!');
+      resetRoleForm();
+      fetchGroup();
+    }
+    setCreatingRole(false);
+  };
+
+  const resetRoleForm = () => {
+    setShowRoleModal(false);
+    setEditingRole(null);
+    setNewRoleName('');
+    setNewRoleColor('#6b7280');
+    setNewRoleRank(1);
+    setNewRolePermissions({
+      can_post_wall: true,
+      can_delete_posts: false,
+      can_kick_members: false,
+      can_manage_roles: false,
+      can_manage_events: false,
+      can_manage_settings: false,
+    });
+  };
+
+  const openEditRole = (role: GroupRole) => {
+    setEditingRole(role);
+    setNewRoleName(role.name);
+    setNewRoleColor(role.color);
+    setNewRoleRank(role.rank);
+    setNewRolePermissions({
+      can_post_wall: role.permissions?.can_post_wall ?? true,
+      can_delete_posts: role.permissions?.can_delete_posts ?? false,
+      can_kick_members: role.permissions?.can_kick_members ?? false,
+      can_manage_roles: role.permissions?.can_manage_roles ?? false,
+      can_manage_events: role.permissions?.can_manage_events ?? false,
+      can_manage_settings: role.permissions?.can_manage_settings ?? false,
+    });
+    setShowRoleModal(true);
   };
 
   const handleDeleteRole = async (roleId: string) => {
@@ -947,6 +1010,12 @@ export default function GroupSettings() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-[hsl(var(--bc-text-muted))]">Rank {role.rank}</span>
+                      <button
+                        onClick={() => openEditRole(role)}
+                        className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
                       {!role.is_default && (
                         <button
                           onClick={() => handleDeleteRole(role.id)}
@@ -1153,11 +1222,13 @@ export default function GroupSettings() {
         )}
       </Tabs>
 
-      {/* Create Role Modal */}
+      {/* Create/Edit Role Modal */}
       {showRoleModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Create Role</h2>
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">
+              {editingRole ? 'Edit Role' : 'Create Role'}
+            </h2>
             
             <div className="space-y-4">
               <div>
@@ -1207,20 +1278,106 @@ export default function GroupSettings() {
                 />
               </div>
 
+              {/* Permissions */}
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-3">
+                  Permissions
+                </label>
+                <div className="space-y-3 bg-[hsl(var(--bc-bg-light))] rounded-lg p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newRolePermissions.can_post_wall}
+                      onChange={(e) => setNewRolePermissions(prev => ({ ...prev, can_post_wall: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[hsl(var(--bc-border))] text-[hsl(var(--bc-primary))] focus:ring-[hsl(var(--bc-primary))]"
+                    />
+                    <div>
+                      <span className="text-[hsl(var(--bc-text))]">Post on wall</span>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">Can post messages on the group wall</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newRolePermissions.can_delete_posts}
+                      onChange={(e) => setNewRolePermissions(prev => ({ ...prev, can_delete_posts: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[hsl(var(--bc-border))] text-[hsl(var(--bc-primary))] focus:ring-[hsl(var(--bc-primary))]"
+                    />
+                    <div>
+                      <span className="text-[hsl(var(--bc-text))]">Delete posts</span>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">Can delete wall posts from other members</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newRolePermissions.can_kick_members}
+                      onChange={(e) => setNewRolePermissions(prev => ({ ...prev, can_kick_members: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[hsl(var(--bc-border))] text-[hsl(var(--bc-primary))] focus:ring-[hsl(var(--bc-primary))]"
+                    />
+                    <div>
+                      <span className="text-[hsl(var(--bc-text))]">Kick members</span>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">Can remove members from the group</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newRolePermissions.can_manage_roles}
+                      onChange={(e) => setNewRolePermissions(prev => ({ ...prev, can_manage_roles: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[hsl(var(--bc-border))] text-[hsl(var(--bc-primary))] focus:ring-[hsl(var(--bc-primary))]"
+                    />
+                    <div>
+                      <span className="text-[hsl(var(--bc-text))]">Manage roles</span>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">Can assign roles to members</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newRolePermissions.can_manage_events}
+                      onChange={(e) => setNewRolePermissions(prev => ({ ...prev, can_manage_events: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[hsl(var(--bc-border))] text-[hsl(var(--bc-primary))] focus:ring-[hsl(var(--bc-primary))]"
+                    />
+                    <div>
+                      <span className="text-[hsl(var(--bc-text))]">Manage events</span>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">Can create and manage group events</p>
+                    </div>
+                  </label>
+                  
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newRolePermissions.can_manage_settings}
+                      onChange={(e) => setNewRolePermissions(prev => ({ ...prev, can_manage_settings: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[hsl(var(--bc-border))] text-[hsl(var(--bc-primary))] focus:ring-[hsl(var(--bc-primary))]"
+                    />
+                    <div>
+                      <span className="text-[hsl(var(--bc-text))]">Manage settings</span>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">Can modify group settings</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowRoleModal(false)}
+                  onClick={resetRoleForm}
                   className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleCreateRole}
+                  onClick={editingRole ? handleUpdateRole : handleCreateRole}
                   disabled={creatingRole || !newRoleName.trim()}
                   className="flex-1 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg transition flex items-center justify-center gap-2"
                 >
-                  {creatingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Create
+                  {creatingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : editingRole ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {editingRole ? 'Save' : 'Create'}
                 </button>
               </div>
             </div>
