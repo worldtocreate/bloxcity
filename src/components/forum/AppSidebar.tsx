@@ -1,0 +1,202 @@
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Home,
+  MessageSquare,
+  Gamepad2,
+  Store,
+  User,
+  ArrowLeftRight,
+  Users,
+  UsersRound,
+  Settings,
+  Mail,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+
+interface AppSidebarProps {
+  forumUser?: {
+    username: string;
+  } | null;
+  isLoggedIn: boolean;
+}
+
+const mainNavItems = [
+  { title: 'Dashboard', url: '/', icon: Home },
+  { title: 'Forum', url: '/forum', icon: MessageSquare },
+  { title: 'Players', url: '/players', icon: Users },
+  { title: 'Groups', url: '/groups', icon: UsersRound },
+];
+
+const comingSoonItems = [
+  { title: 'Games', url: '/games', icon: Gamepad2 },
+  { title: 'Market', url: '/market', icon: Store },
+  { title: 'Character', url: '/character', icon: User },
+  { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
+];
+
+export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
+  const location = useLocation();
+  const { state, toggleSidebar } = useSidebar();
+  const collapsed = state === 'collapsed';
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <Sidebar
+      className={`border-r border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-card))] transition-all duration-300 ${
+        collapsed ? 'w-16' : 'w-60'
+      }`}
+      collapsible="icon"
+    >
+      <SidebarHeader className="p-3 border-b border-[hsl(var(--bc-border))]">
+        <Link to="/" className="flex items-center gap-2">
+          <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 rounded-lg flex-shrink-0" />
+          {!collapsed && (
+            <span className="font-bold text-[hsl(var(--bc-text))]">BLOX City</span>
+          )}
+        </Link>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 py-4">
+        {/* Main Navigation */}
+        <SidebarGroup>
+          {!collapsed && (
+            <SidebarGroupLabel className="text-xs font-semibold text-[hsl(var(--bc-text-muted))] uppercase tracking-wider mb-2 px-2">
+              Navigation
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={item.url}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive(item.url)
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Coming Soon Section */}
+        <SidebarGroup className="mt-4">
+          {!collapsed && (
+            <SidebarGroupLabel className="text-xs font-semibold text-[hsl(var(--bc-text-muted))] uppercase tracking-wider mb-2 px-2">
+              Coming Soon
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {comingSoonItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to={item.url}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive(item.url)
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* User Section */}
+        {isLoggedIn && (
+          <SidebarGroup className="mt-4">
+            {!collapsed && (
+              <SidebarGroupLabel className="text-xs font-semibold text-[hsl(var(--bc-text-muted))] uppercase tracking-wider mb-2 px-2">
+                Account
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to="/messages"
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/messages')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Mail className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Messages</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link
+                      to="/settings"
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/settings')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Settings className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Settings</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+
+      <SidebarFooter className="p-2 border-t border-[hsl(var(--bc-border))]">
+        <button
+          onClick={toggleSidebar}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))] transition-colors"
+        >
+          {collapsed ? (
+            <ChevronRight className="w-5 h-5" />
+          ) : (
+            <>
+              <ChevronLeft className="w-5 h-5" />
+              <span className="text-sm">Collapse</span>
+            </>
+          )}
+        </button>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

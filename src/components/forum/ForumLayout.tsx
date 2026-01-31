@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
 import ForumHeader from './ForumHeader';
+import AppSidebar from './AppSidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { Loader2, Megaphone, X, Shield, Lock, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -248,97 +250,104 @@ export default function ForumLayout() {
   const showEmailVerificationBanner = user && forumUser && emailVerified === false;
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
-      <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
-      
-      {/* Email Verification Banner */}
-      {showEmailVerificationBanner && (
-        <div className="bg-amber-50 border-b border-amber-200">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2 flex-1">
-              <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <span className="text-sm font-medium text-amber-800">
-                Verify your email <strong>{user.email}</strong> to access forum features like posting, replying, and direct messages.
-              </span>
-            </div>
-            {verificationEmailSent ? (
-              <span className="text-sm text-amber-700 font-medium">Email sent! Check your inbox.</span>
-            ) : (
-              <button
-                onClick={handleSendVerificationEmail}
-                disabled={sendingVerification}
-                className="flex items-center gap-2 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg text-sm font-medium transition"
-              >
-                {sendingVerification ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]">
+        <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
+        
+        <div className="flex-1 flex flex-col min-w-0">
+          <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+          
+          {/* Email Verification Banner */}
+          {showEmailVerificationBanner && (
+            <div className="bg-amber-50 border-b border-amber-200">
+              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-1">
+                  <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <span className="text-sm font-medium text-amber-800">
+                    Verify your email <strong>{user.email}</strong> to access forum features like posting, replying, and direct messages.
+                  </span>
+                </div>
+                {verificationEmailSent ? (
+                  <span className="text-sm text-amber-700 font-medium">Email sent! Check your inbox.</span>
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <button
+                    onClick={handleSendVerificationEmail}
+                    disabled={sendingVerification}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg text-sm font-medium transition"
+                  >
+                    {sendingVerification ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Send Verification Email
+                  </button>
                 )}
-                Send Verification Email
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-      
-      {/* Admin 2FA Warning Banner on Settings Page */}
-      {adminNeeds2FA && isSettingsPage && (
-        <div className="bg-amber-50 border-b border-amber-200">
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-            <Shield className="w-5 h-5 text-amber-600 flex-shrink-0" />
-            <span className="text-sm font-medium text-amber-800">
-              You must enable Two-Factor Authentication before you can access other forum features.
-            </span>
-          </div>
-        </div>
-      )}
-      
-      {/* Announcement Banner */}
-      {announcement?.enabled && announcement.message && !bannerDismissed && (
-        <div className={`border-b ${bannerStyles[announcement.type]}`}>
-          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-1">
-              <Megaphone className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">{announcement.message}</span>
+              </div>
             </div>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className="p-1 hover:bg-black/10 rounded transition"
-              aria-label="Dismiss announcement"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          )}
+          
+          {/* Admin 2FA Warning Banner on Settings Page */}
+          {adminNeeds2FA && isSettingsPage && (
+            <div className="bg-amber-50 border-b border-amber-200">
+              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+                <Shield className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-amber-800">
+                  You must enable Two-Factor Authentication before you can access other forum features.
+                </span>
+              </div>
+            </div>
+          )}
+          
+          {/* Announcement Banner */}
+          {announcement?.enabled && announcement.message && !bannerDismissed && (
+            <div className={`border-b ${bannerStyles[announcement.type]}`}>
+              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-1">
+                  <Megaphone className="w-5 h-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">{announcement.message}</span>
+                </div>
+                <button
+                  onClick={() => setBannerDismissed(true)}
+                  className="p-1 hover:bg-black/10 rounded transition"
+                  aria-label="Dismiss announcement"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+          
+          <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+            {loading || checkingTwoFA ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
+              </div>
+            ) : (
+              <Outlet context={{ user, forumUser, isAdmin, loading, emailVerified }} />
+            )}
+          </main>
+          
+          <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-auto">
+            <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
+              <div className="flex items-center justify-center gap-4 text-sm">
+                <Link to="/users" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Members</Link>
+                <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Staff</Link>
+                <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">FAQ</Link>
+              </div>
+              <p className="text-[hsl(var(--bc-text-muted))] text-sm">
+                © 2026 BLOX City, Inc. All rights reserved.
+              </p>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                Looking for where BLOX City is now? Isaac is over at{" "}
+                <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">brickplanet.com</a>
+                {" "}& Kyle is over at{" "}
+                <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">truworlds.net</a>
+              </p>
+            </div>
+          </footer>
         </div>
-      )}
-      
-      <main className="max-w-6xl mx-auto px-4 py-6">
-        {loading || checkingTwoFA ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
-          </div>
-        ) : (
-          <Outlet context={{ user, forumUser, isAdmin, loading, emailVerified }} />
-        )}
-      </main>
-      <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
-          <div className="flex items-center justify-center gap-4 text-sm">
-            <Link to="/users" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Members</Link>
-            <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Staff</Link>
-            <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">FAQ</Link>
-          </div>
-          <p className="text-[hsl(var(--bc-text-muted))] text-sm">
-            © 2026 BLOX City, Inc. All rights reserved.
-          </p>
-          <p className="text-xs text-[hsl(var(--bc-text-muted))]">
-            Looking for where BLOX City is now? Isaac is over at{" "}
-            <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">brickplanet.com</a>
-            {" "}& Kyle is over at{" "}
-            <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-primary))] hover:underline">truworlds.net</a>
-          </p>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
