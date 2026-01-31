@@ -180,6 +180,50 @@ export type Database = {
           },
         ]
       }
+      forum_2fa_trusted_devices: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          device_token: string
+          expires_at: string
+          forum_user_id: string
+          id: string
+          ip_address: string | null
+          last_used_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          device_token: string
+          expires_at: string
+          forum_user_id: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          device_token?: string
+          expires_at?: string
+          forum_user_id?: string
+          id?: string
+          ip_address?: string | null
+          last_used_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_2fa_trusted_devices_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_account_deletion_requests: {
         Row: {
           forum_user_id: string

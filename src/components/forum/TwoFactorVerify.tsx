@@ -1,13 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Loader2, Key, Mail, Smartphone } from 'lucide-react';
+import { Shield, Loader2, Key, Mail, Smartphone, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TwoFactorVerifyProps {
   email: string;
   method: 'totp' | 'email';
-  onVerified: () => void;
+  onVerified: (deviceToken?: string) => void;
   onCancel: () => void;
+}
+
+// Get or generate a unique device identifier
+function getDeviceId(): string {
+  const storageKey = 'bloxcity-device-id';
+  let deviceId = localStorage.getItem(storageKey);
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem(storageKey, deviceId);
+  }
+  return deviceId;
+}
+
+// Check if device is trusted (stored token)
+export function getTrustedDeviceToken(email: string): string | null {
+  const key = `bloxcity-2fa-trusted-${email.toLowerCase()}`;
+  return localStorage.getItem(key);
+}
+
+// Store trusted device token
+export function storeTrustedDeviceToken(email: string, token: string): void {
+  const key = `bloxcity-2fa-trusted-${email.toLowerCase()}`;
+  localStorage.setItem(key, token);
+}
+
+// Clear trusted device token
+export function clearTrustedDeviceToken(email: string): void {
+  const key = `bloxcity-2fa-trusted-${email.toLowerCase()}`;
+  localStorage.removeItem(key);
 }
 
 export default function TwoFactorVerify({ email, method, onVerified, onCancel }: TwoFactorVerifyProps) {
@@ -16,6 +45,7 @@ export default function TwoFactorVerify({ email, method, onVerified, onCancel }:
   const [verifying, setVerifying] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
 
   const sendEmailCode = async () => {
     setSendingCode(true);
@@ -42,15 +72,30 @@ export default function TwoFactorVerify({ email, method, onVerified, onCancel }:
 
     setVerifying(true);
     try {
+      const deviceId = getDeviceId();
+      const userAgent = navigator.userAgent;
+      
       const { data, error } = await supabase.functions.invoke('forum-2fa-verify', {
-        body: { action: 'verify', email, code, useBackup }
+        body: { 
+          action: 'verify', 
+          email, 
+          code, 
+          useBackup,
+          rememberDevice,
+          deviceId,
+          userAgent
+        }
       });
 
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
       if (data.verified) {
-        onVerified();
+        // Store trusted device token if returned
+        if (data.deviceToken) {
+          storeTrustedDeviceToken(email, data.deviceToken);
+        }
+        onVerified(data.deviceToken);
       } else {
         toast.error('Invalid code');
       }
@@ -134,6 +179,23 @@ export default function TwoFactorVerify({ email, method, onVerified, onCancel }:
               'Verify'
             )}
           </button>
+
+          {/* Remember device checkbox */}
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div 
+              onClick={() => setRememberDevice(!rememberDevice)}
+              className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+                rememberDevice 
+                  ? 'bg-[hsl(var(--bc-primary))] border-[hsl(var(--bc-primary))]' 
+                  : 'border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-light))]'
+              }`}
+            >
+              {rememberDevice && <Check className="w-3 h-3 text-white" />}
+            </div>
+            <span className="text-sm text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-text))]">
+              Remember this device for 30 days
+            </span>
+          </label>
         </>
       )}
 
