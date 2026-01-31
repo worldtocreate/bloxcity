@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck } from 'lucide-react';
+import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ForumUserData {
@@ -17,6 +17,17 @@ interface ForumUserData {
 }
 
 interface AvatarRequest {
+  id: string;
+  forum_user_id: string;
+  image_url: string;
+  status: string;
+  created_at: string;
+  forum_user?: {
+    username: string;
+  };
+}
+
+interface CoverRequest {
   id: string;
   forum_user_id: string;
   image_url: string;
@@ -47,26 +58,32 @@ interface ForumModTabProps {
 export default function ForumModTab({ darkMode }: ForumModTabProps) {
   const [forumUsers, setForumUsers] = useState<ForumUserData[]>([]);
   const [avatarRequests, setAvatarRequests] = useState<AvatarRequest[]>([]);
+  const [coverRequests, setCoverRequests] = useState<CoverRequest[]>([]);
   const [verificationRequests, setVerificationRequests] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAvatars, setLoadingAvatars] = useState(true);
+  const [loadingCovers, setLoadingCovers] = useState(true);
   const [loadingVerifications, setLoadingVerifications] = useState(true);
   const [search, setSearch] = useState('');
   const [showSuspendModal, setShowSuspendModal] = useState<string | null>(null);
   const [suspensionReason, setSuspensionReason] = useState('');
   const [suspensionDays, setSuspensionDays] = useState('7');
   const [suspending, setSuspending] = useState(false);
-  const [activeSection, setActiveSection] = useState<'users' | 'avatars' | 'verification'>('users');
+  const [activeSection, setActiveSection] = useState<'users' | 'avatars' | 'covers' | 'verification'>('users');
   const [processingAvatar, setProcessingAvatar] = useState<string | null>(null);
+  const [processingCover, setProcessingCover] = useState<string | null>(null);
   const [processingVerification, setProcessingVerification] = useState<string | null>(null);
   const [denyReason, setDenyReason] = useState('');
   const [showDenyModal, setShowDenyModal] = useState<string | null>(null);
+  const [showDenyCoverModal, setShowDenyCoverModal] = useState<string | null>(null);
+  const [coverDenyReason, setCoverDenyReason] = useState('');
   const [showDenyVerificationModal, setShowDenyVerificationModal] = useState<string | null>(null);
   const [verifyDenyReason, setVerifyDenyReason] = useState('');
 
   useEffect(() => {
     fetchForumUsers();
     fetchAvatarRequests();
+    fetchCoverRequests();
     fetchVerificationRequests();
   }, []);
 
@@ -95,6 +112,20 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
       setAvatarRequests(data as AvatarRequest[]);
     }
     setLoadingAvatars(false);
+  };
+
+  const fetchCoverRequests = async () => {
+    setLoadingCovers(true);
+    const { data } = await supabase
+      .from('forum_cover_requests')
+      .select('*, forum_user:forum_user_id (username)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setCoverRequests(data as CoverRequest[]);
+    }
+    setLoadingCovers(false);
   };
 
   const fetchVerificationRequests = async () => {
@@ -168,7 +199,61 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
     setProcessingAvatar(null);
   };
 
-  const handleApproveVerification = async (request: VerificationRequest) => {
+  const handleApproveCover = async (request: CoverRequest) => {
+    setProcessingCover(request.id);
+
+    const { error: updateError } = await supabase
+      .from('forum_cover_requests')
+      .update({ 
+        status: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (updateError) {
+      toast.error('Failed to approve cover');
+      setProcessingCover(null);
+      return;
+    }
+
+    const { error: userError } = await supabase
+      .from('forum_users')
+      .update({ cover_url: request.image_url })
+      .eq('id', request.forum_user_id);
+
+    if (userError) {
+      toast.error('Failed to update user cover');
+    } else {
+      toast.success('Cover photo approved and updated');
+      fetchCoverRequests();
+      fetchForumUsers();
+    }
+    setProcessingCover(null);
+  };
+
+  const handleDenyCover = async (requestId: string) => {
+    setProcessingCover(requestId);
+
+    const { error } = await supabase
+      .from('forum_cover_requests')
+      .update({ 
+        status: 'denied',
+        denial_reason: coverDenyReason || 'Image does not meet community guidelines',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to deny cover');
+    } else {
+      toast.success('Cover request denied');
+      fetchCoverRequests();
+      setShowDenyCoverModal(null);
+      setCoverDenyReason('');
+    }
+    setProcessingCover(null);
+  };
+
     setProcessingVerification(request.id);
 
     // Update verification request status
@@ -337,7 +422,7 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
             </div>
           )}
           <button
-            onClick={() => { fetchForumUsers(); fetchAvatarRequests(); fetchVerificationRequests(); }}
+            onClick={() => { fetchForumUsers(); fetchAvatarRequests(); fetchCoverRequests(); fetchVerificationRequests(); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
               darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-200'
             }`}
@@ -374,6 +459,22 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
           {avatarRequests.length > 0 && (
             <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
               {avatarRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveSection('covers')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'covers'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          Cover Requests
+          {coverRequests.length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {coverRequests.length}
             </span>
           )}
         </button>
@@ -602,6 +703,61 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
             </div>
           )}
         </div>
+      ) : activeSection === 'covers' ? (
+        /* Cover Requests Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          {loadingCovers ? (
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>Loading...</div>
+          ) : coverRequests.length === 0 ? (
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>
+              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending cover requests</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+              {coverRequests.map((request) => (
+                <div 
+                  key={request.id} 
+                  className={`border rounded-xl p-4 ${darkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}
+                >
+                  <div className="aspect-[4/1] w-full mb-3 rounded-lg overflow-hidden bg-gray-200">
+                    <img 
+                      src={request.image_url} 
+                      alt="Cover request"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <div className={`font-medium ${textClass}`}>
+                      {request.forum_user?.username || 'Unknown User'}
+                    </div>
+                    <div className={`text-xs ${mutedClass}`}>
+                      Submitted: {new Date(request.created_at).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveCover(request)}
+                      disabled={processingCover === request.id}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                    >
+                      <Check className="w-4 h-4" />
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => setShowDenyCoverModal(request.id)}
+                      disabled={processingCover === request.id}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                    >
+                      <X className="w-4 h-4" />
+                      Deny
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : activeSection === 'verification' ? (
         /* Verification Requests Section */
         <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
@@ -782,6 +938,43 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
               <button
                 onClick={() => handleDenyVerification(showDenyVerificationModal)}
                 disabled={processingVerification === showDenyVerificationModal}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+                Deny Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deny Cover Modal */}
+      {showDenyCoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${cardClass}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Cover Request</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Reason (optional)</label>
+              <textarea
+                value={coverDenyReason}
+                onChange={(e) => setCoverDenyReason(e.target.value)}
+                placeholder="Reason for denial..."
+                className={`w-full px-4 py-2 border rounded-lg resize-none ${inputClass}`}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowDenyCoverModal(null); setCoverDenyReason(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDenyCover(showDenyCoverModal)}
+                disabled={processingCover === showDenyCoverModal}
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
               >
                 <X className="w-4 h-4" />

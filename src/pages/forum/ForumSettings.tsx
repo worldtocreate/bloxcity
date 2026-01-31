@@ -1,11 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
 import TwoFactorSetup from '@/components/forum/TwoFactorSetup';
+
+interface CoverRequest {
+  id: string;
+  status: string;
+  created_at: string;
+  denial_reason: string | null;
+}
 
 interface BlockedUser {
   id: string;
@@ -65,13 +72,16 @@ export default function ForumSettings() {
   }>();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [signature, setSignature] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loadingBlocked, setLoadingBlocked] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<AvatarRequest | null>(null);
+  const [pendingCover, setPendingCover] = useState<CoverRequest | null>(null);
   
   // New states
   const [pin, setPin] = useState('');
@@ -100,6 +110,7 @@ export default function ForumSettings() {
     if (forumUser) {
       fetchBlockedUsers();
       fetchPendingAvatar();
+      fetchPendingCover();
       fetchVerificationRequest();
       fetchPinnedThreads();
     }
@@ -130,6 +141,23 @@ export default function ForumSettings() {
       setPendingAvatar(data as AvatarRequest);
     } else {
       setPendingAvatar(null);
+    }
+  };
+
+  const fetchPendingCover = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('forum_cover_requests')
+      .select('*')
+      .eq('forum_user_id', forumUser.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (data && (data.status === 'pending' || data.status === 'denied')) {
+      setPendingCover(data as CoverRequest);
+    } else {
+      setPendingCover(null);
     }
   };
 
@@ -244,6 +272,59 @@ export default function ForumSettings() {
     }
 
     setUploadingAvatar(false);
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !forumUser || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Cover image must be less than 5MB');
+      return;
+    }
+
+    setUploadingCover(true);
+
+    try {
+      const filePath = `covers/${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('forum-avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        toast.error('Failed to upload cover');
+        setUploadingCover(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('forum-avatars')
+        .getPublicUrl(filePath);
+
+      const { error: requestError } = await supabase
+        .from('forum_cover_requests')
+        .insert({
+          forum_user_id: forumUser.id,
+          image_url: urlData.publicUrl,
+          status: 'pending'
+        });
+
+      if (requestError) {
+        toast.error('Failed to submit cover for review');
+      } else {
+        toast.success('Cover photo submitted for admin approval!');
+        fetchPendingCover();
+      }
+    } catch (err) {
+      toast.error('Failed to upload cover');
+    }
+
+    setUploadingCover(false);
   };
 
   const handleUnblock = async (blockedId: string) => {
@@ -498,7 +579,57 @@ export default function ForumSettings() {
         </div>
       </div>
 
-      {/* Verification Request */}
+      {/* Cover Photo Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <ImageIcon className="w-5 h-5" />
+          Profile Cover
+        </h2>
+        
+        <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+          Add a custom cover photo to personalize your profile. Recommended size: 1200x300 pixels.
+        </p>
+
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleCoverUpload}
+          className="hidden"
+        />
+
+        {pendingCover?.status === 'pending' ? (
+          <div className="flex items-center gap-2 text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm">Your cover photo is pending admin review</span>
+          </div>
+        ) : pendingCover?.status === 'denied' ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+              <X className="w-4 h-4" />
+              <span className="text-sm">Denied: {pendingCover.denial_reason || 'Does not meet guidelines'}</span>
+            </div>
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={uploadingCover}
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition text-sm"
+            >
+              {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploadingCover ? 'Uploading...' : 'Upload New Cover'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => coverInputRef.current?.click()}
+            disabled={uploadingCover}
+            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition text-sm"
+          >
+            {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {uploadingCover ? 'Uploading...' : (forumUser.cover_url ? 'Change Cover Photo' : 'Upload Cover Photo')}
+          </button>
+        )}
+      </div>
+
       {!forumUser.is_verified && (
         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
           <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
