@@ -326,10 +326,12 @@ export default function ForumSettings() {
       });
 
     if (error) {
-      if (error.message.includes('unique')) {
+      // Surface the real error to help diagnose any remaining RLS/validation issues.
+      // (No sensitive data is included in this error message.)
+      if (error.message?.toLowerCase().includes('pending') || error.message?.toLowerCase().includes('exists')) {
         toast.error('You already have a pending verification request');
       } else {
-        toast.error('Failed to submit verification request');
+        toast.error(`Failed to submit verification request: ${error.message}`);
       }
     } else {
       toast.success('Verification request submitted!');
