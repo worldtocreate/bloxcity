@@ -5,7 +5,7 @@ import { User } from "@supabase/supabase-js";
 import { 
   LogOut, Check, X, Clock, RefreshCw, Users, Mail, Send, Image, 
   BarChart3, Ban, Trash2, Plus, CheckSquare, Square, Shield, Activity,
-  UserPlus, UserMinus
+  UserPlus, UserMinus, Search
 } from "lucide-react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
@@ -87,6 +87,7 @@ const Admin = () => {
   const [selectedReservations, setSelectedReservations] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
   const [showBulkDenialModal, setShowBulkDenialModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Newsletter state
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
@@ -439,7 +440,17 @@ const Admin = () => {
   }
 
   const activeSubscribers = subscribers.filter(s => s.is_active).length;
-  const pendingReservations = reservations.filter(r => r.status === 'pending');
+  
+  // Filter reservations by search query
+  const filteredReservations = reservations.filter(r => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return r.username.toLowerCase().includes(query) || 
+           r.email.toLowerCase().includes(query) ||
+           (r.ip_address && r.ip_address.toLowerCase().includes(query));
+  });
+  
+  const pendingReservations = filteredReservations.filter(r => r.status === 'pending');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -652,14 +663,39 @@ const Admin = () => {
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
-              <button
-                onClick={fetchReservations}
-                className="ml-auto flex items-center gap-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
+              <div className="flex items-center gap-2 ml-auto">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search username, email, or IP..."
+                    className="pl-9 pr-4 py-2 w-64 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                  />
+                </div>
+                <button
+                  onClick={fetchReservations}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+              </div>
             </div>
+
+            {/* Search Results Info */}
+            {searchQuery.trim() && (
+              <div className="mb-4 text-sm text-gray-600">
+                Found {filteredReservations.length} result{filteredReservations.length !== 1 ? 's' : ''} for "{searchQuery}"
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="ml-2 text-blue-600 hover:underline"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
 
             {/* Bulk Actions */}
             {filter === 'pending' && pendingReservations.length > 0 && (
@@ -718,14 +754,14 @@ const Admin = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reservations.length === 0 ? (
+                    {filteredReservations.length === 0 ? (
                       <tr>
                         <td colSpan={filter === 'pending' ? 7 : 6} className="px-6 py-12 text-center text-gray-500">
-                          No reservations found
+                          {searchQuery.trim() ? 'No matching reservations found' : 'No reservations found'}
                         </td>
                       </tr>
                     ) : (
-                      reservations.map((reservation) => (
+                      filteredReservations.map((reservation) => (
                         <tr key={reservation.id} className="border-b border-gray-100 hover:bg-gray-50">
                           {filter === 'pending' && (
                             <td className="px-4 py-4">
