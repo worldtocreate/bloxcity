@@ -161,6 +161,10 @@ export default function ForumSettings() {
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [changingUsername, setChangingUsername] = useState(false);
+  
+  // Clear avatar/cover
+  const [clearingAvatar, setClearingAvatar] = useState(false);
+  const [clearingCover, setClearingCover] = useState(false);
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -758,6 +762,42 @@ export default function ForumSettings() {
     setChangingUsername(false);
   };
 
+  const handleClearAvatar = async () => {
+    if (!forumUser) return;
+    setClearingAvatar(true);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ avatar_url: null })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to clear profile picture');
+    } else {
+      toast.success('Profile picture cleared!');
+      window.location.reload();
+    }
+    setClearingAvatar(false);
+  };
+
+  const handleClearCover = async () => {
+    if (!forumUser) return;
+    setClearingCover(true);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ cover_url: null })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to clear cover photo');
+    } else {
+      toast.success('Cover photo cleared!');
+      window.location.reload();
+    }
+    setClearingCover(false);
+  };
+
   if (!user) {
     navigate('/login');
     return null;
@@ -841,14 +881,26 @@ export default function ForumSettings() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition"
-              >
-                {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
-              </button>
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition"
+                >
+                  {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+                </button>
+                {forumUser.avatar_url && (
+                  <button
+                    onClick={handleClearAvatar}
+                    disabled={clearingAvatar}
+                    className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition"
+                  >
+                    {clearingAvatar ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                    Clear
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
@@ -1033,16 +1085,38 @@ export default function ForumSettings() {
               {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               {uploadingCover ? 'Uploading...' : 'Upload New Cover'}
             </button>
+            {forumUser.cover_url && (
+              <button
+                onClick={handleClearCover}
+                disabled={clearingCover}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm"
+              >
+                {clearingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                Clear Cover
+              </button>
+            )}
           </div>
         ) : (
-          <button
-            onClick={() => coverInputRef.current?.click()}
-            disabled={uploadingCover}
-            className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition text-sm"
-          >
-            {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {uploadingCover ? 'Uploading...' : (forumUser.cover_url ? 'Change Cover Photo' : 'Upload Cover Photo')}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              disabled={uploadingCover}
+              className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition text-sm"
+            >
+              {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploadingCover ? 'Uploading...' : (forumUser.cover_url ? 'Change Cover Photo' : 'Upload Cover Photo')}
+            </button>
+            {forumUser.cover_url && (
+              <button
+                onClick={handleClearCover}
+                disabled={clearingCover}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition text-sm"
+              >
+                {clearingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                Clear Cover
+              </button>
+            )}
+          </div>
         )}
       </div>
 
