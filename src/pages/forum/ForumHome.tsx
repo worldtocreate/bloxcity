@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search } from 'lucide-react';
+import WelcomeDialog from '@/components/forum/WelcomeDialog';
 
 interface Category {
   id: string;
@@ -12,11 +13,18 @@ interface Category {
   thread_count?: number;
 }
 
+interface OutletContext {
+  isAdmin: boolean;
+  forumUser: unknown;
+}
+
 export default function ForumHome() {
-  const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
+  const { isAdmin, forumUser } = useOutletContext<OutletContext>();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ users: 0, threads: 0, posts: 0 });
+
+  const isLoggedIn = !!forumUser;
 
   useEffect(() => {
     fetchCategories();
@@ -66,6 +74,9 @@ export default function ForumHome() {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Dialog for non-logged-in users */}
+      <WelcomeDialog isLoggedIn={isLoggedIn} />
+
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
@@ -82,37 +93,6 @@ export default function ForumHome() {
           <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))] mx-auto mb-2" />
           <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.posts.toLocaleString()}</div>
           <div className="text-sm text-[hsl(var(--bc-text-muted))]">Posts</div>
-        </div>
-      </div>
-
-      {/* Username Reservation Section */}
-      <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
-        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Link
-            to="/reserve"
-            className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-              <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
-            </div>
-          </Link>
-          <Link
-            to="/check-status"
-            className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
-              <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
-            </div>
-          </Link>
         </div>
       </div>
 
@@ -157,6 +137,37 @@ export default function ForumHome() {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Username Reservation Section - Now at bottom */}
+      <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Link
+            to="/reserve"
+            className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
+              <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
+            </div>
+          </Link>
+          <Link
+            to="/check-status"
+            className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
+              <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   );
