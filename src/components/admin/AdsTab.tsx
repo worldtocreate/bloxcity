@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Check, X, ExternalLink, Eye, MousePointer, Coins } from 'lucide-react';
+import { Check, X, ExternalLink, Eye, MousePointer, Coins, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
 interface Ad {
   id: string;
   title: string;
@@ -91,6 +90,22 @@ export default function AdsTab({ darkMode }: AdsTabProps) {
       toast({ title: "Ad Denied", description: "The user has been notified." });
       setDenyingId(null);
       setDenialReason('');
+      fetchAds();
+    }
+  };
+
+  const handleDelete = async (adId: string) => {
+    if (!confirm('Are you sure you want to delete this ad? The user will still need to wait 24 hours before submitting a new one.')) return;
+    
+    const { error } = await supabase
+      .from('forum_ads')
+      .delete()
+      .eq('id', adId);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Ad Deleted", description: "The ad has been removed." });
       fetchAds();
     }
   };
@@ -198,9 +213,9 @@ export default function AdsTab({ darkMode }: AdsTabProps) {
                 </div>
               </div>
 
-              {ad.status === 'pending' && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  {denyingId === ad.id ? (
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                {ad.status === 'pending' ? (
+                  denyingId === ad.id ? (
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -247,10 +262,25 @@ export default function AdsTab({ darkMode }: AdsTabProps) {
                         <X className="w-4 h-4" />
                         Deny
                       </button>
+                      <button
+                        onClick={() => handleDelete(ad.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition ml-auto"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </button>
                     </div>
-                  )}
-                </div>
-              )}
+                  )
+                ) : (
+                  <button
+                    onClick={() => handleDelete(ad.id)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Ad
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
