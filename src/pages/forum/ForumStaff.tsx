@@ -101,6 +101,35 @@ export default function ForumStaff() {
             </div>
           ) : (
             <div className="p-6">
+              {/* System */}
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  System
+                </h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <Shield className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-[hsl(var(--bc-text))]">
+                          BLOX City
+                        </span>
+                        <VerifiedBadge size="sm" />
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                          System
+                        </span>
+                      </div>
+                      <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">
+                        Official System Account
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Admins */}
               <div className="mb-8">
                 <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
@@ -108,7 +137,7 @@ export default function ForumStaff() {
                   Administrators
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {staff.filter(s => s.role === 'admin').map(member => (
+                  {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
                     <Link
                       key={member.id}
                       to={`/user/${member.username}`}
@@ -144,14 +173,14 @@ export default function ForumStaff() {
               </div>
 
               {/* Moderators */}
-              {staff.filter(s => s.role === 'moderator').length > 0 && (
+              {staff.filter(s => s.role === 'moderator' && s.username.toLowerCase() !== 'blox city').length > 0 && (
                 <div>
                   <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500" />
                     Moderators
                   </h2>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    {staff.filter(s => s.role === 'moderator').map(member => (
+                    {staff.filter(s => s.role === 'moderator' && s.username.toLowerCase() !== 'blox city').map(member => (
                       <Link
                         key={member.id}
                         to={`/user/${member.username}`}
