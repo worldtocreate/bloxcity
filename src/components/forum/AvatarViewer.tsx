@@ -7,7 +7,7 @@ function AvatarModel() {
 
   return (
     <group rotation={[0, -0.4, 0]}>
-      <primitive object={scene} scale={1} position={[0, -1.2, 0]} />
+      <primitive object={scene} scale={0.02} position={[0, -1.5, 0]} />
     </group>
   );
 }
