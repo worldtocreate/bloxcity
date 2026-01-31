@@ -11,7 +11,6 @@ import {
   Settings,
   Mail,
   ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,7 +50,7 @@ const comingSoonItems = [
 
 export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
   const location = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === 'collapsed';
 
   const isActive = (path: string) => {
@@ -59,15 +58,17 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
     return location.pathname.startsWith(path);
   };
 
+  // Close sidebar on mobile when clicking a link
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
-    <Sidebar
-      className={`border-r border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-card))] transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-60'
-      }`}
-      collapsible="icon"
-    >
+    <Sidebar collapsible="icon">
       <SidebarHeader className="p-3 border-b border-[hsl(var(--bc-border))]">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
           <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 rounded-lg flex-shrink-0" />
           {!collapsed && (
             <span className="font-bold text-[hsl(var(--bc-text))]">BLOX City</span>
@@ -90,6 +91,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <Link
                       to={item.url}
+                      onClick={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive(item.url)
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -120,6 +122,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <Link
                       to={item.url}
+                      onClick={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive(item.url)
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -150,6 +153,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <Link
                       to="/messages"
+                      onClick={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive('/messages')
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -165,6 +169,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild>
                     <Link
                       to="/settings"
+                      onClick={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive('/settings')
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -182,21 +187,18 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="p-2 border-t border-[hsl(var(--bc-border))]">
-        <button
-          onClick={toggleSidebar}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))] transition-colors"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-5 h-5" />
-          ) : (
-            <>
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm">Collapse</span>
-            </>
-          )}
-        </button>
-      </SidebarFooter>
+      {/* Only show collapse button on desktop */}
+      {!isMobile && (
+        <SidebarFooter className="p-2 border-t border-[hsl(var(--bc-border))]">
+          <SidebarMenuButton
+            onClick={() => {}}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))] transition-colors"
+          >
+            <ChevronLeft className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+            {!collapsed && <span className="text-sm">Collapse</span>}
+          </SidebarMenuButton>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }
