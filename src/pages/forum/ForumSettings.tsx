@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send, Sparkles } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
 import TwoFactorSetup from '@/components/forum/TwoFactorSetup';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import { useTheme } from '@/contexts/ThemeContext';
+import UserAvatar, { AVATAR_EFFECTS, AvatarEffect } from '@/components/forum/UserAvatar';
+import UserLevelBadge from '@/components/forum/UserLevelBadge';
 
 interface CoverRequest {
   id: string;
@@ -152,6 +154,8 @@ export default function ForumSettings() {
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
+  const [selectedAvatarEffect, setSelectedAvatarEffect] = useState<AvatarEffect>(null);
+  const [savingEffect, setSavingEffect] = useState(false);
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -160,6 +164,7 @@ export default function ForumSettings() {
       setHideThreads(forumUser.hide_threads);
       setSocialDiscord((forumUser as any).social_discord || '');
       setSocialX((forumUser as any).social_x || '');
+      setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
       setInitialized(true);
     }
   }, [forumUser, initialized]);
@@ -482,12 +487,13 @@ export default function ForumSettings() {
 
     try {
       const filePath = `covers/${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('forum-avatars')
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
-        toast.error('Failed to upload cover');
+        console.error('Cover upload error:', uploadError);
+        toast.error(`Failed to upload cover: ${uploadError.message}`);
         setUploadingCover(false);
         return;
       }
@@ -505,16 +511,36 @@ export default function ForumSettings() {
         });
 
       if (requestError) {
-        toast.error('Failed to submit cover for review');
+        console.error('Cover request error:', requestError);
+        toast.error(`Failed to submit cover for review: ${requestError.message}`);
       } else {
         toast.success('Cover photo submitted for admin approval!');
         fetchPendingCover();
       }
-    } catch (err) {
-      toast.error('Failed to upload cover');
+    } catch (err: any) {
+      console.error('Cover upload exception:', err);
+      toast.error(`Failed to upload cover: ${err.message || 'Unknown error'}`);
     }
 
     setUploadingCover(false);
+  };
+
+  const handleSaveAvatarEffect = async (effect: AvatarEffect) => {
+    if (!forumUser) return;
+    setSavingEffect(true);
+    
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ avatar_effect: effect })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to save avatar effect');
+    } else {
+      setSelectedAvatarEffect(effect);
+      toast.success(effect ? 'Avatar effect applied!' : 'Avatar effect removed');
+    }
+    setSavingEffect(false);
   };
 
   const handleUnblock = async (blockedId: string) => {
@@ -924,6 +950,136 @@ export default function ForumSettings() {
           </button>
         )}
       </div>
+
+      {/* Avatar Effects Section - Members Only */}
+      {(forumUser as any).membership_tier && (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+            Avatar Effects
+            <MembershipBadge tier={(forumUser as any).membership_tier} size="sm" showLabel={false} />
+          </h2>
+          
+          <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+            As a member, you can add special effects to your profile picture!
+          </p>
+
+          {/* Preview */}
+          <div className="flex items-center gap-4 mb-6 p-4 bg-[hsl(var(--bc-bg-light))] rounded-xl">
+            <UserAvatar
+              avatarUrl={forumUser.avatar_url}
+              username={forumUser.username}
+              size="lg"
+              effect={selectedAvatarEffect}
+              membershipTier={(forumUser as any).membership_tier}
+            />
+            <div>
+              <div className="font-semibold text-[hsl(var(--bc-text))]">{forumUser.username}</div>
+              <div className="text-sm text-[hsl(var(--bc-text-muted))]">
+                {selectedAvatarEffect ? AVATAR_EFFECTS.find(e => e.value === selectedAvatarEffect)?.label : 'No effect'}
+              </div>
+            </div>
+          </div>
+
+          {/* Effect Categories */}
+          <div className="space-y-4">
+            {/* Glow Effects */}
+            <div>
+              <h3 className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Glow Effects</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {AVATAR_EFFECTS.filter(e => e.category === 'glow').map((effect) => (
+                  <button
+                    key={effect.value}
+                    onClick={() => handleSaveAvatarEffect(effect.value)}
+                    disabled={savingEffect}
+                    className={`p-3 rounded-lg border transition text-sm flex items-center gap-2 ${
+                      selectedAvatarEffect === effect.value
+                        ? 'border-[hsl(var(--bc-primary))] bg-[hsla(var(--bc-primary),0.1)] text-[hsl(var(--bc-primary))]'
+                        : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] text-[hsl(var(--bc-text))]'
+                    }`}
+                  >
+                    <UserAvatar
+                      avatarUrl={forumUser.avatar_url}
+                      username={forumUser.username}
+                      size="xs"
+                      effect={effect.value}
+                      membershipTier={(forumUser as any).membership_tier}
+                    />
+                    {effect.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pulse Effects */}
+            <div>
+              <h3 className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Pulse Effects</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {AVATAR_EFFECTS.filter(e => e.category === 'pulse').map((effect) => (
+                  <button
+                    key={effect.value}
+                    onClick={() => handleSaveAvatarEffect(effect.value)}
+                    disabled={savingEffect}
+                    className={`p-3 rounded-lg border transition text-sm flex items-center gap-2 ${
+                      selectedAvatarEffect === effect.value
+                        ? 'border-[hsl(var(--bc-primary))] bg-[hsla(var(--bc-primary),0.1)] text-[hsl(var(--bc-primary))]'
+                        : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] text-[hsl(var(--bc-text))]'
+                    }`}
+                  >
+                    <UserAvatar
+                      avatarUrl={forumUser.avatar_url}
+                      username={forumUser.username}
+                      size="xs"
+                      effect={effect.value}
+                      membershipTier={(forumUser as any).membership_tier}
+                    />
+                    {effect.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Frame Effects */}
+            <div>
+              <h3 className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Frames & Overlays</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {AVATAR_EFFECTS.filter(e => e.category === 'frame').map((effect) => (
+                  <button
+                    key={effect.value}
+                    onClick={() => handleSaveAvatarEffect(effect.value)}
+                    disabled={savingEffect}
+                    className={`p-3 rounded-lg border transition text-sm flex items-center gap-2 ${
+                      selectedAvatarEffect === effect.value
+                        ? 'border-[hsl(var(--bc-primary))] bg-[hsla(var(--bc-primary),0.1)] text-[hsl(var(--bc-primary))]'
+                        : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] text-[hsl(var(--bc-text))]'
+                    }`}
+                  >
+                    <UserAvatar
+                      avatarUrl={forumUser.avatar_url}
+                      username={forumUser.username}
+                      size="xs"
+                      effect={effect.value}
+                      membershipTier={(forumUser as any).membership_tier}
+                    />
+                    {effect.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Remove Effect Button */}
+          {selectedAvatarEffect && (
+            <button
+              onClick={() => handleSaveAvatarEffect(null)}
+              disabled={savingEffect}
+              className="mt-4 text-sm text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition"
+            >
+              Remove effect
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Active Sessions */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">

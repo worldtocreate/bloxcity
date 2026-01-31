@@ -3,6 +3,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search } from 'lucide-react';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
+import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 
 interface Category {
   id: string;
@@ -73,121 +74,129 @@ export default function ForumHome() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Dialog for non-logged-in users */}
-      <WelcomeDialog isLoggedIn={isLoggedIn} />
+    <div className="flex gap-6">
+      {/* Main Content */}
+      <div className="flex-1 space-y-6 min-w-0">
+        {/* Welcome Dialog for non-logged-in users */}
+        <WelcomeDialog isLoggedIn={isLoggedIn} />
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-          <Users className="w-6 h-6 text-[hsl(var(--bc-blue))] mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.users.toLocaleString()}</div>
-          <div className="text-sm text-[hsl(var(--bc-text-muted))]">Members</div>
+        {/* Stats Bar */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
+            <Users className="w-6 h-6 text-[hsl(var(--bc-blue))] mx-auto mb-2" />
+            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.users.toLocaleString()}</div>
+            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Members</div>
+          </div>
+          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
+            <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-green))] mx-auto mb-2" />
+            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.threads.toLocaleString()}</div>
+            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Threads</div>
+          </div>
+          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
+            <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))] mx-auto mb-2" />
+            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.posts.toLocaleString()}</div>
+            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Posts</div>
+          </div>
         </div>
-        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-          <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-green))] mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.threads.toLocaleString()}</div>
-          <div className="text-sm text-[hsl(var(--bc-text-muted))]">Threads</div>
-        </div>
-        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-          <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))] mx-auto mb-2" />
-          <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.posts.toLocaleString()}</div>
-          <div className="text-sm text-[hsl(var(--bc-text-muted))]">Posts</div>
-        </div>
-      </div>
 
-      {/* Categories */}
-      <div className="space-y-3">
-        {categories.map((category) => (
-          <Link
-            key={category.id}
-            to={`/category/${category.slug}`}
-            className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-5 transition group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  category.is_admin_only ? 'bg-[hsla(var(--bc-accent),0.2)]' : 'bg-[hsla(var(--bc-primary),0.1)]'
-                }`}>
-                  {category.is_admin_only ? (
-                    <Shield className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
-                  ) : (
-                    <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
-                  )}
+        {/* Categories */}
+        <div className="space-y-3">
+          {categories.map((category) => (
+            <Link
+              key={category.id}
+              to={`/category/${category.slug}`}
+              className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-5 transition group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    category.is_admin_only ? 'bg-[hsla(var(--bc-accent),0.2)]' : 'bg-[hsla(var(--bc-primary),0.1)]'
+                  }`}>
+                    {category.is_admin_only ? (
+                      <Shield className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
+                    ) : (
+                      <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition flex items-center gap-2">
+                      {category.name}
+                      {category.is_admin_only && (
+                        <span className="text-xs bg-[hsla(var(--bc-accent),0.2)] text-[hsl(var(--bc-accent))] px-2 py-0.5 rounded-full">
+                          Staff Only
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-[hsl(var(--bc-text-muted))] text-sm">{category.description}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="text-right hidden sm:block">
+                    <div className="text-[hsl(var(--bc-text))] font-medium">{category.thread_count || 0}</div>
+                    <div className="text-[hsl(var(--bc-text-muted))] text-sm">threads</div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-primary))] transition" />
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Username Reservation Section */}
+        {isLoggedIn ? (
+          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Link
+                to="/reserve"
+                className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
+                  <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition flex items-center gap-2">
-                    {category.name}
-                    {category.is_admin_only && (
-                      <span className="text-xs bg-[hsla(var(--bc-accent),0.2)] text-[hsl(var(--bc-accent))] px-2 py-0.5 rounded-full">
-                        Staff Only
-                      </span>
-                    )}
-                  </h3>
-                  <p className="text-[hsl(var(--bc-text-muted))] text-sm">{category.description}</p>
+                  <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
+                  <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right hidden sm:block">
-                  <div className="text-[hsl(var(--bc-text))] font-medium">{category.thread_count || 0}</div>
-                  <div className="text-[hsl(var(--bc-text-muted))] text-sm">threads</div>
+              </Link>
+              <Link
+                to="/check-status"
+                className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
+                  <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
                 </div>
-                <ChevronRight className="w-5 h-5 text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-primary))] transition" />
+                <div>
+                  <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
+                  <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
+                  <Ticket className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+                </div>
+                <p className="text-[hsl(var(--bc-text))]">
+                  Looking to reserve your BLOX City username?{' '}
+                  <Link to="/register" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">Sign up</Link>
+                  {' '}or{' '}
+                  <Link to="/login" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">log in</Link>
+                  {' '}to do so.
+                </p>
               </div>
             </div>
-          </Link>
-        ))}
+          </div>
+        )}
       </div>
 
-      {/* Username Reservation Section */}
-      {isLoggedIn ? (
-        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
-          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              to="/reserve"
-              className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-                <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
-                <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
-              </div>
-            </Link>
-            <Link
-              to="/check-status"
-              className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
-            >
-              <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
-                <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
-                <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-                <Ticket className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
-              </div>
-              <p className="text-[hsl(var(--bc-text))]">
-                Looking to reserve your BLOX City username?{' '}
-                <Link to="/register" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">Sign up</Link>
-                {' '}or{' '}
-                <Link to="/login" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">log in</Link>
-                {' '}to do so.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Sidebar */}
+      <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+        <LeaderboardSidebar />
+      </div>
     </div>
   );
 }

@@ -18,6 +18,11 @@ export interface ForumUser {
   dm_encryption_pin_hash: string | null;
   allow_dms: boolean;
   hide_threads: boolean;
+  xp: number;
+  level: number;
+  thread_count: number;
+  avatar_effect: string | null;
+  membership_tier: 'bronze' | 'silver' | 'platinum' | null;
 }
 
 export function useForumAuth() {

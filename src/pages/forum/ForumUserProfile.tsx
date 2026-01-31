@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink } from 'lucide-react';
+import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
+import UserAvatar from '@/components/forum/UserAvatar';
+import UserLevelBadge from '@/components/forum/UserLevelBadge';
 
 interface ProfileData {
   id: string;
@@ -24,6 +26,10 @@ interface ProfileData {
   social_discord: string | null;
   social_x: string | null;
   membership_tier: 'bronze' | 'silver' | 'platinum' | null;
+  xp: number;
+  level: number;
+  thread_count: number;
+  avatar_effect: string | null;
 }
 
 interface ThreadData {
@@ -243,17 +249,14 @@ export default function ForumUserProfile() {
         <div className="relative px-6 pb-6">
           {/* Avatar - overlapping banner */}
           <div className="absolute -top-12 left-6">
-            {profile.avatar_url ? (
-              <img 
-                src={profile.avatar_url} 
-                alt={profile.username}
-                className="w-24 h-24 rounded-xl object-cover border-4 border-[hsl(var(--bc-bg-card))] shadow-lg"
-              />
-            ) : (
-              <div className="w-24 h-24 rounded-xl bg-[hsl(var(--bc-primary))] flex items-center justify-center border-4 border-[hsl(var(--bc-bg-card))] shadow-lg">
-                <User className="w-12 h-12 text-white" />
-              </div>
-            )}
+            <UserAvatar
+              avatarUrl={profile.avatar_url}
+              username={profile.username}
+              size="xl"
+              effect={profile.avatar_effect}
+              membershipTier={profile.membership_tier}
+              className="border-4 border-[hsl(var(--bc-bg-card))] shadow-lg"
+            />
           </div>
 
           {/* Actions - aligned right */}
@@ -292,6 +295,7 @@ export default function ForumUserProfile() {
               <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
               {profile.is_verified && <VerifiedBadge size="lg" />}
               {profile.membership_tier && <MembershipBadge tier={profile.membership_tier} size="md" />}
+              <UserLevelBadge level={profile.level} xp={profile.xp} size="md" />
               {profile.is_suspended && (
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
               )}
@@ -341,7 +345,20 @@ export default function ForumUserProfile() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {/* Level & XP */}
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 col-span-2 sm:col-span-1">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <Star className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{profile.xp.toLocaleString()}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">XP</div>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[hsl(var(--bc-primary))]/20 flex items-center justify-center">
@@ -360,7 +377,7 @@ export default function ForumUserProfile() {
               <FileText className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
             </div>
             <div>
-              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{stats.threadCount}</div>
+              <div className="text-xl font-bold text-[hsl(var(--bc-text))]">{profile.thread_count}</div>
               <div className="text-xs text-[hsl(var(--bc-text-muted))]">Threads</div>
             </div>
           </div>

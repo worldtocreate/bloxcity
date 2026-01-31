@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Calendar, MessageCircle, Shield, MessageSquare, Pin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import VerifiedBadge from './VerifiedBadge';
+import UserAvatar from './UserAvatar';
+import UserLevelBadge from './UserLevelBadge';
 
 interface ForumUserProfile {
   id: string;
@@ -13,6 +15,10 @@ interface ForumUserProfile {
   is_verified: boolean;
   is_suspended: boolean;
   hide_threads: boolean;
+  xp: number;
+  level: number;
+  avatar_effect: string | null;
+  membership_tier: 'bronze' | 'silver' | 'platinum' | null;
 }
 
 interface PinnedThread {
@@ -110,25 +116,25 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
       className="absolute z-50 w-80 bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl shadow-xl"
       onMouseLeave={onClose}
     >
-      {/* Header */}
       <div className="p-4 border-b border-[hsl(var(--bc-border))]">
         <div className="flex items-start gap-3">
           <Link 
             to={`/forum/user/${profile.username}`}
             className="block hover:opacity-80 transition"
           >
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                <User className="w-7 h-7 text-white" />
-              </div>
-            )}
+            <UserAvatar
+              avatarUrl={profile.avatar_url}
+              username={profile.username}
+              size="lg"
+              effect={profile.avatar_effect}
+              membershipTier={profile.membership_tier}
+            />
           </Link>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-semibold text-[hsl(var(--bc-text))] truncate">{profile.username}</span>
               {profile.is_verified && <VerifiedBadge size="md" />}
+              <UserLevelBadge level={profile.level} size="sm" />
             </div>
             <div className="flex items-center gap-1 text-xs text-[hsl(var(--bc-text-muted))]">
               <Calendar className="w-3 h-3" />
@@ -136,7 +142,7 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
             </div>
             <div className="flex items-center gap-1 text-xs text-[hsl(var(--bc-text-muted))] mt-0.5">
               <MessageSquare className="w-3 h-3" />
-              {profile.post_count} posts
+              {profile.post_count} posts • {profile.xp.toLocaleString()} XP
             </div>
           </div>
         </div>
