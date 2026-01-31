@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.admin-send-newsletter]
 verify_jwt = false
+
+[functions.admin-get-stats]
+verify_jwt = false
+
+[functions.admin-manage-banned-words]
+verify_jwt = false
+
+[functions.admin-bulk-action]
+verify_jwt = false
