@@ -6,16 +6,8 @@ import { Loader2 } from 'lucide-react';
 export default function ForumLayout() {
   const { user, forumUser, isAdmin, loading } = useForumAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
-      </div>
-    );
-  }
-
-  // Check if user is suspended
-  if (forumUser?.is_suspended) {
+  // Check if user is suspended (only after loading completes)
+  if (!loading && forumUser?.is_suspended) {
     const now = new Date();
     const endsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
     
@@ -47,7 +39,13 @@ export default function ForumLayout() {
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
       <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
       <main className="max-w-6xl mx-auto px-4 py-6">
-        <Outlet context={{ user, forumUser, isAdmin, loading }} />
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
+          </div>
+        ) : (
+          <Outlet context={{ user, forumUser, isAdmin, loading }} />
+        )}
       </main>
       <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-12">
         <div className="max-w-6xl mx-auto px-4 text-center text-[hsl(var(--bc-text-muted))] text-sm">
