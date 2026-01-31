@@ -13,19 +13,34 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem('bloxcity-theme');
-    return (stored as Theme) || 'light';
+    // Only accept 'dark' as valid dark mode, default to 'light' for everything else
+    return stored === 'dark' ? 'dark' : 'light';
   });
 
+  // Apply theme immediately on mount and whenever it changes
   useEffect(() => {
     localStorage.setItem('bloxcity-theme', theme);
     
-    // Apply theme to document
+    // Apply theme to document - ensure clean state
+    const root = document.documentElement;
     if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
+  
+  // Also apply theme on initial render (before first effect runs)
+  useEffect(() => {
+    const stored = localStorage.getItem('bloxcity-theme');
+    const initialTheme = stored === 'dark' ? 'dark' : 'light';
+    
+    if (initialTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [theme]);
+  }, []);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
