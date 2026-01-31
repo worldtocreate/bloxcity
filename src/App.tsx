@@ -27,6 +27,7 @@ import ForumCheckStatus from "./pages/forum/ForumCheckStatus";
 import ForumFAQ from "./pages/forum/ForumFAQ";
 import ForumStaff from "./pages/forum/ForumStaff";
 import ForumUsers from "./pages/forum/ForumUsers";
+import ForumDashboard from "./pages/forum/ForumDashboard";
 import Updates from "./pages/Updates";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="user/:username" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="users" element={<ForumUsers />} />
+              <Route path="dashboard" element={<ForumDashboard />} />
             </Route>
             <Route path="/staff" element={<ForumStaff />} />
             <Route path="/updates" element={<Updates />} />

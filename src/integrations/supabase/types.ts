@@ -503,6 +503,116 @@ export type Database = {
           },
         ]
       }
+      forum_friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          responded_at: string | null
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          responded_at?: string | null
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          responded_at?: string | null
+          sender_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_friend_requests_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_friend_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_friendships: {
+        Row: {
+          created_at: string
+          id: string
+          user_1_id: string
+          user_2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_1_id: string
+          user_2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_1_id?: string
+          user_2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_friendships_user_1_id_fkey"
+            columns: ["user_1_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_friendships_user_2_id_fkey"
+            columns: ["user_2_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_membership_redemptions: {
+        Row: {
+          coins_spent: number
+          created_at: string
+          forum_user_id: string
+          id: string
+          tier: string
+        }
+        Insert: {
+          coins_spent: number
+          created_at?: string
+          forum_user_id: string
+          id?: string
+          tier: string
+        }
+        Update: {
+          coins_spent?: number
+          created_at?: string
+          forum_user_id?: string
+          id?: string
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_membership_redemptions_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_moderation_logs: {
         Row: {
           action: string
@@ -636,6 +746,99 @@ export type Database = {
           },
         ]
       }
+      forum_reports: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reported_id: string
+          reported_type: string
+          reporter_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reported_id: string
+          reported_type: string
+          reporter_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reported_id?: string
+          reported_type?: string
+          reporter_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_status_likes: {
+        Row: {
+          created_at: string
+          id: string
+          liked_user_id: string
+          liker_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          liked_user_id: string
+          liker_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          liked_user_id?: string
+          liker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_status_likes_liked_user_id_fkey"
+            columns: ["liked_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_status_likes_liker_id_fkey"
+            columns: ["liker_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_threads: {
         Row: {
           author_id: string
@@ -761,6 +964,7 @@ export type Database = {
           allow_dms: boolean | null
           avatar_effect: string | null
           avatar_url: string | null
+          coins: number | null
           cover_url: string | null
           created_at: string | null
           dm_encryption_pin_hash: string | null
@@ -770,6 +974,7 @@ export type Database = {
           is_self_disabled: boolean | null
           is_suspended: boolean | null
           is_verified: boolean | null
+          last_coin_claim: string | null
           last_post_at: string | null
           last_username_change_at: string | null
           level: number | null
@@ -784,6 +989,8 @@ export type Database = {
           signature: string | null
           social_discord: string | null
           social_x: string | null
+          status_text: string | null
+          status_updated_at: string | null
           suspension_ends_at: string | null
           suspension_reason: string | null
           thread_count: number | null
@@ -795,6 +1002,7 @@ export type Database = {
           allow_dms?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
+          coins?: number | null
           cover_url?: string | null
           created_at?: string | null
           dm_encryption_pin_hash?: string | null
@@ -804,6 +1012,7 @@ export type Database = {
           is_self_disabled?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
+          last_coin_claim?: string | null
           last_post_at?: string | null
           last_username_change_at?: string | null
           level?: number | null
@@ -818,6 +1027,8 @@ export type Database = {
           signature?: string | null
           social_discord?: string | null
           social_x?: string | null
+          status_text?: string | null
+          status_updated_at?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
           thread_count?: number | null
@@ -829,6 +1040,7 @@ export type Database = {
           allow_dms?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
+          coins?: number | null
           cover_url?: string | null
           created_at?: string | null
           dm_encryption_pin_hash?: string | null
@@ -838,6 +1050,7 @@ export type Database = {
           is_self_disabled?: boolean | null
           is_suspended?: boolean | null
           is_verified?: boolean | null
+          last_coin_claim?: string | null
           last_post_at?: string | null
           last_username_change_at?: string | null
           level?: number | null
@@ -852,6 +1065,8 @@ export type Database = {
           signature?: string | null
           social_discord?: string | null
           social_x?: string | null
+          status_text?: string | null
+          status_updated_at?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
           thread_count?: number | null
@@ -1104,8 +1319,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_friend_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
+      claim_daily_coins: { Args: never; Returns: number }
       get_reservation_count: { Args: never; Returns: number }
       has_pending_verification_request: {
         Args: { _forum_user_id: string }
@@ -1118,6 +1338,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      redeem_membership: { Args: { tier_name: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
