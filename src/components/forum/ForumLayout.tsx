@@ -6,6 +6,16 @@ import { Loader2 } from 'lucide-react';
 export default function ForumLayout() {
   const { user, forumUser, isAdmin, loading } = useForumAuth();
 
+  // Debug logging
+  console.log('[ForumLayout] Auth state:', { 
+    loading, 
+    hasUser: !!user, 
+    userId: user?.id,
+    hasForumUser: !!forumUser, 
+    forumUserId: forumUser?.id,
+    isAdmin 
+  });
+
   // Check if user is suspended (only after loading completes)
   if (!loading && forumUser?.is_suspended) {
     const now = new Date();
