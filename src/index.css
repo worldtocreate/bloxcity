@@ -738,6 +738,67 @@ body {
   font-weight: 600;
 }
 
+/* FAQ Section */
+.faq-section {
+  background: hsl(var(--bc-bg-card));
+  border: 1px solid hsl(var(--bc-border));
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  text-align: center;
+  box-shadow: 0 4px 20px hsla(var(--bc-text), 0.05);
+}
+
+.faq-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, hsl(var(--bc-yellow)) 0%, hsl(var(--bc-red)) 100%);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.faq-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--bc-text));
+  margin-bottom: 1.5rem;
+}
+
+.faq-accordion {
+  text-align: left;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.faq-accordion [data-state] {
+  border-color: hsl(var(--bc-border));
+}
+
+.faq-accordion button {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--bc-text));
+  text-align: left;
+}
+
+.faq-accordion button:hover {
+  text-decoration: none;
+  color: hsl(var(--bc-primary));
+}
+
+.faq-accordion [data-state="open"] button {
+  color: hsl(var(--bc-primary));
+}
+
+.faq-accordion [role="region"] {
+  color: hsl(var(--bc-text-muted));
+  line-height: 1.7;
+}
+
 /* Social Section */
 .social-section {
   margin-bottom: 3rem;
