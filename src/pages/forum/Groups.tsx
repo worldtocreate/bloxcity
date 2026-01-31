@@ -131,14 +131,33 @@ export default function Groups() {
   const handleCreateGroup = async () => {
     if (!forumUser || !newGroupName.trim()) return;
     
+    // Check if user has enough coins
+    const GROUP_CREATION_COST = 25;
+    if ((forumUser.coins || 0) < GROUP_CREATION_COST) {
+      toast.error(`You need ${GROUP_CREATION_COST} coins to create a group. You have ${forumUser.coins || 0}.`);
+      return;
+    }
+    
     setCreating(true);
     try {
+      // Deduct coins first
+      const { error: coinError } = await supabase
+        .from('forum_users')
+        .update({ coins: (forumUser.coins || 0) - GROUP_CREATION_COST })
+        .eq('id', forumUser.id);
+
+      if (coinError) {
+        toast.error('Failed to process payment');
+        setCreating(false);
+        return;
+      }
+
       // Generate slug from name
       const slug = newGroupName.trim().toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
 
-      // Create the group first
+      // Create the group
       const { data: group, error } = await supabase
         .from('forum_groups')
         .insert({
@@ -151,6 +170,12 @@ export default function Groups() {
         .single();
 
       if (error) {
+        // Refund coins on failure
+        await supabase
+          .from('forum_users')
+          .update({ coins: forumUser.coins })
+          .eq('id', forumUser.id);
+          
         if (error.message.includes('unique')) {
           toast.error('A group with this name already exists');
         } else {
@@ -328,7 +353,13 @@ export default function Groups() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Create New Group</h2>
+            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-2">Create New Group</h2>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+              Cost: <span className="font-semibold text-amber-600">25 coins</span>
+              {forumUser && (
+                <span className="ml-2">(You have {forumUser.coins?.toLocaleString() || 0} coins)</span>
+              )}
+            </p>
             
             <div className="space-y-4">
               {/* Group Icon Upload */}
@@ -423,11 +454,11 @@ export default function Groups() {
                 </button>
                 <button
                   onClick={handleCreateGroup}
-                  disabled={creating || !newGroupName.trim()}
+                  disabled={creating || !newGroupName.trim() || (forumUser?.coins || 0) < 25}
                   className="flex-1 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg font-medium transition flex items-center justify-center gap-2"
                 >
                   {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Create
+                  Create (25 coins)
                 </button>
               </div>
             </div>
