@@ -163,6 +163,11 @@ export default function ForumSettings() {
   const [newUsername, setNewUsername] = useState('');
   const [changingUsername, setChangingUsername] = useState(false);
   
+  // Email change
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
+  
   // Clear avatar/cover
   const [clearingAvatar, setClearingAvatar] = useState(false);
   const [clearingCover, setClearingCover] = useState(false);
@@ -801,6 +806,40 @@ export default function ForumSettings() {
     setChangingUsername(false);
   };
 
+  const handleChangeEmail = async () => {
+    if (!newEmail.trim()) return;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (newEmail.toLowerCase() === user?.email?.toLowerCase()) {
+      toast.error('This is already your current email');
+      return;
+    }
+
+    setChangingEmail(true);
+
+    const { error } = await supabase.auth.updateUser({
+      email: newEmail
+    });
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error('This email is already in use');
+      } else {
+        toast.error(error.message || 'Failed to change email');
+      }
+    } else {
+      toast.success('Confirmation email sent! Check both your old and new email addresses.');
+      setShowEmailModal(false);
+      setNewEmail('');
+    }
+    setChangingEmail(false);
+  };
+
   const handleClearAvatar = async () => {
     if (!forumUser) return;
     setClearingAvatar(true);
@@ -995,6 +1034,13 @@ export default function ForumSettings() {
                   </>
                 )}
               </div>
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="text-xs text-[hsl(var(--bc-primary))] hover:underline mt-1 flex items-center gap-1"
+              >
+                <Edit2 className="w-3 h-3" />
+                Change email address
+              </button>
             </div>
           </div>
         </div>
@@ -1816,6 +1862,57 @@ export default function ForumSettings() {
               >
                 {changingUsername ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Change Username
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Change Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Change Email Address</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+              Enter your new email address. You'll need to verify both your old and new email addresses.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                Current Email
+              </label>
+              <div className="text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] rounded-lg p-3 border border-[hsl(var(--bc-border))]">
+                {user?.email}
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                New Email Address
+              </label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="Enter new email address"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowEmailModal(false);
+                  setNewEmail('');
+                }}
+                className="px-4 py-2 text-[hsl(var(--bc-text-muted))] hover:opacity-80"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeEmail}
+                disabled={!newEmail.trim() || changingEmail}
+                className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition"
+              >
+                {changingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                Change Email
               </button>
             </div>
           </div>
