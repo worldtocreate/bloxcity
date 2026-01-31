@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { RotateCcw, Pause, Play, ZoomIn, ZoomOut, Shirt, Palette, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Shirt, Palette, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import AvatarViewer from '@/components/forum/AvatarViewer';
 
 export default function Character() {
-  const [autoRotate, setAutoRotate] = useState(true);
-
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
       <div className="container mx-auto px-4 py-8">
@@ -19,30 +15,58 @@ export default function Character() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 3D Viewer */}
+          {/* Avatar Display */}
           <div className="lg:col-span-2">
             <Card className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))] overflow-hidden">
               <CardHeader className="border-b border-[hsl(var(--bc-border))]">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-[hsl(var(--bc-text))]">Avatar Preview</CardTitle>
-                    <CardDescription>Drag to rotate • Scroll to zoom</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setAutoRotate(!autoRotate)}
-                      className="border-[hsl(var(--bc-border))] hover:bg-[hsl(var(--bc-bg-light))]"
-                    >
-                      {autoRotate ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
+                <CardTitle className="text-[hsl(var(--bc-text))]">Avatar Preview</CardTitle>
+                <CardDescription>Your current look</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="h-[500px] bg-gradient-to-b from-[hsl(var(--bc-bg-light))] to-[hsl(var(--bc-bg))]">
-                  <AvatarViewer autoRotate={autoRotate} />
+                <div className="h-[500px] bg-gradient-to-b from-[hsl(var(--bc-bg-light))] to-[hsl(var(--bc-bg))] flex items-center justify-center">
+                  {/* Static Avatar Display */}
+                  <div className="relative">
+                    {/* Avatar Body - Simple block character style */}
+                    <div className="relative w-40 h-64 flex flex-col items-center">
+                      {/* Head with face */}
+                      <div className="relative w-24 h-24 bg-[#f5d0a9] rounded-lg shadow-lg overflow-hidden">
+                        {/* Face overlay */}
+                        <img 
+                          src="/textures/face.png" 
+                          alt="Face"
+                          className="absolute inset-0 w-full h-full object-contain"
+                        />
+                      </div>
+                      
+                      {/* Neck */}
+                      <div className="w-8 h-4 bg-[#f5d0a9]" />
+                      
+                      {/* Torso */}
+                      <div className="w-20 h-24 bg-[hsl(var(--bc-primary))] rounded-t-sm flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">BLOX</span>
+                      </div>
+                      
+                      {/* Arms */}
+                      <div className="absolute top-28 left-0 w-6 h-20 bg-[hsl(var(--bc-primary))] rounded-b-lg" />
+                      <div className="absolute top-28 right-0 w-6 h-20 bg-[hsl(var(--bc-primary))] rounded-b-lg" />
+                      
+                      {/* Hands */}
+                      <div className="absolute top-44 -left-1 w-8 h-6 bg-[#f5d0a9] rounded" />
+                      <div className="absolute top-44 -right-1 w-8 h-6 bg-[#f5d0a9] rounded" />
+                      
+                      {/* Legs */}
+                      <div className="flex gap-2">
+                        <div className="w-8 h-20 bg-[#3b5998] rounded-b-lg" />
+                        <div className="w-8 h-20 bg-[#3b5998] rounded-b-lg" />
+                      </div>
+                      
+                      {/* Feet */}
+                      <div className="flex gap-2 -mt-1">
+                        <div className="w-10 h-4 bg-[#333] rounded" />
+                        <div className="w-10 h-4 bg-[#333] rounded" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
