@@ -46,7 +46,8 @@ const App = () => (
           <Routes>
             {/* Main Forum Routes (now at root) */}
             <Route path="/" element={<ForumLayout />}>
-              <Route index element={<ForumHome />} />
+              <Route index element={<ForumDashboard />} />
+              <Route path="forum" element={<ForumHome />} />
               <Route path="category/:slug" element={<ForumCategory />} />
               <Route path="category/:slug/new" element={<ForumNewThread />} />
               <Route path="thread/:threadId" element={<ForumThread />} />
@@ -54,7 +55,6 @@ const App = () => (
               <Route path="user/:username" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="users" element={<ForumUsers />} />
-              <Route path="dashboard" element={<ForumDashboard />} />
             </Route>
             <Route path="/staff" element={<ForumStaff />} />
             <Route path="/updates" element={<Updates />} />

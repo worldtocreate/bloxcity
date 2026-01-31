@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone, Gamepad2, ShoppingBag, Users, ArrowLeftRight, LayoutDashboard } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone, Gamepad2, ShoppingBag, Users, ArrowLeftRight, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -33,7 +33,7 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
 
         <nav className="flex items-center gap-4">
           <Link 
-            to="/"
+            to="/forum"
             className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
           >
             <MessageSquare className="w-4 h-4" />
@@ -88,19 +88,16 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
             <span className="hidden sm:inline">Updates</span>
           </Link>
 
+          {/* Coins Display */}
+          <div className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] px-3 py-1.5 rounded-lg">
+            <Coins className="w-4 h-4 text-yellow-500" />
+            <span className="font-medium">{forumUser?.coins?.toLocaleString() || 0}</span>
+          </div>
+
           {user ? (
             <>
               {forumUser && (
-                <>
-                  <UnreadBadge forumUserId={forumUser.id} />
-                  <Link 
-                    to="/dashboard"
-                    className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
-                  >
-                    <LayoutDashboard className="w-4 h-4" />
-                    <span className="hidden sm:inline">Dashboard</span>
-                  </Link>
-                </>
+                <UnreadBadge forumUserId={forumUser.id} />
               )}
               <Link 
                 to="/reserve"
