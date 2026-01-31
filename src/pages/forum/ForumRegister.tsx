@@ -24,7 +24,6 @@ export default function ForumRegister() {
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
   useEffect(() => {
-    // Load reCAPTCHA v3 script
     if (siteKey && !window.grecaptcha) {
       const script = document.createElement('script');
       script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
@@ -46,7 +45,6 @@ export default function ForumRegister() {
     e.preventDefault();
     setError('');
 
-    // Validations
     const usernameError = validateUsername(username);
     if (usernameError) {
       setError(usernameError);
@@ -66,13 +64,11 @@ export default function ForumRegister() {
     setLoading(true);
 
     try {
-      // Get reCAPTCHA token
       let recaptchaToken = '';
       if (recaptchaLoaded && window.grecaptcha && siteKey) {
         recaptchaToken = await window.grecaptcha.execute(siteKey, { action: 'register' });
       }
 
-      // Verify reCAPTCHA and check username
       const verifyResponse = await supabase.functions.invoke('forum-register', {
         body: { 
           action: 'verify',
@@ -87,7 +83,6 @@ export default function ForumRegister() {
         return;
       }
 
-      // Sign up user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -108,7 +103,6 @@ export default function ForumRegister() {
         return;
       }
 
-      // Create forum user profile
       const { error: profileError } = await supabase.from('forum_users').insert({
         user_id: authData.user.id,
         username: username.toLowerCase()
@@ -130,65 +124,65 @@ export default function ForumRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/forum" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-white">Create Account</h1>
-            <p className="text-gray-400">Join the BLOX City community</p>
+            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Create Account</h1>
+            <p className="text-[hsl(var(--bc-text-muted))]">Join the BLOX City community</p>
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 space-y-4">
           {error && (
-            <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <span className="text-red-400 text-sm">{error}</span>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <span className="text-red-600 text-sm">{error}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
+            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Username</label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choose a username"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
                 required
               />
             </div>
-            <p className="text-xs text-gray-500 mt-1">3-20 characters, letters, numbers, underscores only</p>
+            <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">3-20 characters, letters, numbers, underscores only</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a password"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
                 required
                 minLength={8}
               />
@@ -196,15 +190,15 @@ export default function ForumRegister() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Confirm Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your password"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
                 required
               />
             </div>
@@ -213,7 +207,7 @@ export default function ForumRegister() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
+            className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -225,17 +219,17 @@ export default function ForumRegister() {
             )}
           </button>
 
-          <p className="text-center text-gray-400 text-sm">
+          <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
             Already have an account?{' '}
-            <Link to="/forum/login" className="text-blue-400 hover:underline">
+            <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">
               Login here
             </Link>
           </p>
 
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-[hsl(var(--bc-text-muted))] text-center">
             This site is protected by reCAPTCHA and the Google{' '}
-            <a href="https://policies.google.com/privacy" className="text-gray-400 hover:underline">Privacy Policy</a> and{' '}
-            <a href="https://policies.google.com/terms" className="text-gray-400 hover:underline">Terms of Service</a> apply.
+            <a href="https://policies.google.com/privacy" className="text-[hsl(var(--bc-text))] hover:underline">Privacy Policy</a> and{' '}
+            <a href="https://policies.google.com/terms" className="text-[hsl(var(--bc-text))] hover:underline">Terms of Service</a> apply.
           </p>
         </form>
       </div>

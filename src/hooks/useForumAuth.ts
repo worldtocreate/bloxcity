@@ -20,59 +20,68 @@ export function useForumAuth() {
   const [forumUser, setForumUser] = useState<ForumUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+    let isMounted = true;
 
-      if (session?.user) {
-        // Check admin role
-        const { data: hasAdminRole } = await supabase.rpc('has_role', {
-          _user_id: session.user.id,
-          _role: 'admin'
-        });
-        setIsAdmin(hasAdminRole === true);
+    const fetchUserData = async (authUser: User) => {
+      // Check admin role
+      const { data: hasAdminRole } = await supabase.rpc('has_role', {
+        _user_id: authUser.id,
+        _role: 'admin'
+      });
+      if (isMounted) setIsAdmin(hasAdminRole === true);
 
-        // Fetch forum user
-        const { data: forumData } = await supabase
-          .from('forum_users')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        setForumUser(forumData as ForumUser | null);
-      }
-
-      setLoading(false);
+      // Fetch forum user
+      const { data: forumData } = await supabase
+        .from('forum_users')
+        .select('*')
+        .eq('user_id', authUser.id)
+        .single();
+      
+      if (isMounted) setForumUser(forumData as ForumUser | null);
     };
 
-    checkAuth();
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (isMounted) {
+          setUser(session?.user ?? null);
+        }
+
+        if (session?.user) {
+          await fetchUserData(session.user);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          setInitialLoadDone(true);
+        }
+      }
+    };
+
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const { data: hasAdminRole } = await supabase.rpc('has_role', {
-          _user_id: session.user.id,
-          _role: 'admin'
-        });
-        setIsAdmin(hasAdminRole === true);
-
-        const { data: forumData } = await supabase
-          .from('forum_users')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        setForumUser(forumData as ForumUser | null);
+        // Don't await - let it update in background
+        fetchUserData(session.user);
       } else {
         setIsAdmin(false);
         setForumUser(null);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refreshForumUser = async () => {

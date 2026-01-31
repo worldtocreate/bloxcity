@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Pin, Lock, ChevronRight, Users, Shield } from 'lucide-react';
+import { MessageSquare, ChevronRight, Users, Shield } from 'lucide-react';
 
 interface Category {
   id: string;
@@ -10,7 +10,6 @@ interface Category {
   slug: string;
   is_admin_only: boolean;
   thread_count?: number;
-  post_count?: number;
 }
 
 export default function ForumHome() {
@@ -31,7 +30,6 @@ export default function ForumHome() {
       .order('sort_order');
     
     if (data) {
-      // Fetch thread and post counts for each category
       const categoriesWithCounts = await Promise.all(
         data.map(async (cat) => {
           const { count: threadCount } = await supabase
@@ -60,7 +58,7 @@ export default function ForumHome() {
     return (
       <div className="animate-pulse space-y-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-gray-800 rounded-xl" />
+          <div key={i} className="h-24 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
         ))}
       </div>
     );
@@ -70,20 +68,20 @@ export default function ForumHome() {
     <div className="space-y-6">
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700">
-          <Users className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-white">{stats.users.toLocaleString()}</div>
-          <div className="text-sm text-gray-400">Members</div>
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
+          <Users className="w-6 h-6 text-[hsl(var(--bc-blue))] mx-auto mb-2" />
+          <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.users.toLocaleString()}</div>
+          <div className="text-sm text-[hsl(var(--bc-text-muted))]">Members</div>
         </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700">
-          <MessageSquare className="w-6 h-6 text-green-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-white">{stats.threads.toLocaleString()}</div>
-          <div className="text-sm text-gray-400">Threads</div>
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
+          <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-green))] mx-auto mb-2" />
+          <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.threads.toLocaleString()}</div>
+          <div className="text-sm text-[hsl(var(--bc-text-muted))]">Threads</div>
         </div>
-        <div className="bg-gray-800/50 rounded-xl p-4 text-center border border-gray-700">
-          <MessageSquare className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-white">{stats.posts.toLocaleString()}</div>
-          <div className="text-sm text-gray-400">Posts</div>
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
+          <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))] mx-auto mb-2" />
+          <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.posts.toLocaleString()}</div>
+          <div className="text-sm text-[hsl(var(--bc-text-muted))]">Posts</div>
         </div>
       </div>
 
@@ -93,37 +91,37 @@ export default function ForumHome() {
           <Link
             key={category.id}
             to={`/forum/category/${category.slug}`}
-            className="block bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-xl p-5 transition group"
+            className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-5 transition group"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  category.is_admin_only ? 'bg-yellow-600/20' : 'bg-blue-600/20'
+                  category.is_admin_only ? 'bg-[hsla(var(--bc-accent),0.2)]' : 'bg-[hsla(var(--bc-primary),0.1)]'
                 }`}>
                   {category.is_admin_only ? (
-                    <Shield className="w-6 h-6 text-yellow-400" />
+                    <Shield className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
                   ) : (
-                    <MessageSquare className="w-6 h-6 text-blue-400" />
+                    <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
                   )}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition flex items-center gap-2">
                     {category.name}
                     {category.is_admin_only && (
-                      <span className="text-xs bg-yellow-600/30 text-yellow-400 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-[hsla(var(--bc-accent),0.2)] text-[hsl(var(--bc-accent))] px-2 py-0.5 rounded-full">
                         Staff Only
                       </span>
                     )}
                   </h3>
-                  <p className="text-gray-400 text-sm">{category.description}</p>
+                  <p className="text-[hsl(var(--bc-text-muted))] text-sm">{category.description}</p>
                 </div>
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right hidden sm:block">
-                  <div className="text-white font-medium">{category.thread_count || 0}</div>
-                  <div className="text-gray-500 text-sm">threads</div>
+                  <div className="text-[hsl(var(--bc-text))] font-medium">{category.thread_count || 0}</div>
+                  <div className="text-[hsl(var(--bc-text-muted))] text-sm">threads</div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-blue-400 transition" />
+                <ChevronRight className="w-5 h-5 text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-primary))] transition" />
               </div>
             </div>
           </Link>

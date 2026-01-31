@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X } from 'lucide-react';
@@ -29,9 +29,9 @@ export default function ForumSettings() {
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loadingBlocked, setLoadingBlocked] = useState(true);
 
-  useState(() => {
+  useEffect(() => {
     if (forumUser) fetchBlockedUsers();
-  });
+  }, [forumUser]);
 
   const fetchBlockedUsers = async () => {
     if (!forumUser) return;
@@ -65,7 +65,6 @@ export default function ForumSettings() {
     const file = e.target.files?.[0];
     if (!file || !forumUser || !user) return;
 
-    // Validate file
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
@@ -78,12 +77,10 @@ export default function ForumSettings() {
 
     setUploadingAvatar(true);
 
-    // Convert to base64 for AI moderation
     const reader = new FileReader();
     reader.onload = async () => {
       const base64 = reader.result as string;
 
-      // Check with AI moderation
       const moderationResult = await supabase.functions.invoke('forum-moderate-avatar', {
         body: { imageBase64: base64 }
       });
@@ -94,7 +91,6 @@ export default function ForumSettings() {
         return;
       }
 
-      // Upload to storage
       const filePath = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
       const { error: uploadError } = await supabase.storage
         .from('forum-avatars')
@@ -106,12 +102,10 @@ export default function ForumSettings() {
         return;
       }
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('forum-avatars')
         .getPublicUrl(filePath);
 
-      // Update forum user
       const { error: updateError } = await supabase
         .from('forum_users')
         .update({ avatar_url: urlData.publicUrl })
@@ -121,7 +115,7 @@ export default function ForumSettings() {
         toast.error('Failed to update profile');
       } else {
         toast.success('Avatar updated!');
-        window.location.reload(); // Refresh to see new avatar
+        window.location.reload();
       }
 
       setUploadingAvatar(false);
@@ -154,11 +148,11 @@ export default function ForumSettings() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-white">Forum Settings</h1>
+      <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Forum Settings</h1>
 
       {/* Profile Section */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
           <User className="w-5 h-5" />
           Profile
         </h2>
@@ -173,7 +167,7 @@ export default function ForumSettings() {
                 className="w-24 h-24 rounded-full object-cover"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
                 <User className="w-12 h-12 text-white" />
               </div>
             )}
@@ -187,7 +181,7 @@ export default function ForumSettings() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition"
+              className="flex items-center gap-1 text-sm text-[hsl(var(--bc-primary))] hover:opacity-80 transition"
             >
               {uploadingAvatar ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -201,43 +195,43 @@ export default function ForumSettings() {
           {/* Info */}
           <div className="flex-1">
             <div className="mb-3">
-              <label className="text-sm text-gray-400">Username</label>
-              <div className="text-white font-medium flex items-center gap-2">
+              <label className="text-sm text-[hsl(var(--bc-text-muted))]">Username</label>
+              <div className="text-[hsl(var(--bc-text))] font-medium flex items-center gap-2">
                 {forumUser.username}
-                {isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
+                {isAdmin && <Shield className="w-4 h-4 text-[hsl(var(--bc-accent))]" />}
               </div>
             </div>
             <div>
-              <label className="text-sm text-gray-400">Email</label>
-              <div className="text-white">{user.email}</div>
+              <label className="text-sm text-[hsl(var(--bc-text-muted))]">Email</label>
+              <div className="text-[hsl(var(--bc-text))]">{user.email}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Signature Section */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
           <Edit2 className="w-5 h-5" />
           Signature
         </h2>
-        <p className="text-gray-400 text-sm mb-3">
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3">
           This will appear at the bottom of your posts.
         </p>
         <textarea
           value={signature}
           onChange={(e) => setSignature(e.target.value)}
           placeholder="Enter your signature (max 200 characters)..."
-          className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
           rows={3}
           maxLength={200}
         />
         <div className="flex items-center justify-between mt-3">
-          <span className="text-xs text-gray-500">{signature.length}/200</span>
+          <span className="text-xs text-[hsl(var(--bc-text-muted))]">{signature.length}/200</span>
           <button
             onClick={handleSaveSignature}
             disabled={saving}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition text-sm"
+            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Saving...' : 'Save Signature'}
@@ -246,27 +240,27 @@ export default function ForumSettings() {
       </div>
 
       {/* Blocked Users Section */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
           <Ban className="w-5 h-5" />
           Blocked Users
         </h2>
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
           Blocked users' posts will be hidden from your view.
         </p>
 
         {loadingBlocked ? (
           <div className="text-center py-4">
-            <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+            <Loader2 className="w-6 h-6 text-[hsl(var(--bc-text-muted))] animate-spin mx-auto" />
           </div>
         ) : blockedUsers.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No blocked users</p>
+          <p className="text-[hsl(var(--bc-text-muted))] text-center py-4">No blocked users</p>
         ) : (
           <div className="space-y-2">
             {blockedUsers.map((block) => (
               <div 
                 key={block.id}
-                className="flex items-center justify-between bg-gray-700/50 rounded-lg p-3"
+                className="flex items-center justify-between bg-[hsl(var(--bc-bg-light))] rounded-lg p-3"
               >
                 <div className="flex items-center gap-3">
                   {block.blocked_user?.avatar_url ? (
@@ -276,15 +270,15 @@ export default function ForumSettings() {
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-                      <User className="w-4 h-4 text-gray-400" />
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-text-muted))] flex items-center justify-center">
+                      <User className="w-4 h-4 text-white" />
                     </div>
                   )}
-                  <span className="text-white">{block.blocked_user?.username}</span>
+                  <span className="text-[hsl(var(--bc-text))]">{block.blocked_user?.username}</span>
                 </div>
                 <button
                   onClick={() => handleUnblock(block.blocked_id)}
-                  className="text-red-400 hover:text-red-300 transition"
+                  className="text-[hsl(var(--bc-secondary))] hover:opacity-80 transition"
                 >
                   <X className="w-5 h-5" />
                 </button>

@@ -63,7 +63,6 @@ export default function ForumThread() {
   }, [threadId, forumUser]);
 
   const fetchThread = async () => {
-    // Fetch thread and category separately to avoid join issues
     const { data: threadData } = await supabase
       .from('forum_threads')
       .select('*')
@@ -94,7 +93,6 @@ export default function ForumThread() {
       .order('created_at');
 
     if (postsData) {
-      // Fetch authors and quoted posts for each post
       const postsWithAuthors = await Promise.all(
         postsData.map(async (post) => {
           const { data: author } = await supabase
@@ -137,7 +135,6 @@ export default function ForumThread() {
   };
 
   const incrementViewCount = async () => {
-    // Simple increment without RPC
     try {
       const { data: currentThread } = await supabase
         .from('forum_threads')
@@ -167,7 +164,6 @@ export default function ForumThread() {
 
     setSubmitting(true);
     
-    // Check for profanity via edge function
     const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
       body: { content: replyContent }
     });
@@ -193,14 +189,12 @@ export default function ForumThread() {
       setQuotedPost(null);
       fetchPosts();
 
-      // Update thread stats
       await supabase.from('forum_threads').update({
         reply_count: posts.length + 1,
         last_post_at: new Date().toISOString(),
         last_post_by: forumUser.id
       }).eq('id', threadId);
 
-      // Update user post count
       await supabase.from('forum_users').update({
         post_count: forumUser.post_count + 1
       }).eq('id', forumUser.id);
@@ -209,24 +203,19 @@ export default function ForumThread() {
     setSubmitting(false);
   };
 
-  const isUserAdmin = async (userId: string) => {
-    const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
-    return data === true;
-  };
-
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-800 rounded w-1/2" />
+        <div className="h-8 bg-[hsl(var(--bc-bg-card))] rounded w-1/2 border border-[hsl(var(--bc-border))]" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-40 bg-gray-800 rounded-xl" />
+          <div key={i} className="h-40 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
         ))}
       </div>
     );
   }
 
   if (!thread) {
-    return <div className="text-center text-gray-400">Thread not found</div>;
+    return <div className="text-center text-[hsl(var(--bc-text-muted))]">Thread not found</div>;
   }
 
   return (
@@ -235,32 +224,32 @@ export default function ForumThread() {
       <div>
         <Link
           to={`/forum/category/${thread.category.slug}`}
-          className="flex items-center gap-1 text-gray-400 hover:text-white transition mb-2"
+          className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-2"
         >
           <ChevronLeft className="w-4 h-4" />
           {thread.category.name}
         </Link>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2">
           {thread.title}
-          {thread.is_locked && <Lock className="w-5 h-5 text-red-400" />}
+          {thread.is_locked && <Lock className="w-5 h-5 text-[hsl(var(--bc-secondary))]" />}
         </h1>
       </div>
 
       {/* Posts */}
       <div className="space-y-4">
-        {posts.map((post, index) => {
+        {posts.map((post) => {
           const isBlocked = blockedUsers.includes(post.author.id);
           
           return (
             <div
               key={post.id}
               id={`post-${post.id}`}
-              className={`bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden ${
+              className={`bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden ${
                 isBlocked ? 'opacity-50' : ''
               }`}
             >
               {isBlocked && (
-                <div className="bg-gray-700 px-4 py-2 text-sm text-gray-400">
+                <div className="bg-[hsl(var(--bc-bg-light))] px-4 py-2 text-sm text-[hsl(var(--bc-text-muted))] border-b border-[hsl(var(--bc-border))]">
                   This user is blocked. Content hidden.
                 </div>
               )}
@@ -268,7 +257,7 @@ export default function ForumThread() {
               {!isBlocked && (
                 <div className="flex flex-col sm:flex-row">
                   {/* Author Sidebar */}
-                  <div className="sm:w-48 p-4 bg-gray-800/50 border-b sm:border-b-0 sm:border-r border-gray-700">
+                  <div className="sm:w-48 p-4 bg-[hsl(var(--bc-bg-light))] border-b sm:border-b-0 sm:border-r border-[hsl(var(--bc-border))]">
                     <div className="flex sm:flex-col items-center sm:items-start gap-3">
                       {post.author.avatar_url ? (
                         <img
@@ -277,16 +266,16 @@ export default function ForumThread() {
                           className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-600 flex items-center justify-center">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
                           <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
                       )}
                       <div>
-                        <div className="font-medium text-white flex items-center gap-1">
+                        <div className="font-medium text-[hsl(var(--bc-text))] flex items-center gap-1">
                           {post.author.username}
                           <AdminBadge userId={post.author?.user_id || ''} />
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))]">
                           {post.author.post_count} posts
                         </div>
                       </div>
@@ -295,7 +284,7 @@ export default function ForumThread() {
 
                   {/* Post Content */}
                   <div className="flex-1 p-4">
-                    <div className="flex items-center justify-between mb-3 text-xs text-gray-500">
+                    <div className="flex items-center justify-between mb-3 text-xs text-[hsl(var(--bc-text-muted))]">
                       <div className="flex items-center gap-2">
                         <Clock className="w-3 h-3" />
                         {new Date(post.created_at).toLocaleString()}
@@ -308,7 +297,7 @@ export default function ForumThread() {
                       </div>
                       <button
                         onClick={() => handleQuote(post)}
-                        className="flex items-center gap-1 text-gray-400 hover:text-blue-400 transition"
+                        className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
                       >
                         <Quote className="w-4 h-4" />
                         Quote
@@ -317,22 +306,22 @@ export default function ForumThread() {
 
                     {/* Quoted Post */}
                     {post.quoted_post && (
-                      <div className="bg-gray-700/50 border-l-4 border-blue-500 p-3 mb-3 rounded">
-                        <div className="text-xs text-gray-400 mb-1">
+                      <div className="bg-[hsl(var(--bc-bg-light))] border-l-4 border-[hsl(var(--bc-primary))] p-3 mb-3 rounded">
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
                           Originally posted by {(post.quoted_post as any).author?.username}:
                         </div>
-                        <div className="text-gray-300 text-sm line-clamp-3">
+                        <div className="text-[hsl(var(--bc-text))] text-sm line-clamp-3">
                           {post.quoted_post.content}
                         </div>
                       </div>
                     )}
 
-                    <div className="text-gray-200 whitespace-pre-wrap">{post.content}</div>
+                    <div className="text-[hsl(var(--bc-text))] whitespace-pre-wrap">{post.content}</div>
 
                     {/* Signature */}
                     {post.author.signature && (
-                      <div className="mt-4 pt-4 border-t border-gray-700">
-                        <div className="text-sm text-gray-500 italic">{post.author.signature}</div>
+                      <div className="mt-4 pt-4 border-t border-[hsl(var(--bc-border))]">
+                        <div className="text-sm text-[hsl(var(--bc-text-muted))] italic">{post.author.signature}</div>
                       </div>
                     )}
                   </div>
@@ -345,23 +334,23 @@ export default function ForumThread() {
 
       {/* Reply Form */}
       {forumUser && !thread.is_locked ? (
-        <form onSubmit={handleSubmitReply} className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-          <h3 className="text-lg font-medium text-white mb-3">Reply to this thread</h3>
+        <form onSubmit={handleSubmitReply} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <h3 className="text-lg font-medium text-[hsl(var(--bc-text))] mb-3">Reply to this thread</h3>
           
           {quotedPost && (
-            <div className="bg-gray-700/50 border-l-4 border-blue-500 p-3 mb-3 rounded flex items-start justify-between">
+            <div className="bg-[hsl(var(--bc-bg-light))] border-l-4 border-[hsl(var(--bc-primary))] p-3 mb-3 rounded flex items-start justify-between">
               <div>
-                <div className="text-xs text-gray-400 mb-1">
+                <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
                   Quoting {quotedPost.author.username}:
                 </div>
-                <div className="text-gray-300 text-sm line-clamp-2">
+                <div className="text-[hsl(var(--bc-text))] text-sm line-clamp-2">
                   {quotedPost.content}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setQuotedPost(null)}
-                className="text-gray-400 hover:text-white"
+                className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]"
               >
                 ×
               </button>
@@ -372,7 +361,7 @@ export default function ForumThread() {
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
             placeholder="Write your reply..."
-            className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
             rows={4}
             required
           />
@@ -380,7 +369,7 @@ export default function ForumThread() {
             <button
               type="submit"
               disabled={submitting || !replyContent.trim()}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition font-medium"
+              className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition font-medium"
             >
               <Send className="w-4 h-4" />
               {submitting ? 'Posting...' : 'Post Reply'}
@@ -388,16 +377,16 @@ export default function ForumThread() {
           </div>
         </form>
       ) : thread.is_locked ? (
-        <div className="bg-red-900/20 border border-red-700 rounded-xl p-4 text-center">
-          <Lock className="w-6 h-6 text-red-400 mx-auto mb-2" />
-          <p className="text-red-400">This thread is locked and cannot receive new replies.</p>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+          <Lock className="w-6 h-6 text-red-500 mx-auto mb-2" />
+          <p className="text-red-600">This thread is locked and cannot receive new replies.</p>
         </div>
       ) : (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 text-center">
-          <p className="text-gray-400">
-            <Link to="/forum/login" className="text-blue-400 hover:underline">Login</Link>
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
+          <p className="text-[hsl(var(--bc-text-muted))]">
+            <Link to="/forum/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link>
             {' '}or{' '}
-            <Link to="/forum/register" className="text-blue-400 hover:underline">register</Link>
+            <Link to="/forum/register" className="text-[hsl(var(--bc-primary))] hover:underline">register</Link>
             {' '}to reply.
           </p>
         </div>
@@ -406,7 +395,6 @@ export default function ForumThread() {
   );
 }
 
-// Separate component to check admin status
 function AdminBadge({ userId }: { userId: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -416,5 +404,5 @@ function AdminBadge({ userId }: { userId: string }) {
   }, [userId]);
 
   if (!isAdmin) return null;
-  return <span title="Administrator"><Shield className="w-4 h-4 text-yellow-400" /></span>;
+  return <span title="Administrator"><Shield className="w-4 h-4 text-[hsl(var(--bc-accent))]" /></span>;
 }
