@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search, Play } from 'lucide-react';
+import { MessageSquare, Shield, Play } from 'lucide-react';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
 import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 import teaserVideo from '@/assets/bloxcity-teaser.mp4';
+
 interface Category {
   id: string;
   name: string;
@@ -12,6 +13,17 @@ interface Category {
   slug: string;
   is_admin_only: boolean;
   thread_count?: number;
+  reply_count?: number;
+  latest_thread?: {
+    title: string;
+    author: string;
+    created_at: string;
+  };
+}
+
+interface CategoryGroup {
+  name: string;
+  categories: Category[];
 }
 
 interface OutletContext {
@@ -21,15 +33,13 @@ interface OutletContext {
 
 export default function ForumHome() {
   const { isAdmin, forumUser } = useOutletContext<OutletContext>();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ users: 0, threads: 0, posts: 0 });
 
   const isLoggedIn = !!forumUser;
 
   useEffect(() => {
     fetchCategories();
-    fetchStats();
   }, []);
 
   const fetchCategories = async () => {
@@ -39,35 +49,86 @@ export default function ForumHome() {
       .order('sort_order');
     
     if (data) {
-      const categoriesWithCounts = await Promise.all(
+      const categoriesWithStats = await Promise.all(
         data.map(async (cat) => {
           const { count: threadCount } = await supabase
             .from('forum_threads')
             .select('*', { count: 'exact', head: true })
-            .eq('category_id', cat.id);
+            .eq('category_id', cat.id)
+            .eq('is_deleted', false);
           
-          return { ...cat, thread_count: threadCount || 0 };
+          const { count: replyCount } = await supabase
+            .from('forum_posts')
+            .select('*, forum_threads!inner(category_id)')
+            .eq('forum_threads.category_id', cat.id)
+            .eq('is_deleted', false);
+
+          // Get latest thread
+          const { data: latestThread } = await supabase
+            .from('forum_threads')
+            .select('title, created_at, author:author_id(username)')
+            .eq('category_id', cat.id)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          return { 
+            ...cat, 
+            thread_count: threadCount || 0,
+            reply_count: replyCount || 0,
+            latest_thread: latestThread ? {
+              title: latestThread.title,
+              author: (latestThread.author as any)?.username || 'Unknown',
+              created_at: latestThread.created_at
+            } : undefined
+          };
         })
       );
-      setCategories(categoriesWithCounts);
+
+      // Group categories - BLOX City main and Game Development
+      const bloxCityCategories = categoriesWithStats.filter(c => 
+        !c.slug.includes('building') && !c.slug.includes('scripting')
+      );
+      const devCategories = categoriesWithStats.filter(c => 
+        c.slug.includes('building') || c.slug.includes('scripting')
+      );
+
+      const groups: CategoryGroup[] = [
+        { name: 'BLOX City', categories: bloxCityCategories },
+      ];
+
+      if (devCategories.length > 0) {
+        groups.push({ name: 'Game Development', categories: devCategories });
+      }
+
+      setCategoryGroups(groups);
     }
     setLoading(false);
   };
 
-  const fetchStats = async () => {
-    const [{ count: users }, { count: threads }, { count: posts }] = await Promise.all([
-      supabase.from('forum_users').select('*', { count: 'exact', head: true }),
-      supabase.from('forum_threads').select('*', { count: 'exact', head: true }),
-      supabase.from('forum_posts').select('*', { count: 'exact', head: true }),
-    ]);
-    setStats({ users: users || 0, threads: threads || 0, posts: posts || 0 });
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = now.getTime() - then.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+
+    if (seconds < 60) return `${seconds} seconds ago`;
+    if (minutes < 60) return `${minutes} minutes ago`;
+    if (hours < 24) return `${hours} hours ago`;
+    return `${Math.floor(hours / 24)} days ago`;
   };
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="animate-pulse">
+            <div className="h-10 bg-[hsl(var(--bc-table-header))] rounded-t" />
+            <div className="h-32 bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-b" />
+          </div>
         ))}
       </div>
     );
@@ -77,143 +138,95 @@ export default function ForumHome() {
     <div className="flex gap-6">
       {/* Main Content */}
       <div className="flex-1 space-y-6 min-w-0">
-        {/* Welcome Dialog for non-logged-in users */}
         <WelcomeDialog isLoggedIn={isLoggedIn} />
 
         {/* Teaser Video */}
-        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))] overflow-hidden">
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded border border-[hsl(var(--bc-border))] overflow-hidden">
           <div className="relative">
             <video 
               className="w-full aspect-video object-cover"
               controls
-              poster=""
               preload="metadata"
             >
               <source src={teaserVideo} type="video/mp4" />
-              Your browser does not support the video tag.
             </video>
-            <div className="absolute top-3 left-3 flex items-center gap-2 bg-[hsl(var(--bc-bg-dark))]/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-              <Play className="w-4 h-4 text-[hsl(var(--bc-primary))]" />
-              <span className="text-sm font-medium text-[hsl(var(--bc-text))]">BLOX City Teaser</span>
+            <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/70 px-2 py-1 rounded text-xs text-white">
+              <Play className="w-3 h-3" />
+              <span>BLOX City Teaser</span>
             </div>
           </div>
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-            <Users className="w-6 h-6 text-[hsl(var(--bc-blue))] mx-auto mb-2" />
-            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.users.toLocaleString()}</div>
-            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Members</div>
-          </div>
-          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-            <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-green))] mx-auto mb-2" />
-            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.threads.toLocaleString()}</div>
-            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Threads</div>
-          </div>
-          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-            <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))] mx-auto mb-2" />
-            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.posts.toLocaleString()}</div>
-            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Posts</div>
-          </div>
-        </div>
+        {/* Forum Categories - Classic Table Style */}
+        {categoryGroups.map((group) => (
+          <div key={group.name} className="overflow-hidden rounded border border-[hsl(var(--bc-border))]">
+            {/* Section Header - Teal */}
+            <div className="bg-[hsl(var(--bc-table-header))] text-white px-4 py-2.5 flex items-center justify-between text-sm font-medium">
+              <span>{group.name}</span>
+              <div className="flex gap-8 text-xs">
+                <span className="w-16 text-center">Threads</span>
+                <span className="w-16 text-center">Replies</span>
+                <span className="w-40 text-right hidden md:block">Last Post</span>
+              </div>
+            </div>
 
-        {/* Categories */}
-        <div className="space-y-3">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              to={`/category/${category.slug}`}
-              className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-5 transition group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    category.is_admin_only ? 'bg-[hsla(var(--bc-accent),0.2)]' : 'bg-[hsla(var(--bc-primary),0.1)]'
-                  }`}>
-                    {category.is_admin_only ? (
-                      <Shield className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
-                    ) : (
-                      <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition flex items-center gap-2">
-                      {category.name}
-                      {category.is_admin_only && (
-                        <span className="text-xs bg-[hsla(var(--bc-accent),0.2)] text-[hsl(var(--bc-accent))] px-2 py-0.5 rounded-full">
-                          Staff Only
-                        </span>
+            {/* Category Rows */}
+            <div className="divide-y divide-[hsl(var(--bc-border))]">
+              {group.categories.map((category, idx) => (
+                <div 
+                  key={category.id}
+                  className={`p-4 ${idx % 2 === 1 ? 'bg-[hsl(var(--bc-table-alt))]' : 'bg-[hsl(var(--bc-bg-card))]'}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/category/${category.slug}`}
+                        className="text-[hsl(var(--bc-link))] hover:underline font-medium flex items-center gap-2"
+                      >
+                        {category.is_admin_only && (
+                          <Shield className="w-4 h-4 text-[hsl(var(--bc-secondary))]" />
+                        )}
+                        {category.name}
+                      </Link>
+                      {category.description && (
+                        <p className="text-[hsl(var(--bc-text-muted))] text-xs mt-1">{category.description}</p>
                       )}
-                    </h3>
-                    <p className="text-[hsl(var(--bc-text-muted))] text-sm">{category.description}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-right hidden sm:block">
-                    <div className="text-[hsl(var(--bc-text))] font-medium">{category.thread_count || 0}</div>
-                    <div className="text-[hsl(var(--bc-text-muted))] text-sm">threads</div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-primary))] transition" />
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                    </div>
 
-        {/* Username Reservation Section */}
-        {isLoggedIn ? (
-          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
-            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Link
-                to="/reserve"
-                className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-                  <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+                    <div className="flex gap-8 items-center text-sm shrink-0">
+                      <span className="w-16 text-center text-[hsl(var(--bc-text))]">
+                        {(category.thread_count || 0).toLocaleString()}
+                      </span>
+                      <span className="w-16 text-center text-[hsl(var(--bc-text))]">
+                        {(category.reply_count || 0).toLocaleString()}
+                      </span>
+                      <div className="w-40 text-right hidden md:block">
+                        {category.latest_thread ? (
+                          <div className="text-xs">
+                            <div className="text-[hsl(var(--bc-link))] truncate hover:underline">
+                              {category.latest_thread.title.length > 25 
+                                ? category.latest_thread.title.slice(0, 22) + '...'
+                                : category.latest_thread.title}
+                            </div>
+                            <div className="text-[hsl(var(--bc-text-muted))]">
+                              by <Link to={`/user/${category.latest_thread.author}`} className="text-[hsl(var(--bc-link))] hover:underline">{category.latest_thread.author}</Link>, {formatTimeAgo(category.latest_thread.created_at)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-[hsl(var(--bc-text-muted))] text-xs">No posts yet</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
-                  <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
-                </div>
-              </Link>
-              <Link
-                to="/check-status"
-                className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
-              >
-                <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
-                  <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
-                  <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
-                </div>
-              </Link>
+              ))}
             </div>
           </div>
-        ) : (
-          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-                  <Ticket className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
-                </div>
-                <p className="text-[hsl(var(--bc-text))]">
-                  Looking to reserve your BLOX City username?{' '}
-                  <Link to="/register" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">Sign up</Link>
-                  {' '}or{' '}
-                  <Link to="/login" className="text-[hsl(var(--bc-primary))] font-medium hover:underline">log in</Link>
-                  {' '}to do so.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        ))}
       </div>
 
       {/* Sidebar */}
-      <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+      <div className="hidden lg:block w-64 flex-shrink-0 space-y-4">
         <LeaderboardSidebar />
       </div>
     </div>
