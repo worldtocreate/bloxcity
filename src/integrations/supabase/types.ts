@@ -759,6 +759,7 @@ export type Database = {
       forum_users: {
         Row: {
           allow_dms: boolean | null
+          avatar_effect: string | null
           avatar_url: string | null
           cover_url: string | null
           created_at: string | null
@@ -769,6 +770,7 @@ export type Database = {
           is_suspended: boolean | null
           is_verified: boolean | null
           last_post_at: string | null
+          level: number | null
           membership_tier: string | null
           post_count: number | null
           self_disabled_at: string | null
@@ -779,11 +781,14 @@ export type Database = {
           social_x: string | null
           suspension_ends_at: string | null
           suspension_reason: string | null
+          thread_count: number | null
           user_id: string
           username: string
+          xp: number | null
         }
         Insert: {
           allow_dms?: boolean | null
+          avatar_effect?: string | null
           avatar_url?: string | null
           cover_url?: string | null
           created_at?: string | null
@@ -794,6 +799,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
+          level?: number | null
           membership_tier?: string | null
           post_count?: number | null
           self_disabled_at?: string | null
@@ -804,11 +810,14 @@ export type Database = {
           social_x?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
+          thread_count?: number | null
           user_id: string
           username: string
+          xp?: number | null
         }
         Update: {
           allow_dms?: boolean | null
+          avatar_effect?: string | null
           avatar_url?: string | null
           cover_url?: string | null
           created_at?: string | null
@@ -819,6 +828,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
+          level?: number | null
           membership_tier?: string | null
           post_count?: number | null
           self_disabled_at?: string | null
@@ -829,8 +839,10 @@ export type Database = {
           social_x?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
+          thread_count?: number | null
           user_id?: string
           username?: string
+          xp?: number | null
         }
         Relationships: []
       }
@@ -1004,6 +1016,7 @@ export type Database = {
     }
     Functions: {
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
+      calculate_level: { Args: { xp_value: number }; Returns: number }
       get_reservation_count: { Args: never; Returns: number }
       has_pending_verification_request: {
         Args: { _forum_user_id: string }
