@@ -39,7 +39,7 @@ export default function WelcomeDialog({ isLoggedIn }: WelcomeDialogProps) {
             <img src={bloxcityLogo} alt="BLOX City" className="w-full h-full object-cover" />
           </div>
           <DialogTitle className="text-xl font-bold text-[hsl(var(--bc-text))]">
-            Welcome to the BLOX City forums!
+            Welcome to BLOX City!
           </DialogTitle>
           <DialogDescription className="text-[hsl(var(--bc-text-muted))] text-left space-y-3 pt-3">
             <p>

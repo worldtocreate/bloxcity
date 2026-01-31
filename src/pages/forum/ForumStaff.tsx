@@ -25,7 +25,7 @@ export default function ForumStaff() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    document.title = 'Staff Team - BLOX City Forum';
+    document.title = 'Staff Team - BLOX City';
     fetchStaff();
   }, []);
 

@@ -36,7 +36,7 @@ export default function ForumUsers() {
   const page = parseInt(searchParams.get('page') || '1');
 
   useEffect(() => {
-    document.title = 'Members - BLOX City Forum';
+    document.title = 'Members - BLOX City';
     fetchUsers();
   }, [page, searchParams.get('q')]);
 
