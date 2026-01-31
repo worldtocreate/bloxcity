@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -88,6 +88,13 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
             </>
           ) : (
             <>
+              <Link 
+                to="/forum/reserve"
+                className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+              >
+                <Ticket className="w-4 h-4" />
+                <span className="hidden sm:inline">Reserve</span>
+              </Link>
               <Link 
                 to="/forum/login"
                 className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
