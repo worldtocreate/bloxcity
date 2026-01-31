@@ -1,4 +1,4 @@
-// v2
+// v3
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +29,10 @@ import ForumStaff from "./pages/forum/ForumStaff";
 import ForumUsers from "./pages/forum/ForumUsers";
 import ForumDashboard from "./pages/forum/ForumDashboard";
 import Updates from "./pages/Updates";
+import Games from "./pages/forum/Games";
+import Market from "./pages/forum/Market";
+import Character from "./pages/forum/Character";
+import Trading from "./pages/forum/Trading";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,10 @@ const App = () => (
             </Route>
             <Route path="/staff" element={<ForumStaff />} />
             <Route path="/updates" element={<Updates />} />
+            <Route path="/games" element={<Games />} />
+            <Route path="/market" element={<Market />} />
+            <Route path="/character" element={<Character />} />
+            <Route path="/trading" element={<Trading />} />
             <Route path="/login" element={<ForumLogin />} />
             <Route path="/register" element={<ForumRegister />} />
             <Route path="/forgot-password" element={<ForumForgotPassword />} />

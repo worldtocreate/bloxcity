@@ -20,6 +20,7 @@ import UserManagementTab from "@/components/admin/UserManagementTab";
 import MaintenanceTab from "@/components/admin/MaintenanceTab";
 import UpdatesTab from "@/components/admin/UpdatesTab";
 import ReportsTab from "@/components/admin/ReportsTab";
+import AdsTab from "@/components/admin/AdsTab";
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -1008,6 +1009,9 @@ const Admin = () => {
 
         {/* Reports Tab */}
         {activeTab === "reports" && <ReportsTab darkMode={darkMode} />}
+        
+        {/* Ads Tab */}
+        {activeTab === "ads" && <AdsTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (

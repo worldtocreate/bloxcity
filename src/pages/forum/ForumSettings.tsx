@@ -943,6 +943,13 @@ export default function ForumSettings() {
           <User className="w-5 h-5" />
           Profile
         </h2>
+        
+        {/* Avatar Notice */}
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+          <p className="text-sm text-blue-400">
+            <strong>Note:</strong> Profile pictures will be replaced with in-game avatars after BLOX City launches. Your cover photos will stay the same.
+          </p>
+        </div>
 
         <div className="flex items-start gap-6">
           <div className="flex flex-col items-center gap-2">

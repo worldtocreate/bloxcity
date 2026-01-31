@@ -11,6 +11,7 @@ import UserLevelBadge from '@/components/forum/UserLevelBadge';
 import FriendButton from '@/components/forum/FriendButton';
 import FriendsList from '@/components/forum/FriendsList';
 import ReportButton from '@/components/forum/ReportButton';
+import ProfileViews from '@/components/forum/ProfileViews';
 
 interface ProfileData {
   id: string;
@@ -84,6 +85,31 @@ export default function ForumUserProfile() {
       fetchProfile();
     }
   }, [username]);
+
+  // Log profile view
+  useEffect(() => {
+    const logProfileView = async () => {
+      if (!profile || !user) return;
+      if (isOwnProfile) return; // Don't log own profile views
+      
+      // Check if we already viewed this profile recently (within 1 hour)
+      const viewKey = `profile_view_${profile.id}`;
+      const lastView = localStorage.getItem(viewKey);
+      if (lastView && Date.now() - parseInt(lastView) < 3600000) return;
+      
+      await supabase
+        .from('forum_profile_views')
+        .insert({
+          viewed_user_id: profile.id,
+          viewer_user_id: forumUser?.id || null,
+          viewer_ip: null // We don't track IP on client side
+        });
+      
+      localStorage.setItem(viewKey, Date.now().toString());
+    };
+    
+    logProfileView();
+  }, [profile, user, isOwnProfile, forumUser]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -593,6 +619,11 @@ export default function ForumUserProfile() {
           <MessageSquare className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-3" />
           <p className="text-[hsl(var(--bc-text-muted))]">This user has hidden their threads from public view.</p>
         </div>
+      )}
+
+      {/* Profile Views - only visible to profile owner */}
+      {isOwnProfile && profile && (
+        <ProfileViews forumUserId={profile.id} isOwnProfile={isOwnProfile} />
       )}
 
       {/* Friends List */}
