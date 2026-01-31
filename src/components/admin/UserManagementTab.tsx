@@ -59,23 +59,21 @@ export default function UserManagementTab() {
     setLoading(false);
   };
 
-  const handleSearchReservation = async () => {
+  const handleSearchForumUser = async () => {
     if (!searchQuery.trim()) return;
     
-    const { data, error } = await supabase.functions.invoke('admin-get-reservations', {
-      body: { action: 'list', status: 'all' }
-    });
+    const { data, error } = await supabase
+      .from('forum_users')
+      .select('id, username')
+      .ilike('username', searchQuery.trim())
+      .single();
 
-    if (data?.reservations) {
-      const match = data.reservations.find(
-        (r: any) => r.username.toLowerCase() === searchQuery.toLowerCase()
-      );
-      if (match) {
-        setSelectedReservation({ id: match.id, username: match.username });
-      } else {
-        toast.error('Reservation not found');
-      }
+    if (error || !data) {
+      toast.error('Forum user not found');
+      return;
     }
+
+    setSelectedReservation({ id: data.id, username: data.username });
   };
 
   const handlePurge = async () => {
@@ -83,28 +81,36 @@ export default function UserManagementTab() {
     setPurging(true);
 
     try {
-      // Insert into purged_usernames
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      
+      // Insert into purged_usernames (for forum accounts, no reservation_id)
       const { error: purgeError } = await supabase
         .from('purged_usernames')
         .insert({
           username: selectedReservation.username,
-          original_reservation_id: selectedReservation.id,
-          purged_by: (await supabase.auth.getUser()).data.user?.id,
+          original_reservation_id: null,
+          purged_by: currentUser?.id,
           reason: purgeReason || null
         });
 
       if (purgeError) throw purgeError;
 
-      // Update reservation status to denied
-      await supabase.functions.invoke('update-reservation-status', {
-        body: {
-          reservationId: selectedReservation.id,
-          status: 'denied',
-          denialReason: `Username purged: ${purgeReason || 'Administrative action'}`
-        }
-      });
+      // Generate a random replacement username
+      const randomSuffix = Math.random().toString(36).substring(2, 10);
+      const purgedUsername = `purged_${randomSuffix}`;
 
-      toast.success(`Username "${selectedReservation.username}" purged`);
+      // Update the forum user's username to a purged placeholder
+      const { error: updateError } = await supabase
+        .from('forum_users')
+        .update({ 
+          username: purgedUsername,
+          last_username_change_at: new Date().toISOString()
+        })
+        .eq('id', selectedReservation.id);
+
+      if (updateError) throw updateError;
+
+      toast.success(`Username "${selectedReservation.username}" purged and replaced with "${purgedUsername}"`);
       setSelectedReservation(null);
       setPurgeReason('');
       setSearchQuery('');
@@ -228,10 +234,10 @@ export default function UserManagementTab() {
       {activeSection === 'purge' ? (
         <div className="space-y-6">
           {/* Purge Form */}
-          <div className="bg-white rounded-lg border p-6 space-y-4">
-            <h3 className="font-semibold text-gray-900">Purge a Reserved Username</h3>
-            <p className="text-sm text-gray-600">
-              Search for a reserved username to purge. This will deny the reservation and mark it as purged.
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white">Purge a Forum Username</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Search for a forum account username to purge. This will replace their username with a random placeholder and record the purge.
             </p>
             
             <div className="flex gap-2">
@@ -241,12 +247,12 @@ export default function UserManagementTab() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Enter username to purge..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Enter forum username to purge..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
               <button
-                onClick={handleSearchReservation}
+                onClick={handleSearchForumUser}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
               >
                 Search
