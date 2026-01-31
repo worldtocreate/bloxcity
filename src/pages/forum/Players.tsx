@@ -128,20 +128,24 @@ export default function Players() {
                 to={`/user/${player.username}`}
                 className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 hover:border-[hsl(var(--bc-primary))] transition text-center group"
               >
-                {/* Avatar - Admins don't show profile picture */}
-                {player.is_admin ? (
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-                    <Shield className="w-8 h-8 text-white" />
-                  </div>
-                ) : player.avatar_url ? (
+                {/* Avatar - Show profile picture for everyone including admins */}
+                {player.avatar_url ? (
                   <img 
                     src={player.avatar_url} 
                     alt={player.username}
                     className="w-16 h-16 mx-auto mb-3 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                    <User className="w-8 h-8 text-white" />
+                  <div className={`w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center ${
+                    player.is_admin 
+                      ? 'bg-gradient-to-br from-red-500 to-red-600' 
+                      : 'bg-[hsl(var(--bc-primary))]'
+                  }`}>
+                    {player.is_admin ? (
+                      <Shield className="w-8 h-8 text-white" />
+                    ) : (
+                      <User className="w-8 h-8 text-white" />
+                    )}
                   </div>
                 )}
 
