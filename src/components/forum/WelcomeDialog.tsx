@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import { Sparkles } from 'lucide-react';
 
 const WELCOME_SHOWN_KEY = 'bloxcity_forum_welcome_shown';
@@ -38,8 +39,8 @@ export default function WelcomeDialog({ isLoggedIn }: WelcomeDialogProps) {
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-md bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]">
         <DialogHeader className="text-center sm:text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center mb-3">
-            <Sparkles className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+          <div className="mx-auto w-16 h-16 rounded-xl overflow-hidden mb-3">
+            <img src={bloxcityLogo} alt="BLOX City" className="w-full h-full object-cover" />
           </div>
           <DialogTitle className="text-xl font-bold text-[hsl(var(--bc-text))]">
             Welcome to the BLOX City forums!
