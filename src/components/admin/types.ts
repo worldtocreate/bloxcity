@@ -85,5 +85,6 @@ export type AdminTab =
   | "forum-mod"
   | "content-mod"
   | "user-mgmt"
+  | "updates"
   | "maintenance"
   | "settings";
