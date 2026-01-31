@@ -113,6 +113,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Log the admin activity
+    const { data: adminProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('email')
+      .eq('user_id', userId)
+      .single();
+
+    await supabaseAdmin.from('admin_activity_logs').insert({
+      admin_user_id: userId,
+      admin_email: adminProfile?.email,
+      action: status === 'approved' ? 'approve_reservation' : 'deny_reservation',
+      target_type: 'reservation',
+      target_id: reservationId,
+      details: { username: reservation.username, denial_reason: denialReason }
+    });
+
     console.log(`[${requestId}] Reservation ${reservationId} updated to ${status} by admin ${userId}`);
 
     // Send email notification
