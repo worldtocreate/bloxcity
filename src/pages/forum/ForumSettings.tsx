@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2 } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
@@ -144,6 +144,8 @@ export default function ForumSettings() {
   const [pinnedThreads, setPinnedThreads] = useState<PinnedThread[]>([]);
   const [userThreads, setUserThreads] = useState<UserThread[]>([]);
   const [loadingThreads, setLoadingThreads] = useState(true);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(false);
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -265,6 +267,23 @@ export default function ForumSettings() {
     
     setSessions((data || []) as UserSession[]);
     setLoadingSessions(false);
+  };
+
+  const handleSendVerificationEmail = async () => {
+    setSendingVerification(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-verification-email');
+      
+      if (error) {
+        toast.error('Failed to send verification email');
+      } else {
+        toast.success('Verification email sent! Check your inbox.');
+        setVerificationEmailSent(true);
+      }
+    } catch (err) {
+      toast.error('Failed to send verification email');
+    }
+    setSendingVerification(false);
   };
 
   const handleSaveSignature = async () => {
@@ -700,12 +719,30 @@ export default function ForumSettings() {
             </div>
             <div>
               <label className="text-sm text-[hsl(var(--bc-text-muted))]">Email</label>
-              <div className="text-[hsl(var(--bc-text))] flex items-center gap-2">
+              <div className="text-[hsl(var(--bc-text))] flex items-center gap-2 flex-wrap">
                 {maskEmail(user.email || '')}
                 {emailVerified ? (
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Verified</span>
                 ) : (
-                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Not Verified</span>
+                  <>
+                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Not Verified</span>
+                    {verificationEmailSent ? (
+                      <span className="text-xs text-green-600">Email sent!</span>
+                    ) : (
+                      <button
+                        onClick={handleSendVerificationEmail}
+                        disabled={sendingVerification}
+                        className="flex items-center gap-1 text-xs text-[hsl(var(--bc-primary))] hover:underline disabled:opacity-50"
+                      >
+                        {sendingVerification ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Send className="w-3 h-3" />
+                        )}
+                        Resend verification email
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
