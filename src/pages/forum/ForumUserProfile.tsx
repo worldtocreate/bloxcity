@@ -36,6 +36,7 @@ interface ProfileData {
   avatar_effect: string | null;
   status_text: string | null;
   status_updated_at: string | null;
+  last_seen_at: string | null;
 }
 
 interface ThreadData {
@@ -371,14 +372,20 @@ export default function ForumUserProfile() {
         <div className="relative px-6 pb-6">
           {/* Avatar - overlapping banner */}
           <div className="absolute -top-12 left-6">
-            <UserAvatar
-              avatarUrl={profile.avatar_url}
-              username={profile.username}
-              size="xl"
-              effect={profile.avatar_effect}
-              membershipTier={profile.membership_tier}
-              className="border-4 border-[hsl(var(--bc-bg-card))] shadow-lg"
-            />
+            <div className="relative">
+              <UserAvatar
+                avatarUrl={profile.avatar_url}
+                username={profile.username}
+                size="xl"
+                effect={profile.avatar_effect}
+                membershipTier={profile.membership_tier}
+                className="border-4 border-[hsl(var(--bc-bg-card))] shadow-lg"
+              />
+              {/* Online status indicator */}
+              {profile.last_seen_at && new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000) && (
+                <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-[hsl(var(--bc-bg-card))] rounded-full" />
+              )}
+            </div>
           </div>
 
           {/* Actions - aligned right */}
@@ -435,10 +442,27 @@ export default function ForumUserProfile() {
               )}
             </div>
 
-            {/* Member since */}
-            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
-              Member since {formatDate(profile.created_at)}
-            </p>
+            {/* Member since & Online Status */}
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                Member since {formatDate(profile.created_at)}
+              </p>
+              {profile.last_seen_at && (
+                <>
+                  <span className="text-[hsl(var(--bc-text-muted))]">•</span>
+                  {new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000) ? (
+                    <span className="text-sm text-green-500 font-medium flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full" />
+                      Online
+                    </span>
+                  ) : (
+                    <span className="text-sm text-[hsl(var(--bc-text-muted))]">
+                      Last seen {getTimeSince(profile.last_seen_at)}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
 
 
             {/* Signature */}

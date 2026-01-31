@@ -1657,6 +1657,7 @@ export type Database = {
           is_verified: boolean | null
           last_coin_claim: string | null
           last_post_at: string | null
+          last_seen_at: string | null
           last_username_change_at: string | null
           level: number | null
           locked_at: string | null
@@ -1700,6 +1701,7 @@ export type Database = {
           is_verified?: boolean | null
           last_coin_claim?: string | null
           last_post_at?: string | null
+          last_seen_at?: string | null
           last_username_change_at?: string | null
           level?: number | null
           locked_at?: string | null
@@ -1743,6 +1745,7 @@ export type Database = {
           is_verified?: boolean | null
           last_coin_claim?: string | null
           last_post_at?: string | null
+          last_seen_at?: string | null
           last_username_change_at?: string | null
           level?: number | null
           locked_at?: string | null

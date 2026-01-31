@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import ForumHeader from './ForumHeader';
 import AppSidebar from './AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
@@ -29,6 +30,9 @@ export default function ForumLayout() {
   const [checkingTwoFA, setCheckingTwoFA] = useState(true);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
+
+  // Track online status
+  useOnlineStatus(forumUser?.id || null);
 
   useEffect(() => {
     fetchAnnouncement();
