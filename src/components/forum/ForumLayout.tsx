@@ -52,7 +52,7 @@ export default function ForumLayout() {
     setMaintenanceBypass(bypass === 'true');
     
     // Set forum-specific meta tags
-    document.title = 'BLOX City Forum - Community Discussions';
+    document.title = 'BLOX City - Community';
     
     const metaDescription = document.querySelector('meta[name="description"]');
     const ogTitle = document.querySelector('meta[property="og:title"]');
@@ -62,9 +62,9 @@ export default function ForumLayout() {
     const originalOgTitle = ogTitle?.getAttribute('content') || '';
     const originalOgDescription = ogDescription?.getAttribute('content') || '';
     
-    metaDescription?.setAttribute('content', 'Join the BLOX City community forum - discuss updates, share ideas, and connect with other players.');
-    ogTitle?.setAttribute('content', 'BLOX City Forum - Community Discussions');
-    ogDescription?.setAttribute('content', 'Join the BLOX City community forum - discuss updates, share ideas, and connect with other players.');
+    metaDescription?.setAttribute('content', 'Join the BLOX City community - discuss updates, share ideas, and connect with other players.');
+    ogTitle?.setAttribute('content', 'BLOX City - Community');
+    ogDescription?.setAttribute('content', 'Join the BLOX City community - discuss updates, share ideas, and connect with other players.');
     
     return () => {
       // Restore original meta tags when leaving forum

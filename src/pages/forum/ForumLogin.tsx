@@ -358,7 +358,7 @@ export default function ForumLogin() {
           <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Welcome Back</h1>
-            <p className="text-[hsl(var(--bc-text-muted))]">Login to the BLOX City Forum</p>
+            <p className="text-[hsl(var(--bc-text-muted))]">Login to BLOX City</p>
           </Link>
         </div>
 

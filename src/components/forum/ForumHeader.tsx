@@ -34,7 +34,7 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
             <img src={bloxcityLogo} alt="BLOX City" className="h-8 w-8 rounded-lg" />
             <div className="hidden sm:block">
               <h1 className="text-lg font-bold text-[hsl(var(--bc-text))] leading-tight">BLOX City</h1>
-              <p className="text-xs text-[hsl(var(--bc-text-muted))] leading-tight">Community Forum</p>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] leading-tight">Community</p>
             </div>
           </Link>
         </div>
