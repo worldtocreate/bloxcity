@@ -47,7 +47,7 @@ export default function ForumLayout() {
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
       <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
       <main className="max-w-6xl mx-auto px-4 py-6">
-        <Outlet context={{ user, forumUser, isAdmin }} />
+        <Outlet context={{ user, forumUser, isAdmin, loading }} />
       </main>
       <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-12">
         <div className="max-w-6xl mx-auto px-4 text-center text-[hsl(var(--bc-text-muted))] text-sm">
