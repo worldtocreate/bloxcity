@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +65,7 @@ const frameOverlays: Record<string, { emoji: string; position: string }> = {
   'frame-lightning': { emoji: '⚡', position: '-top-2 -right-2' },
 };
 
-export default function UserAvatar({ 
+const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({ 
   avatarUrl, 
   username, 
   size = 'md', 
@@ -72,13 +73,13 @@ export default function UserAvatar({
   membershipTier,
   className,
   showEffects = true,
-}: UserAvatarProps) {
+}, ref) => {
   const hasEffect = showEffects && effect && membershipTier;
   const effectClass = hasEffect && effect in effectStyles ? effectStyles[effect] : '';
   const frameOverlay = hasEffect && effect && effect in frameOverlays ? frameOverlays[effect] : null;
 
   return (
-    <div className={cn('relative inline-flex items-center justify-center', frameSizes[size])}>
+    <div ref={ref} className={cn('relative inline-flex items-center justify-center', frameSizes[size])}>
       {avatarUrl ? (
         <img 
           src={avatarUrl} 
@@ -120,7 +121,11 @@ export default function UserAvatar({
       )}
     </div>
   );
-}
+});
+
+UserAvatar.displayName = 'UserAvatar';
+
+export default UserAvatar;
 
 // Export the list of available effects for use in settings
 export const AVATAR_EFFECTS: { value: AvatarEffect; label: string; category: 'glow' | 'pulse' | 'frame' }[] = [

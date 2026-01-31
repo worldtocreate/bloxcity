@@ -54,6 +54,9 @@ verify_jwt = false
 [functions.forum-moderate-avatar]
 verify_jwt = false
 
+[functions.forum-moderate-content]
+verify_jwt = false
+
 [functions.send-verification-email]
 verify_jwt = false
 
