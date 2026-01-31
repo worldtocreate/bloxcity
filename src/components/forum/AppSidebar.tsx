@@ -50,7 +50,7 @@ const comingSoonItems = [
 
 export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
   const location = useLocation();
-  const { state, setOpenMobile, isMobile } = useSidebar();
+  const { state, setOpenMobile, isMobile, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
 
   const isActive = (path: string) => {
@@ -68,7 +68,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-3 border-b border-[hsl(var(--bc-border))]">
-        <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
+        <Link to="/" className="flex items-center gap-2" onClickCapture={handleLinkClick}>
           <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 rounded-lg flex-shrink-0" />
           {!collapsed && (
             <span className="font-bold text-[hsl(var(--bc-text))]">BLOX City</span>
@@ -88,10 +88,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
             <SidebarMenu>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to={item.url}
-                      onClick={handleLinkClick}
+                      onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive(item.url)
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -119,10 +119,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
             <SidebarMenu>
               {comingSoonItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to={item.url}
-                      onClick={handleLinkClick}
+                      onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive(item.url)
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -150,10 +150,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/messages"
-                      onClick={handleLinkClick}
+                      onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive('/messages')
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -166,10 +166,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/settings"
-                      onClick={handleLinkClick}
+                      onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                         isActive('/settings')
                           ? 'bg-[hsl(var(--bc-primary))] text-white'
@@ -191,7 +191,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
       {!isMobile && (
         <SidebarFooter className="p-2 border-t border-[hsl(var(--bc-border))]">
           <SidebarMenuButton
-            onClick={() => {}}
+            onClick={toggleSidebar}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))] transition-colors"
           >
             <ChevronLeft className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
