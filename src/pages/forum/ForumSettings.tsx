@@ -1,0 +1,298 @@
+import { useState, useRef } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X } from 'lucide-react';
+import { ForumUser } from '@/hooks/useForumAuth';
+import { toast } from 'sonner';
+
+interface BlockedUser {
+  id: string;
+  blocked_id: string;
+  blocked_user: {
+    username: string;
+    avatar_url: string | null;
+  };
+}
+
+export default function ForumSettings() {
+  const navigate = useNavigate();
+  const { user, forumUser, isAdmin } = useOutletContext<{
+    user: any;
+    forumUser: ForumUser | null;
+    isAdmin: boolean;
+  }>();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [signature, setSignature] = useState(forumUser?.signature || '');
+  const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [loadingBlocked, setLoadingBlocked] = useState(true);
+
+  useState(() => {
+    if (forumUser) fetchBlockedUsers();
+  });
+
+  const fetchBlockedUsers = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('forum_blocked_users')
+      .select('id, blocked_id, blocked_user:blocked_id (username, avatar_url)')
+      .eq('blocker_id', forumUser.id);
+    
+    setBlockedUsers((data || []) as any);
+    setLoadingBlocked(false);
+  };
+
+  const handleSaveSignature = async () => {
+    if (!forumUser) return;
+    setSaving(true);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ signature: signature.trim() || null })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to save signature');
+    } else {
+      toast.success('Signature saved!');
+    }
+    setSaving(false);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !forumUser || !user) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    // Convert to base64 for AI moderation
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+
+      // Check with AI moderation
+      const moderationResult = await supabase.functions.invoke('forum-moderate-avatar', {
+        body: { imageBase64: base64 }
+      });
+
+      if (moderationResult.data?.inappropriate) {
+        toast.error('This image is not appropriate for a profile picture. Please choose another.');
+        setUploadingAvatar(false);
+        return;
+      }
+
+      // Upload to storage
+      const filePath = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('forum-avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        toast.error('Failed to upload avatar');
+        setUploadingAvatar(false);
+        return;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('forum-avatars')
+        .getPublicUrl(filePath);
+
+      // Update forum user
+      const { error: updateError } = await supabase
+        .from('forum_users')
+        .update({ avatar_url: urlData.publicUrl })
+        .eq('id', forumUser.id);
+
+      if (updateError) {
+        toast.error('Failed to update profile');
+      } else {
+        toast.success('Avatar updated!');
+        window.location.reload(); // Refresh to see new avatar
+      }
+
+      setUploadingAvatar(false);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleUnblock = async (blockedId: string) => {
+    if (!forumUser) return;
+
+    const { error } = await supabase
+      .from('forum_blocked_users')
+      .delete()
+      .eq('blocker_id', forumUser.id)
+      .eq('blocked_id', blockedId);
+
+    if (error) {
+      toast.error('Failed to unblock user');
+    } else {
+      toast.success('User unblocked');
+      fetchBlockedUsers();
+    }
+  };
+
+  if (!user || !forumUser) {
+    navigate('/forum/login');
+    return null;
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-white">Forum Settings</h1>
+
+      {/* Profile Section */}
+      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <User className="w-5 h-5" />
+          Profile
+        </h2>
+
+        <div className="flex items-start gap-6">
+          {/* Avatar */}
+          <div className="flex flex-col items-center gap-2">
+            {forumUser.avatar_url ? (
+              <img
+                src={forumUser.avatar_url}
+                alt={forumUser.username}
+                className="w-24 h-24 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center">
+                <User className="w-12 h-12 text-white" />
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition"
+            >
+              {uploadingAvatar ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+            </button>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1">
+            <div className="mb-3">
+              <label className="text-sm text-gray-400">Username</label>
+              <div className="text-white font-medium flex items-center gap-2">
+                {forumUser.username}
+                {isAdmin && <Shield className="w-4 h-4 text-yellow-400" />}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400">Email</label>
+              <div className="text-white">{user.email}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Signature Section */}
+      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Edit2 className="w-5 h-5" />
+          Signature
+        </h2>
+        <p className="text-gray-400 text-sm mb-3">
+          This will appear at the bottom of your posts.
+        </p>
+        <textarea
+          value={signature}
+          onChange={(e) => setSignature(e.target.value)}
+          placeholder="Enter your signature (max 200 characters)..."
+          className="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          rows={3}
+          maxLength={200}
+        />
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs text-gray-500">{signature.length}/200</span>
+          <button
+            onClick={handleSaveSignature}
+            disabled={saving}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition text-sm"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? 'Saving...' : 'Save Signature'}
+          </button>
+        </div>
+      </div>
+
+      {/* Blocked Users Section */}
+      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Ban className="w-5 h-5" />
+          Blocked Users
+        </h2>
+        <p className="text-gray-400 text-sm mb-4">
+          Blocked users' posts will be hidden from your view.
+        </p>
+
+        {loadingBlocked ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-6 h-6 text-gray-400 animate-spin mx-auto" />
+          </div>
+        ) : blockedUsers.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">No blocked users</p>
+        ) : (
+          <div className="space-y-2">
+            {blockedUsers.map((block) => (
+              <div 
+                key={block.id}
+                className="flex items-center justify-between bg-gray-700/50 rounded-lg p-3"
+              >
+                <div className="flex items-center gap-3">
+                  {block.blocked_user?.avatar_url ? (
+                    <img 
+                      src={block.blocked_user.avatar_url}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+                      <User className="w-4 h-4 text-gray-400" />
+                    </div>
+                  )}
+                  <span className="text-white">{block.blocked_user?.username}</span>
+                </div>
+                <button
+                  onClick={() => handleUnblock(block.blocked_id)}
+                  className="text-red-400 hover:text-red-300 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
