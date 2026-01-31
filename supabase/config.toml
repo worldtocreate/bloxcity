@@ -11,3 +11,15 @@ verify_jwt = false
 
 [functions.admin-get-reservations]
 verify_jwt = false
+
+[functions.newsletter-subscribe]
+verify_jwt = false
+
+[functions.newsletter-unsubscribe]
+verify_jwt = false
+
+[functions.admin-get-newsletter-subscribers]
+verify_jwt = false
+
+[functions.admin-send-newsletter]
+verify_jwt = false
