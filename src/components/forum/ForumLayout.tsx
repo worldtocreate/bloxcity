@@ -1,10 +1,36 @@
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
 import ForumHeader from './ForumHeader';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Megaphone, X } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ForumAnnouncement {
+  enabled: boolean;
+  message: string;
+  type: 'info' | 'warning' | 'success';
+}
 
 export default function ForumLayout() {
   const { user, forumUser, isAdmin, loading } = useForumAuth();
+  const [announcement, setAnnouncement] = useState<ForumAnnouncement | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncement();
+  }, []);
+
+  const fetchAnnouncement = async () => {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'forum_announcement')
+      .single();
+    
+    if (data?.value) {
+      setAnnouncement(data.value as unknown as ForumAnnouncement);
+    }
+  };
 
   // Check if user is suspended (only after loading completes)
   if (!loading && forumUser?.is_suspended) {
@@ -35,9 +61,35 @@ export default function ForumLayout() {
     }
   }
 
+  const bannerStyles = {
+    info: 'bg-blue-50 border-blue-200 text-blue-800',
+    warning: 'bg-amber-50 border-amber-200 text-amber-800',
+    success: 'bg-green-50 border-green-200 text-green-800',
+  };
+
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
       <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+      
+      {/* Announcement Banner */}
+      {announcement?.enabled && announcement.message && !bannerDismissed && (
+        <div className={`border-b ${bannerStyles[announcement.type]}`}>
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Megaphone className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">{announcement.message}</span>
+            </div>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="p-1 hover:bg-black/10 rounded transition"
+              aria-label="Dismiss announcement"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+      
       <main className="max-w-6xl mx-auto px-4 py-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
