@@ -44,3 +44,12 @@ verify_jwt = false
 
 [functions.admin-export-data]
 verify_jwt = false
+
+[functions.forum-check-profanity]
+verify_jwt = false
+
+[functions.forum-register]
+verify_jwt = false
+
+[functions.forum-moderate-avatar]
+verify_jwt = false
