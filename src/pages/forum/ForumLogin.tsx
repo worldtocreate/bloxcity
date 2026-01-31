@@ -12,6 +12,9 @@ export default function ForumLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [sendingLoginLink, setSendingLoginLink] = useState(false);
   
   // 2FA states
   const [requires2FA, setRequires2FA] = useState(false);
@@ -40,6 +43,7 @@ export default function ForumLogin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailNotConfirmed(false);
     setLoading(true);
 
     // First check if 2FA is enabled for this user
@@ -66,7 +70,12 @@ export default function ForumLogin() {
     });
 
     if (authError) {
-      setError(authError.message);
+      const msg = authError.message || 'Login failed';
+      // When email confirmations are enabled, password grant returns this error.
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        setEmailNotConfirmed(true);
+      }
+      setError(msg);
       setLoading(false);
       return;
     }
@@ -84,6 +93,61 @@ export default function ForumLogin() {
     setRequires2FA(false);
     setPendingAuth(null);
     setPassword('');
+  };
+
+  const handleResendVerification = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email first.');
+      return;
+    }
+
+    setResendingVerification(true);
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: trimmedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (resendError) {
+        toast.error(resendError.message || 'Failed to resend verification email.');
+        return;
+      }
+
+      toast.success('Verification email sent! Check your inbox.');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
+  const handleSendLoginLink = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email first.');
+      return;
+    }
+
+    setSendingLoginLink(true);
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: trimmedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (otpError) {
+        toast.error(otpError.message || 'Failed to send login link.');
+        return;
+      }
+
+      toast.success('Login link sent! Open it from your email to sign in.');
+    } finally {
+      setSendingLoginLink(false);
+    }
   };
 
   // Show 2FA verification screen
@@ -124,6 +188,34 @@ export default function ForumLogin() {
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
               <span className="text-red-600 text-sm">{error}</span>
+            </div>
+          )}
+
+          {emailNotConfirmed && (
+            <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 space-y-2">
+              <p className="text-sm text-[hsl(var(--bc-text))]">
+                Your account email isn’t verified yet. You can resend the verification email, or use a login link to get in.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification || loading}
+                  className="inline-flex items-center gap-2 rounded-md bg-[hsl(var(--bc-primary))] text-white px-3 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Resend verification
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendLoginLink}
+                  disabled={sendingLoginLink || loading}
+                  className="inline-flex items-center gap-2 rounded-md border border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text))] px-3 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Send login link
+                </button>
+              </div>
             </div>
           )}
 
