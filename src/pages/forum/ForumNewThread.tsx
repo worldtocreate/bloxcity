@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, Send } from 'lucide-react';
+import { ChevronLeft, Send, Mail } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 
@@ -15,9 +15,10 @@ interface Category {
 export default function ForumNewThread() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { forumUser, isAdmin } = useOutletContext<{ 
+  const { forumUser, isAdmin, emailVerified } = useOutletContext<{ 
     forumUser: ForumUser | null;
     isAdmin: boolean;
+    emailVerified: boolean | null;
   }>();
 
   const [category, setCategory] = useState<Category | null>(null);
@@ -108,6 +109,26 @@ export default function ForumNewThread() {
   if (!forumUser) {
     navigate('/forum/login');
     return null;
+  }
+
+  if (emailVerified === false) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-8 text-center">
+          <Mail className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-amber-800 mb-2">Email Verification Required</h1>
+          <p className="text-amber-700">
+            You must verify your email address before creating threads. Check the banner above to send a verification email.
+          </p>
+          <Link
+            to={`/forum/category/${slug}`}
+            className="inline-block mt-4 text-amber-600 hover:underline"
+          >
+            ← Back to category
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (

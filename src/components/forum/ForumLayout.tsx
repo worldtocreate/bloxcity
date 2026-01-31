@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
 import ForumHeader from './ForumHeader';
-import { Loader2, Megaphone, X, Shield, Lock } from 'lucide-react';
+import { Loader2, Megaphone, X, Shield, Lock, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ForumAnnouncement {
   enabled: boolean;
@@ -17,13 +18,15 @@ interface TwoFASettings {
 }
 
 export default function ForumLayout() {
-  const { user, forumUser, isAdmin, loading } = useForumAuth();
+  const { user, forumUser, isAdmin, loading, emailVerified, refreshEmailVerification } = useForumAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [announcement, setAnnouncement] = useState<ForumAnnouncement | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [twoFAStatus, setTwoFAStatus] = useState<TwoFASettings | null>(null);
   const [checkingTwoFA, setCheckingTwoFA] = useState(true);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [verificationEmailSent, setVerificationEmailSent] = useState(false);
 
   useEffect(() => {
     fetchAnnouncement();
@@ -61,6 +64,17 @@ export default function ForumLayout() {
     }
   }, [loading, isAdmin, forumUser]);
 
+  // Check if user just verified their email (coming back from verification link)
+  useEffect(() => {
+    if (user && emailVerified === false) {
+      // Check periodically if user is verified
+      const interval = setInterval(() => {
+        refreshEmailVerification();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [user, emailVerified]);
+
   const checkTwoFAStatus = async () => {
     if (!forumUser) return;
     
@@ -84,6 +98,31 @@ export default function ForumLayout() {
     if (data?.value) {
       setAnnouncement(data.value as unknown as ForumAnnouncement);
     }
+  };
+
+  const handleSendVerificationEmail = async () => {
+    setSendingVerification(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-verification-email');
+      
+      if (error) {
+        toast.error('Failed to send verification email');
+      } else {
+        toast.success('Verification email sent! Check your inbox.');
+        setVerificationEmailSent(true);
+      }
+    } catch (err) {
+      toast.error('Failed to send verification email');
+    }
+    setSendingVerification(false);
+  };
+
+  // Mask email for display
+  const maskEmail = (email: string) => {
+    if (!email) return '';
+    const [local, domain] = email.split('@');
+    if (!domain) return email;
+    return `${local.charAt(0)}***@${domain}`;
   };
 
   // Check if user is suspended (only after loading completes)
@@ -156,9 +195,42 @@ export default function ForumLayout() {
     success: 'bg-green-50 border-green-200 text-green-800',
   };
 
+  // Check if user needs to verify email
+  const showEmailVerificationBanner = user && forumUser && emailVerified === false;
+
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
       <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+      
+      {/* Email Verification Banner */}
+      {showEmailVerificationBanner && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-1">
+              <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <span className="text-sm font-medium text-amber-800">
+                Verify your email <strong>{user.email}</strong> to access forum features like posting, replying, and direct messages.
+              </span>
+            </div>
+            {verificationEmailSent ? (
+              <span className="text-sm text-amber-700 font-medium">Email sent! Check your inbox.</span>
+            ) : (
+              <button
+                onClick={handleSendVerificationEmail}
+                disabled={sendingVerification}
+                className="flex items-center gap-2 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg text-sm font-medium transition"
+              >
+                {sendingVerification ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                Send Verification Email
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Admin 2FA Warning Banner on Settings Page */}
       {adminNeeds2FA && isSettingsPage && (
@@ -197,7 +269,7 @@ export default function ForumLayout() {
             <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
           </div>
         ) : (
-          <Outlet context={{ user, forumUser, isAdmin, loading }} />
+          <Outlet context={{ user, forumUser, isAdmin, loading, emailVerified }} />
         )}
       </main>
       <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-12">

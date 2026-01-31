@@ -10,9 +10,10 @@ interface TwoFactorSettings {
 
 interface TwoFactorSetupProps {
   forumUserId: string;
+  emailVerified?: boolean;
 }
 
-export default function TwoFactorSetup({ forumUserId }: TwoFactorSetupProps) {
+export default function TwoFactorSetup({ forumUserId, emailVerified = true }: TwoFactorSetupProps) {
   const [settings, setSettings] = useState<TwoFactorSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [setupMode, setSetupMode] = useState<'none' | 'totp' | 'email'>('none');
@@ -326,15 +327,17 @@ export default function TwoFactorSetup({ forumUserId }: TwoFactorSetupProps) {
 
             <button
               onClick={enableEmailAuth}
-              disabled={processing}
-              className="flex flex-col items-center gap-3 p-4 border border-[hsl(var(--bc-border))] rounded-xl hover:border-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-bg-light))] transition group"
+              disabled={processing || !emailVerified}
+              className="flex flex-col items-center gap-3 p-4 border border-[hsl(var(--bc-border))] rounded-xl hover:border-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-bg-light))] transition group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="w-12 h-12 rounded-full bg-[hsl(var(--bc-accent))] flex items-center justify-center group-hover:scale-110 transition">
                 <Mail className="w-6 h-6 text-white" />
               </div>
               <div className="text-center">
                 <div className="font-medium text-[hsl(var(--bc-text))]">Email Verification</div>
-                <div className="text-xs text-[hsl(var(--bc-text-muted))]">Get codes via email</div>
+                <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                  {emailVerified ? 'Get codes via email' : 'Verify email first'}
+                </div>
               </div>
             </button>
           </div>

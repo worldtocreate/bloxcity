@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2 } from 'lucide-react';
+import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2, Mail } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
@@ -43,10 +43,11 @@ interface Thread {
 
 export default function ForumThread() {
   const { threadId } = useParams<{ threadId: string }>();
-  const { user, forumUser, isAdmin } = useOutletContext<{
+  const { user, forumUser, isAdmin, emailVerified } = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
     isAdmin: boolean;
+    emailVerified: boolean | null;
   }>();
 
   const [thread, setThread] = useState<Thread | null>(null);
@@ -482,7 +483,7 @@ export default function ForumThread() {
       </div>
 
       {/* Reply Form */}
-      {forumUser && !thread.is_locked ? (
+      {forumUser && !thread.is_locked && emailVerified ? (
         <form onSubmit={handleSubmitReply} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
           <h3 className="text-lg font-medium text-[hsl(var(--bc-text))] mb-3">Reply to this thread</h3>
           
@@ -525,6 +526,12 @@ export default function ForumThread() {
             </button>
           </div>
         </form>
+      ) : forumUser && !thread.is_locked && emailVerified === false ? (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+          <Mail className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+          <p className="text-amber-700 font-medium">Verify your email to reply</p>
+          <p className="text-amber-600 text-sm mt-1">Check the banner above to send a verification email.</p>
+        </div>
       ) : thread.is_locked ? (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
           <Lock className="w-6 h-6 text-red-500 mx-auto mb-2" />
