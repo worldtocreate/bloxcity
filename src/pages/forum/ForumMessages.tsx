@@ -83,7 +83,7 @@ export default function ForumMessages() {
 
   useEffect(() => {
     if (!user || !forumUser) {
-      navigate('/forum/login');
+      navigate('/login');
       return;
     }
 
@@ -587,7 +587,7 @@ export default function ForumMessages() {
                 }`}
               >
                 <Link 
-                  to={`/forum/user/${convo.other_user?.username}`}
+                  to={`/user/${convo.other_user?.username}`}
                   onClick={(e) => e.stopPropagation()}
                   className="block hover:opacity-80 transition flex-shrink-0"
                 >
@@ -641,7 +641,7 @@ export default function ForumMessages() {
                 return (
                   <>
                     <Link 
-                      to={`/forum/user/${convo.other_user.username}`}
+                      to={`/user/${convo.other_user.username}`}
                       className="block hover:opacity-80 transition"
                     >
                       {convo.other_user.avatar_url ? (
@@ -654,7 +654,7 @@ export default function ForumMessages() {
                     </Link>
                     <div className="flex items-center gap-1">
                       <Link 
-                        to={`/forum/user/${convo.other_user.username}`}
+                        to={`/user/${convo.other_user.username}`}
                         className="font-medium text-[hsl(var(--bc-text))] hover:underline"
                       >
                         {convo.other_user.username}

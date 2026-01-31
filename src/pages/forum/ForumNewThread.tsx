@@ -41,10 +41,10 @@ export default function ForumNewThread() {
       setCategory(data);
       if (data.is_admin_only && !isAdmin) {
         toast.error('You do not have permission to post in this category');
-        navigate(`/forum/category/${slug}`);
+        navigate(`/category/${slug}`);
       }
     } else {
-      navigate('/forum');
+      navigate('/');
     }
   };
 
@@ -103,11 +103,11 @@ export default function ForumNewThread() {
     }).eq('id', forumUser.id);
 
     toast.success('Thread created!');
-    navigate(`/forum/thread/${thread.id}`);
+    navigate(`/thread/${thread.id}`);
   };
 
   if (!forumUser) {
-    navigate('/forum/login');
+    navigate('/login');
     return null;
   }
 
@@ -121,7 +121,7 @@ export default function ForumNewThread() {
             You must verify your email address before creating threads. Check the banner above to send a verification email.
           </p>
           <Link
-            to={`/forum/category/${slug}`}
+            to={`/category/${slug}`}
             className="inline-block mt-4 text-amber-600 hover:underline"
           >
             ← Back to category
@@ -134,7 +134,7 @@ export default function ForumNewThread() {
   return (
     <div className="max-w-2xl mx-auto">
       <Link
-        to={`/forum/category/${slug}`}
+        to={`/category/${slug}`}
         className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-4"
       >
         <ChevronLeft className="w-4 h-4" />
@@ -176,7 +176,7 @@ export default function ForumNewThread() {
 
           <div className="flex justify-end gap-3">
             <Link
-              to={`/forum/category/${slug}`}
+              to={`/category/${slug}`}
               className="px-4 py-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition"
             >
               Cancel

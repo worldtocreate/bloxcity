@@ -90,7 +90,7 @@ export default function ForumHome() {
         <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           <Link
-            to="/forum/reserve"
+            to="/reserve"
             className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
           >
             <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
@@ -102,7 +102,7 @@ export default function ForumHome() {
             </div>
           </Link>
           <Link
-            to="/forum/check-status"
+            to="/check-status"
             className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
           >
             <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
@@ -121,7 +121,7 @@ export default function ForumHome() {
         {categories.map((category) => (
           <Link
             key={category.id}
-            to={`/forum/category/${category.slug}`}
+            to={`/category/${category.slug}`}
             className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-5 transition group"
           >
             <div className="flex items-center justify-between">

@@ -599,7 +599,7 @@ export default function ForumSettings() {
   };
 
   if (!user) {
-    navigate('/forum/login');
+    navigate('/login');
     return null;
   }
 
@@ -613,13 +613,13 @@ export default function ForumSettings() {
           </p>
           <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => navigate('/forum/register')}
+              onClick={() => navigate('/register')}
               className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
             >
               Create forum profile
             </button>
             <button
-              onClick={() => navigate('/forum')}
+              onClick={() => navigate('/')}
               className="px-4 py-2 rounded-lg border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))] transition"
             >
               Back to forums

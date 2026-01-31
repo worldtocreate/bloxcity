@@ -155,7 +155,7 @@ export default function ForumLayout() {
   }
 
   // Block admin access if 2FA is not enabled (except on settings page to allow setup)
-  const isSettingsPage = location.pathname === '/forum/settings';
+  const isSettingsPage = location.pathname === '/settings';
   const adminNeeds2FA = !loading && !checkingTwoFA && isAdmin && forumUser && (!twoFAStatus || !twoFAStatus.is_enabled);
   
   if (adminNeeds2FA && !isSettingsPage) {
@@ -173,7 +173,7 @@ export default function ForumLayout() {
             </p>
             <div className="space-y-3">
               <button
-                onClick={() => navigate('/forum/settings')}
+                onClick={() => navigate('/settings')}
                 className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-6 py-3 rounded-lg transition font-medium flex items-center justify-center gap-2"
               >
                 <Lock className="w-5 h-5" />

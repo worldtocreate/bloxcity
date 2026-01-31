@@ -261,7 +261,7 @@ export default function ForumUserProfile() {
             {!isOwnProfile && forumUser && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => navigate(`/forum/messages?to=${profile.username}`)}
+                  onClick={() => navigate(`/messages?to=${profile.username}`)}
                   disabled={!profile.allow_dms && !isAdmin}
                   className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] disabled:cursor-not-allowed text-white rounded-lg transition text-sm font-medium"
                 >
@@ -424,7 +424,7 @@ export default function ForumUserProfile() {
               {threads.map((thread) => (
                 <Link
                   key={thread.id}
-                  to={`/forum/thread/${thread.id}`}
+                  to={`/thread/${thread.id}`}
                   className="block p-4 hover:bg-[hsl(var(--bc-bg-light))] transition"
                 >
                   <div className="flex items-start gap-3">

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -17,13 +17,13 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/forum');
+    navigate('/');
   };
 
   return (
     <header className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))] sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/forum" className="flex items-center gap-3">
+        <Link to="/" className="flex items-center gap-3">
           <img src={bloxcityLogo} alt="BLOX City" className="h-10 w-10 rounded-lg" />
           <div>
             <h1 className="text-xl font-bold text-[hsl(var(--bc-text))]">BLOX City</h1>
@@ -33,11 +33,19 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
 
         <nav className="flex items-center gap-4">
           <Link 
-            to="/forum"
+            to="/"
             className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
           >
             <MessageSquare className="w-4 h-4" />
             <span className="hidden sm:inline">Forums</span>
+          </Link>
+          
+          <Link 
+            to="/faq"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">FAQ</span>
           </Link>
 
           {user ? (
@@ -55,7 +63,7 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
                 </Link>
               )}
               <Link 
-                to="/forum/settings"
+                to="/settings"
                 className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
               >
                 <Settings className="w-4 h-4" />
@@ -89,21 +97,21 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
           ) : (
             <>
               <Link 
-                to="/forum/reserve"
+                to="/reserve"
                 className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
               >
                 <Ticket className="w-4 h-4" />
                 <span className="hidden sm:inline">Reserve</span>
               </Link>
               <Link 
-                to="/forum/login"
+                to="/login"
                 className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Login</span>
               </Link>
               <Link 
-                to="/forum/register"
+                to="/register"
                 className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
               >
                 Register

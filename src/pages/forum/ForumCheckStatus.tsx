@@ -49,7 +49,7 @@ const ForumCheckStatus = () => {
     <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Back Link */}
-        <Link to="/forum" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] mb-6 transition">
+        <Link to="/" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] mb-6 transition">
           <ArrowLeft className="w-4 h-4" />
           Back to Forum
         </Link>
@@ -104,7 +104,7 @@ const ForumCheckStatus = () => {
               {!statusResult.found ? (
                 <div className="text-center">
                   <p className="text-[hsl(var(--bc-text-muted))]">No reservation found for this email address.</p>
-                  <Link to="/forum/reserve" className="inline-block mt-3 text-[hsl(var(--bc-primary))] font-medium hover:underline">
+                  <Link to="/reserve" className="inline-block mt-3 text-[hsl(var(--bc-primary))] font-medium hover:underline">
                     Reserve a username →
                   </Link>
                 </div>
@@ -131,7 +131,7 @@ const ForumCheckStatus = () => {
                   {statusResult.denialReason && (
                     <p className="text-red-600 text-sm mt-2 italic">Reason: {statusResult.denialReason}</p>
                   )}
-                  <Link to="/forum/reserve" className="inline-block mt-3 bg-[hsl(var(--bc-primary))] text-white px-4 py-2 rounded-lg font-medium hover:bg-[hsl(var(--bc-primary-dark))] transition">
+                  <Link to="/reserve" className="inline-block mt-3 bg-[hsl(var(--bc-primary))] text-white px-4 py-2 rounded-lg font-medium hover:bg-[hsl(var(--bc-primary-dark))] transition">
                     Reserve a Different Username
                   </Link>
                 </div>
@@ -141,7 +141,7 @@ const ForumCheckStatus = () => {
 
           {/* Reserve link */}
           <div className="mt-6 text-center">
-            <Link to="/forum/reserve" className="text-[hsl(var(--bc-primary))] hover:underline text-sm">
+            <Link to="/reserve" className="text-[hsl(var(--bc-primary))] hover:underline text-sm">
               Don't have a reservation? Reserve now →
             </Link>
           </div>
