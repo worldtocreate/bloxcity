@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle } from 'lucide-react';
+import { MessageSquare, LogIn, LogOut, Settings, Shield, User, Ticket, HelpCircle, Megaphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -46,6 +46,14 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
           >
             <HelpCircle className="w-4 h-4" />
             <span className="hidden sm:inline">FAQ</span>
+          </Link>
+          
+          <Link 
+            to="/updates"
+            className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+          >
+            <Megaphone className="w-4 h-4" />
+            <span className="hidden sm:inline">Updates</span>
           </Link>
 
           {user ? (
