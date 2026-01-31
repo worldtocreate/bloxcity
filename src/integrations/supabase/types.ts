@@ -259,6 +259,36 @@ export type Database = {
           },
         ]
       }
+      forum_achievements: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          rarity: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          rarity?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          rarity?: string | null
+        }
+        Relationships: []
+      }
       forum_ad_clicks: {
         Row: {
           ad_id: string
@@ -1165,6 +1195,7 @@ export type Database = {
           description: string | null
           icon_url: string | null
           id: string
+          is_private: boolean | null
           is_verified: boolean | null
           last_name_change: string | null
           member_count: number | null
@@ -1173,6 +1204,7 @@ export type Database = {
           require_approval: boolean | null
           slug: string
           updated_at: string | null
+          vault_is_private: boolean | null
           verified_at: string | null
           verified_by: string | null
         }
@@ -1183,6 +1215,7 @@ export type Database = {
           description?: string | null
           icon_url?: string | null
           id?: string
+          is_private?: boolean | null
           is_verified?: boolean | null
           last_name_change?: string | null
           member_count?: number | null
@@ -1191,6 +1224,7 @@ export type Database = {
           require_approval?: boolean | null
           slug: string
           updated_at?: string | null
+          vault_is_private?: boolean | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -1201,6 +1235,7 @@ export type Database = {
           description?: string | null
           icon_url?: string | null
           id?: string
+          is_private?: boolean | null
           is_verified?: boolean | null
           last_name_change?: string | null
           member_count?: number | null
@@ -1209,6 +1244,7 @@ export type Database = {
           require_approval?: boolean | null
           slug?: string
           updated_at?: string | null
+          vault_is_private?: boolean | null
           verified_at?: string | null
           verified_by?: string | null
         }
@@ -1589,6 +1625,52 @@ export type Database = {
           {
             foreignKeyName: "forum_threads_last_post_by_fkey"
             columns: ["last_post_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_user_achievements: {
+        Row: {
+          achievement_id: string
+          awarded_at: string
+          awarded_by: string | null
+          forum_user_id: string
+          id: string
+        }
+        Insert: {
+          achievement_id: string
+          awarded_at?: string
+          awarded_by?: string | null
+          forum_user_id: string
+          id?: string
+        }
+        Update: {
+          achievement_id?: string
+          awarded_at?: string
+          awarded_by?: string | null
+          forum_user_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "forum_achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_user_achievements_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_user_achievements_forum_user_id_fkey"
+            columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]

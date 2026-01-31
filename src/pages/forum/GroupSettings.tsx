@@ -22,6 +22,8 @@ interface GroupData {
   require_approval: boolean;
   last_name_change: string | null;
   coins_vault: number;
+  is_private: boolean;
+  vault_is_private: boolean;
 }
 
 interface GroupRole {
@@ -88,6 +90,9 @@ export default function GroupSettings() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [requireApproval, setRequireApproval] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [vaultIsPrivate, setVaultIsPrivate] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
   const [newBlockedWord, setNewBlockedWord] = useState('');
 
   // Role creation
@@ -150,6 +155,8 @@ export default function GroupSettings() {
     setName(groupData.name);
     setDescription(groupData.description || '');
     setRequireApproval(groupData.require_approval || false);
+    setIsPrivate(groupData.is_private || false);
+    setVaultIsPrivate(groupData.vault_is_private || false);
 
     // Check if user is owner
     if (forumUser) {
@@ -238,6 +245,8 @@ export default function GroupSettings() {
     const updates: any = {
       description,
       require_approval: requireApproval,
+      is_private: isPrivate,
+      vault_is_private: vaultIsPrivate,
     };
 
     if (name !== group.name) {
@@ -596,6 +605,103 @@ export default function GroupSettings() {
                 />
               </button>
             </div>
+
+            <div className="flex items-center justify-between py-3 border-t border-[hsl(var(--bc-border))]">
+              <div>
+                <h3 className="font-medium text-[hsl(var(--bc-text))]">Private Group</h3>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  Only members can see group on profiles and search
+                </p>
+              </div>
+              <button
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  isPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-border))]'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    isPrivate ? 'left-7' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between py-3 border-t border-[hsl(var(--bc-border))]">
+              <div>
+                <h3 className="font-medium text-[hsl(var(--bc-text))]">Private Vault</h3>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  Only owner can see the vault balance
+                </p>
+              </div>
+              <button
+                onClick={() => setVaultIsPrivate(!vaultIsPrivate)}
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  vaultIsPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-border))]'
+                }`}
+              >
+                <span
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    vaultIsPrivate ? 'left-7' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Vault Deposit */}
+            {isOwner && forumUser && (
+              <div className="py-3 border-t border-[hsl(var(--bc-border))]">
+                <h3 className="font-medium text-[hsl(var(--bc-text))] mb-2">Deposit to Vault</h3>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-3">
+                  Current vault: {group.coins_vault.toLocaleString()} coins • Your coins: {forumUser.coins.toLocaleString()}
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="Amount"
+                    min="1"
+                    max={forumUser.coins}
+                    className="flex-1 px-4 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
+                  />
+                  <button
+                    onClick={async () => {
+                      const amount = parseInt(depositAmount);
+                      if (!amount || amount < 1 || amount > forumUser.coins) {
+                        toast.error('Invalid amount');
+                        return;
+                      }
+                      // Deduct from user
+                      const { error: userError } = await supabase
+                        .from('forum_users')
+                        .update({ coins: forumUser.coins - amount })
+                        .eq('id', forumUser.id);
+                      if (userError) {
+                        toast.error('Failed to deposit');
+                        return;
+                      }
+                      // Add to vault
+                      const { error: groupError } = await supabase
+                        .from('forum_groups')
+                        .update({ coins_vault: group.coins_vault + amount })
+                        .eq('id', group.id);
+                      if (groupError) {
+                        toast.error('Failed to deposit');
+                        return;
+                      }
+                      toast.success(`Deposited ${amount} coins to vault!`);
+                      setDepositAmount('');
+                      fetchGroup();
+                    }}
+                    disabled={!depositAmount || parseInt(depositAmount) < 1}
+                    className="px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg transition"
+                  >
+                    Deposit
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               onClick={handleSaveGeneral}
