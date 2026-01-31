@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MessageSquare, Pin, BadgeCheck, MessageCircle, Ban, Loader2 } from 'lucide-react';
+import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
+import VerifiedBadge from '@/components/forum/VerifiedBadge';
 
 interface ProfileData {
   id: string;
@@ -201,9 +202,7 @@ export default function ForumUserProfile() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
-              {profile.is_verified && (
-                <BadgeCheck className="w-6 h-6 text-blue-500" />
-              )}
+              {profile.is_verified && <VerifiedBadge size="lg" />}
               {profile.is_suspended && (
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Suspended</span>
               )}

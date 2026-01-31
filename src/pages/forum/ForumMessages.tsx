@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useOutletContext, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Send, User, ArrowLeft, Lock, Loader2, Shield, BadgeCheck } from 'lucide-react';
+import { Mail, Send, User, ArrowLeft, Lock, Loader2, Shield } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
+import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import { 
   encryptMessage, 
   decryptMessage, 
@@ -598,7 +599,7 @@ export default function ForumMessages() {
                       {convo.other_user?.username || 'Unknown'}
                     </span>
                     {convo.other_user?.is_verified && (
-                      <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <VerifiedBadge size="md" />
                     )}
                   </div>
                   <p className="text-xs text-[hsl(var(--bc-text-muted))] truncate">
@@ -648,7 +649,7 @@ export default function ForumMessages() {
                         {convo.other_user.username}
                       </Link>
                       {convo.other_user.is_verified && (
-                        <BadgeCheck className="w-4 h-4 text-blue-500" />
+                        <VerifiedBadge size="md" />
                       )}
                     </div>
                     <div className="ml-auto flex items-center gap-1 text-xs text-green-600">
@@ -683,7 +684,7 @@ export default function ForumMessages() {
                         {!isOwn && msg.sender && (
                           <div className="flex items-center gap-1 text-xs opacity-70 mb-1">
                             {msg.sender.username}
-                            {msg.sender.is_verified && <BadgeCheck className="w-3 h-3 text-blue-500" />}
+                            {msg.sender.is_verified && <VerifiedBadge size="sm" />}
                           </div>
                         )}
                         <p className="break-words">{msg.decrypted_content}</p>

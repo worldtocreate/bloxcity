@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Calendar, MessageCircle, Shield, BadgeCheck, MessageSquare, Pin } from 'lucide-react';
+import { User, Calendar, MessageCircle, Shield, MessageSquare, Pin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import VerifiedBadge from './VerifiedBadge';
 
 interface ForumUserProfile {
   id: string;
@@ -122,9 +123,7 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="font-semibold text-[hsl(var(--bc-text))] truncate">{profile.username}</span>
-              {profile.is_verified && (
-                <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              )}
+              {profile.is_verified && <VerifiedBadge size="md" />}
             </div>
             <div className="flex items-center gap-1 text-xs text-[hsl(var(--bc-text-muted))]">
               <Calendar className="w-3 h-3" />
