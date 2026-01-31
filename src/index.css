@@ -21,6 +21,15 @@
   --bc-glow: 217 70% 60%;
 }
 
+/* Dark mode overrides */
+.dark {
+  --bc-bg-light: 220 15% 10%;
+  --bc-bg-card: 220 15% 13%;
+  --bc-text: 220 15% 90%;
+  --bc-text-muted: 220 10% 60%;
+  --bc-border: 220 15% 25%;
+}
+
 * {
   margin: 0;
   padding: 0;

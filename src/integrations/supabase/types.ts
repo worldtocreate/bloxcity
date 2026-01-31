@@ -180,6 +180,41 @@ export type Database = {
           },
         ]
       }
+      forum_account_deletion_requests: {
+        Row: {
+          forum_user_id: string
+          id: string
+          processed_at: string | null
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          forum_user_id: string
+          id?: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          forum_user_id?: string
+          id?: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_account_deletion_requests_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: true
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_avatar_requests: {
         Row: {
           created_at: string
@@ -633,6 +668,50 @@ export type Database = {
           },
         ]
       }
+      forum_user_sessions: {
+        Row: {
+          created_at: string
+          device_info: string | null
+          forum_user_id: string
+          id: string
+          ip_address: string | null
+          is_current: boolean | null
+          last_activity_at: string
+          session_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_info?: string | null
+          forum_user_id: string
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_activity_at?: string
+          session_token: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_info?: string | null
+          forum_user_id?: string
+          id?: string
+          ip_address?: string | null
+          is_current?: boolean | null
+          last_activity_at?: string
+          session_token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_user_sessions_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_users: {
         Row: {
           allow_dms: boolean | null
@@ -645,8 +724,11 @@ export type Database = {
           is_suspended: boolean | null
           is_verified: boolean | null
           last_post_at: string | null
+          membership_tier: string | null
           post_count: number | null
           signature: string | null
+          social_discord: string | null
+          social_x: string | null
           suspension_ends_at: string | null
           suspension_reason: string | null
           user_id: string
@@ -663,8 +745,11 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
+          membership_tier?: string | null
           post_count?: number | null
           signature?: string | null
+          social_discord?: string | null
+          social_x?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
           user_id: string
@@ -681,8 +766,11 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_post_at?: string | null
+          membership_tier?: string | null
           post_count?: number | null
           signature?: string | null
+          social_discord?: string | null
+          social_x?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
           user_id?: string

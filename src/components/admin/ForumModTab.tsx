@@ -14,6 +14,7 @@ interface ForumUserData {
   suspension_ends_at: string | null;
   post_count: number;
   created_at: string;
+  membership_tier: string | null;
 }
 
 interface AvatarRequest {
