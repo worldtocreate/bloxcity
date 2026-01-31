@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import TwoFactorVerify from '@/components/forum/TwoFactorVerify';
 
 export default function ForumLogin() {
   const navigate = useNavigate();
@@ -11,6 +12,11 @@ export default function ForumLogin() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // 2FA states
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [twoFAMethod, setTwoFAMethod] = useState<'totp' | 'email'>('totp');
+  const [pendingAuth, setPendingAuth] = useState<{ email: string; password: string } | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -18,14 +24,45 @@ export default function ForumLogin() {
     });
   }, [navigate]);
 
+  const check2FA = async (userEmail: string): Promise<{ requires2FA: boolean; method: 'totp' | 'email' | 'none' }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('forum-2fa-verify', {
+        body: { action: 'check', email: userEmail }
+      });
+      
+      if (error) return { requires2FA: false, method: 'none' };
+      return data || { requires2FA: false, method: 'none' };
+    } catch {
+      return { requires2FA: false, method: 'none' };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
+    // First check if 2FA is enabled for this user
+    const twoFAStatus = await check2FA(email);
+    
+    if (twoFAStatus.requires2FA && twoFAStatus.method !== 'none') {
+      // Store credentials and show 2FA screen
+      setPendingAuth({ email, password });
+      setTwoFAMethod(twoFAStatus.method as 'totp' | 'email');
+      setRequires2FA(true);
+      setLoading(false);
+      return;
+    }
+
+    // No 2FA, proceed with normal login
+    await performLogin(email, password);
+  };
+
+  const performLogin = async (userEmail: string, userPassword: string) => {
+    setLoading(true);
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password
+      email: userEmail,
+      password: userPassword
     });
 
     if (authError) {
@@ -37,6 +74,39 @@ export default function ForumLogin() {
     toast.success('Welcome back!');
     navigate('/forum');
   };
+
+  const handle2FAVerified = async () => {
+    if (!pendingAuth) return;
+    await performLogin(pendingAuth.email, pendingAuth.password);
+  };
+
+  const handleCancel2FA = () => {
+    setRequires2FA(false);
+    setPendingAuth(null);
+    setPassword('');
+  };
+
+  // Show 2FA verification screen
+  if (requires2FA && pendingAuth) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/forum" className="inline-block">
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+            </Link>
+          </div>
+          
+          <TwoFactorVerify
+            email={pendingAuth.email}
+            method={twoFAMethod}
+            onVerified={handle2FAVerified}
+            onCancel={handleCancel2FA}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">

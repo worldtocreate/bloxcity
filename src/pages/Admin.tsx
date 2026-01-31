@@ -15,6 +15,7 @@ import IPBlockingTab from "@/components/admin/IPBlockingTab";
 import SettingsTab from "@/components/admin/SettingsTab";
 import ExportButton from "@/components/admin/ExportButton";
 import ForumModTab from "@/components/admin/ForumModTab";
+import ContentModerationTab from "@/components/admin/ContentModerationTab";
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -988,6 +989,10 @@ const Admin = () => {
 
         {/* Forum Moderation Tab */}
         {activeTab === "forum-mod" && <ForumModTab darkMode={darkMode} />}
+
+        {/* Content Moderation Tab */}
+        {activeTab === "content-mod" && <ContentModerationTab darkMode={darkMode} />}
+        
         {/* Admin Users Tab */}
         {activeTab === "admins" && (
           <div className="space-y-6">

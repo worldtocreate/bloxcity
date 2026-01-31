@@ -98,6 +98,88 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_2fa_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          forum_user_id: string
+          id: string
+          type: string
+          used_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          expires_at: string
+          forum_user_id: string
+          id?: string
+          type?: string
+          used_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          forum_user_id?: string
+          id?: string
+          type?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_2fa_codes_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_2fa_settings: {
+        Row: {
+          backup_codes: string[] | null
+          backup_codes_used: boolean[] | null
+          created_at: string
+          forum_user_id: string
+          id: string
+          is_enabled: boolean
+          method: string
+          totp_secret: string | null
+          updated_at: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          backup_codes_used?: boolean[] | null
+          created_at?: string
+          forum_user_id: string
+          id?: string
+          is_enabled?: boolean
+          method?: string
+          totp_secret?: string | null
+          updated_at?: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          backup_codes_used?: boolean[] | null
+          created_at?: string
+          forum_user_id?: string
+          id?: string
+          is_enabled?: boolean
+          method?: string
+          totp_secret?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_2fa_settings_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: true
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_avatar_requests: {
         Row: {
           created_at: string
@@ -292,6 +374,36 @@ export type Database = {
           },
         ]
       }
+      forum_moderation_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          moderator_id: string
+          reason: string | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          moderator_id: string
+          reason?: string | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          moderator_id?: string
+          reason?: string | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       forum_pinned_threads: {
         Row: {
           forum_user_id: string
@@ -333,8 +445,12 @@ export type Database = {
           author_id: string
           content: string
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           edited_at: string | null
           id: string
+          is_deleted: boolean | null
           is_edited: boolean | null
           quoted_post_id: string | null
           thread_id: string
@@ -343,8 +459,12 @@ export type Database = {
           author_id: string
           content: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           edited_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_edited?: boolean | null
           quoted_post_id?: string | null
           thread_id: string
@@ -353,8 +473,12 @@ export type Database = {
           author_id?: string
           content?: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           edited_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_edited?: boolean | null
           quoted_post_id?: string | null
           thread_id?: string
@@ -388,7 +512,11 @@ export type Database = {
           author_id: string
           category_id: string
           created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           id: string
+          is_deleted: boolean | null
           is_locked: boolean | null
           is_pinned: boolean | null
           last_post_at: string | null
@@ -401,7 +529,11 @@ export type Database = {
           author_id: string
           category_id: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_locked?: boolean | null
           is_pinned?: boolean | null
           last_post_at?: string | null
@@ -414,7 +546,11 @@ export type Database = {
           author_id?: string
           category_id?: string
           created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_locked?: boolean | null
           is_pinned?: boolean | null
           last_post_at?: string | null
