@@ -71,7 +71,8 @@ export default function GroupSettings() {
     isAdmin: boolean;
   }>();
   
-  const { forumUser, isAdmin: isSiteAdmin } = context || {};
+  const forumUser = context?.forumUser;
+  const isSiteAdmin = context?.isAdmin ?? false;
 
   const [group, setGroup] = useState<GroupData | null>(null);
   const [roles, setRoles] = useState<GroupRole[]>([]);
@@ -81,6 +82,7 @@ export default function GroupSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [permissionChecked, setPermissionChecked] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -153,6 +155,7 @@ export default function GroupSettings() {
     if (forumUser) {
       setIsOwner(groupData.owner_id === forumUser.id);
     }
+    setPermissionChecked(true);
 
     // Fetch roles
     const { data: rolesData } = await supabase
@@ -472,12 +475,23 @@ export default function GroupSettings() {
     );
   }
 
-  if (!group || !canEdit) {
+  if (!group) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-[hsl(var(--bc-text-muted))]">Group not found.</p>
+        <Link to="/groups" className="text-[hsl(var(--bc-primary))] hover:underline mt-2 inline-block">
+          Back to Groups
+        </Link>
+      </div>
+    );
+  }
+
+  if (permissionChecked && !canEdit) {
     return (
       <div className="text-center py-20">
         <p className="text-[hsl(var(--bc-text-muted))]">You don't have permission to access this page.</p>
-        <Link to="/groups" className="text-[hsl(var(--bc-primary))] hover:underline mt-2 inline-block">
-          Back to Groups
+        <Link to={`/group/${slug}`} className="text-[hsl(var(--bc-primary))] hover:underline mt-2 inline-block">
+          Back to Group
         </Link>
       </div>
     );
