@@ -67,12 +67,13 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
         {achievements.slice(0, 5).map(achievement => (
           <div
             key={achievement.id}
-            className="relative"
+            className="group relative"
+            title={achievement.name}
           >
             {achievement.image_url ? (
               <img 
                 src={achievement.image_url} 
-                alt=""
+                alt={achievement.name}
                 className="w-6 h-6 rounded-full object-cover border border-[hsl(var(--bc-border))]"
               />
             ) : (
@@ -83,6 +84,9 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
                 <Award className="w-3 h-3" style={{ color: achievement.color }} />
               </div>
             )}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-[hsl(var(--bc-bg-dark))] text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+              {achievement.name}
+            </div>
           </div>
         ))}
         {achievements.length > 5 && (
@@ -113,12 +117,13 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
           <Link
             key={achievement.id}
             to="/achievements"
-            className="relative"
+            className="group relative"
+            title={achievement.name}
           >
             {achievement.image_url ? (
               <img 
                 src={achievement.image_url} 
-                alt=""
+                alt={achievement.name}
                 className="w-10 h-10 rounded-lg object-cover border border-[hsl(var(--bc-border))] hover:scale-105 transition"
               />
             ) : (
@@ -129,6 +134,9 @@ export default function UserAchievements({ forumUserId, compact = false }: UserA
                 <Award className="w-5 h-5" style={{ color: achievement.color }} />
               </div>
             )}
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-[hsl(var(--bc-bg-dark))] text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
+              {achievement.name}
+            </div>
           </Link>
         ))}
       </div>
