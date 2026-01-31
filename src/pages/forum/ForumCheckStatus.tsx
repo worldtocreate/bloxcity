@@ -1,18 +1,14 @@
 import { useState } from "react";
-import { Link, useOutletContext, Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { Search, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import { useForumAuth } from "@/hooks/useForumAuth";
 
 type ReservationStatus = 'pending' | 'approved' | 'denied' | null;
 
-interface OutletContext {
-  forumUser: { id: string; username: string } | null;
-  loading: boolean;
-}
-
 const ForumCheckStatus = () => {
-  const { forumUser, loading: authLoading } = useOutletContext<OutletContext>();
+  const { forumUser, loading: authLoading } = useForumAuth();
   const [checkEmail, setCheckEmail] = useState("");
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkError, setCheckError] = useState("");
