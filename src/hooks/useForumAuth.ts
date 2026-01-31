@@ -23,6 +23,10 @@ export interface ForumUser {
   thread_count: number;
   avatar_effect: string | null;
   membership_tier: 'bronze' | 'silver' | 'platinum' | null;
+  coins: number;
+  last_coin_claim: string | null;
+  status_text: string | null;
+  status_updated_at: string | null;
 }
 
 export function useForumAuth() {

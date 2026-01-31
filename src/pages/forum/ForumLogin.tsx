@@ -34,7 +34,7 @@ export default function ForumLogin() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/');
+      if (session) navigate('/dashboard');
     });
   }, [navigate]);
 
@@ -113,7 +113,7 @@ export default function ForumLogin() {
       } else {
         toast.success('Welcome back! Your account has been reactivated.');
         setShowReactivateModal(false);
-        navigate('/');
+        navigate('/dashboard');
       }
     } finally {
       setReactivating(false);
@@ -179,7 +179,7 @@ export default function ForumLogin() {
     }
 
     toast.success('Welcome back!');
-    navigate('/');
+    navigate('/dashboard');
   };
 
   const handle2FAVerified = async () => {

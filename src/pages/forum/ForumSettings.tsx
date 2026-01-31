@@ -157,6 +157,8 @@ export default function ForumSettings() {
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
   const [selectedAvatarEffect, setSelectedAvatarEffect] = useState<AvatarEffect>(null);
   const [savingEffect, setSavingEffect] = useState(false);
+  const [statusText, setStatusText] = useState('');
+  const [savingStatus, setSavingStatus] = useState(false);
   
   // Username change
   const [showUsernameModal, setShowUsernameModal] = useState(false);
@@ -185,6 +187,7 @@ export default function ForumSettings() {
       setSocialDiscord((forumUser as any).social_discord || '');
       setSocialX((forumUser as any).social_x || '');
       setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
+      setStatusText((forumUser as any).status_text || '');
       setInitialized(true);
     }
   }, [forumUser, initialized]);
@@ -332,6 +335,26 @@ export default function ForumSettings() {
       toast.success('Signature saved!');
     }
     setSaving(false);
+  };
+
+  const handleSaveStatus = async () => {
+    if (!forumUser) return;
+    setSavingStatus(true);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ 
+        status_text: statusText.trim() || null,
+        status_updated_at: statusText.trim() ? new Date().toISOString() : null
+      })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to save status');
+    } else {
+      toast.success('Status updated!');
+    }
+    setSavingStatus(false);
   };
 
   const handleSaveSocialLinks = async () => {
@@ -1594,6 +1617,36 @@ export default function ForumSettings() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Status Update Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <MessageSquare className="w-5 h-5" />
+          Status
+        </h2>
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3">
+          Share what you're thinking. This shows on your profile and your friends' dashboard.
+        </p>
+        <textarea
+          value={statusText}
+          onChange={(e) => setStatusText(e.target.value)}
+          placeholder="What's on your mind? (max 280 characters)..."
+          className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+          rows={2}
+          maxLength={280}
+        />
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs text-[hsl(var(--bc-text-muted))]">{statusText.length}/280</span>
+          <button
+            onClick={handleSaveStatus}
+            disabled={savingStatus}
+            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
+          >
+            {savingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {savingStatus ? 'Saving...' : 'Update Status'}
+          </button>
+        </div>
       </div>
 
       {/* Signature Section */}

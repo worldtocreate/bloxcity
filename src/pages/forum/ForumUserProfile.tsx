@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star } from 'lucide-react';
+import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star, Heart } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
+import FriendButton from '@/components/forum/FriendButton';
+import FriendsList from '@/components/forum/FriendsList';
+import ReportButton from '@/components/forum/ReportButton';
 
 interface ProfileData {
   id: string;
@@ -30,6 +33,8 @@ interface ProfileData {
   level: number;
   thread_count: number;
   avatar_effect: string | null;
+  status_text: string | null;
+  status_updated_at: string | null;
 }
 
 interface ThreadData {
@@ -68,6 +73,8 @@ export default function ForumUserProfile() {
   const [blocking, setBlocking] = useState(false);
   const [stats, setStats] = useState<ProfileStats>({ totalViews: 0, totalReplies: 0, threadCount: 0 });
   const [activeTab, setActiveTab] = useState<'threads' | 'activity'>('threads');
+  const [statusLiked, setStatusLiked] = useState(false);
+  const [statusLikeCount, setStatusLikeCount] = useState(0);
 
   const isOwnProfile = forumUser?.username === username;
   const canSeeThreads = isOwnProfile || isAdmin || !profile?.hide_threads;
@@ -142,6 +149,24 @@ export default function ForumUserProfile() {
       }
     }
 
+    // Fetch status likes
+    if (forumUser) {
+      const { data: likeData } = await supabase
+        .from('forum_status_likes')
+        .select('id')
+        .eq('liker_id', forumUser.id)
+        .eq('liked_user_id', userData.id)
+        .single();
+      setStatusLiked(!!likeData);
+    }
+
+    // Fetch total status likes
+    const { count: likeCount } = await supabase
+      .from('forum_status_likes')
+      .select('id', { count: 'exact', head: true })
+      .eq('liked_user_id', userData.id);
+    setStatusLikeCount(likeCount || 0);
+
     setLoading(false);
   };
 
@@ -184,6 +209,26 @@ export default function ForumUserProfile() {
       }
     }
     setBlocking(false);
+  };
+
+  const handleLikeStatus = async () => {
+    if (!forumUser || !profile) return;
+    
+    if (statusLiked) {
+      await supabase
+        .from('forum_status_likes')
+        .delete()
+        .eq('liker_id', forumUser.id)
+        .eq('liked_user_id', profile.id);
+      setStatusLiked(false);
+      setStatusLikeCount(prev => Math.max(0, prev - 1));
+    } else {
+      await supabase
+        .from('forum_status_likes')
+        .insert({ liker_id: forumUser.id, liked_user_id: profile.id });
+      setStatusLiked(true);
+      setStatusLikeCount(prev => prev + 1);
+    }
   };
 
   const formatDate = (date: string) => {
@@ -234,6 +279,57 @@ export default function ForumUserProfile() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Status Bubble - shown at top if user has status */}
+      {profile.status_text && (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <UserAvatar
+              avatarUrl={profile.avatar_url}
+              username={profile.username}
+              size="md"
+              effect={profile.avatar_effect}
+              membershipTier={profile.membership_tier}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-[hsl(var(--bc-text))]">{profile.username}</span>
+                {profile.status_updated_at && (
+                  <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                    {getTimeSince(profile.status_updated_at)}
+                  </span>
+                )}
+              </div>
+              <div className="relative bg-[hsl(var(--bc-bg-light))] rounded-xl p-3">
+                <div className="absolute -top-2 left-4 w-3 h-3 bg-[hsl(var(--bc-bg-light))] rotate-45" />
+                <p className="text-[hsl(var(--bc-text))]">{profile.status_text}</p>
+              </div>
+              {/* Like button */}
+              {forumUser && !isOwnProfile && (
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={handleLikeStatus}
+                    className={`flex items-center gap-1 text-sm transition ${
+                      statusLiked 
+                        ? 'text-red-500' 
+                        : 'text-[hsl(var(--bc-text-muted))] hover:text-red-500'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${statusLiked ? 'fill-current' : ''}`} />
+                    {statusLikeCount > 0 && statusLikeCount}
+                  </button>
+                </div>
+              )}
+              {isOwnProfile && statusLikeCount > 0 && (
+                <div className="flex items-center gap-1 mt-2 text-sm text-[hsl(var(--bc-text-muted))]">
+                  <Heart className="w-4 h-4 text-red-500 fill-current" />
+                  {statusLikeCount} {statusLikeCount === 1 ? 'like' : 'likes'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Profile Header Card */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
         {/* Cover/Banner Area */}
@@ -263,6 +359,11 @@ export default function ForumUserProfile() {
           <div className="flex justify-end pt-4">
             {!isOwnProfile && forumUser && (
               <div className="flex gap-2">
+                <FriendButton
+                  currentUserId={forumUser.id}
+                  targetUserId={profile.id}
+                  targetUsername={profile.username}
+                />
                 <button
                   onClick={() => navigate(`/messages?to=${profile.username}`)}
                   disabled={!profile.allow_dms && !isAdmin}
@@ -285,6 +386,13 @@ export default function ForumUserProfile() {
                     {isBlocked ? 'Unblock' : 'Block'}
                   </button>
                 )}
+                <ReportButton
+                  reporterId={forumUser.id}
+                  reportedType="profile"
+                  reportedId={profile.id}
+                  reportedName={profile.username}
+                  variant="icon"
+                />
               </div>
             )}
           </div>
@@ -486,6 +594,9 @@ export default function ForumUserProfile() {
           <p className="text-[hsl(var(--bc-text-muted))]">This user has hidden their threads from public view.</p>
         </div>
       )}
+
+      {/* Friends List */}
+      <FriendsList forumUserId={profile.id} limit={6} showTitle={true} />
     </div>
   );
 }
