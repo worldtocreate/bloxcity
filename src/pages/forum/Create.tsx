@@ -679,13 +679,34 @@ export default function Create() {
                           </p>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        ad.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                        ad.status === 'denied' ? 'bg-red-500/20 text-red-400' :
-                        'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {ad.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          ad.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                          ad.status === 'denied' ? 'bg-red-500/20 text-red-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {ad.status}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Are you sure you want to delete this ad? You still need to wait 24 hours before submitting a new one.')) return;
+                            const { error } = await supabase
+                              .from('forum_ads')
+                              .delete()
+                              .eq('id', ad.id);
+                            if (error) {
+                              toast.error('Failed to delete ad');
+                            } else {
+                              toast.success('Ad deleted');
+                              fetchMyAds();
+                            }
+                          }}
+                          className="p-1 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded transition"
+                          title="Delete ad"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
