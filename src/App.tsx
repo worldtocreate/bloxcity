@@ -38,6 +38,7 @@ import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
 import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
+import Achievements from "./pages/forum/Achievements";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="check-status" element={<ForumCheckStatus />} />
               <Route path="faq" element={<ForumFAQ />} />
               <Route path="friends" element={<Friends />} />
+              <Route path="achievements" element={<Achievements />} />
             </Route>
 
             {/* Admin Route - outside ForumLayout */}

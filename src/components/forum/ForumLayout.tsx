@@ -8,6 +8,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { Loader2, Megaphone, X, Shield, Lock, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import Maintenance from '@/pages/Maintenance';
 
 interface ForumAnnouncement {
   enabled: boolean;
@@ -20,6 +21,12 @@ interface TwoFASettings {
   method: string;
 }
 
+interface MaintenanceSettings {
+  enabled: boolean;
+  password: string;
+  message: string;
+}
+
 export default function ForumLayout() {
   const { user, forumUser, isAdmin, loading, emailVerified, refreshEmailVerification } = useForumAuth();
   const navigate = useNavigate();
@@ -30,12 +37,19 @@ export default function ForumLayout() {
   const [checkingTwoFA, setCheckingTwoFA] = useState(true);
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
+  const [maintenanceSettings, setMaintenanceSettings] = useState<MaintenanceSettings | null>(null);
+  const [maintenanceBypass, setMaintenanceBypass] = useState(false);
 
   // Track online status
   useOnlineStatus(forumUser?.id || null);
 
   useEffect(() => {
     fetchAnnouncement();
+    fetchMaintenanceSettings();
+    
+    // Check for bypass in sessionStorage
+    const bypass = sessionStorage.getItem('maintenance_bypass');
+    setMaintenanceBypass(bypass === 'true');
     
     // Set forum-specific meta tags
     document.title = 'BLOX City Forum - Community Discussions';
@@ -60,7 +74,6 @@ export default function ForumLayout() {
       ogDescription?.setAttribute('content', originalOgDescription);
     };
   }, []);
-
   // Check 2FA status for admins
   useEffect(() => {
     if (!loading && isAdmin && forumUser) {
@@ -106,6 +119,18 @@ export default function ForumLayout() {
     }
   };
 
+  const fetchMaintenanceSettings = async () => {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'maintenance_mode')
+      .single();
+    
+    if (data?.value) {
+      setMaintenanceSettings(data.value as unknown as MaintenanceSettings);
+    }
+  };
+
   const handleSendVerificationEmail = async () => {
     setSendingVerification(true);
     try {
@@ -130,6 +155,11 @@ export default function ForumLayout() {
     if (!domain) return email;
     return `${local.charAt(0)}***@${domain}`;
   };
+
+  // Check for maintenance mode (show to non-admin users who haven't bypassed)
+  if (maintenanceSettings?.enabled && !maintenanceBypass && !isAdmin) {
+    return <Maintenance message={maintenanceSettings.message} password={maintenanceSettings.password} />;
+  }
 
   // Check if user is suspended (only after loading completes)
   if (!loading && forumUser?.is_suspended) {
