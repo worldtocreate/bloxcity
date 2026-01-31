@@ -23,6 +23,7 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import BlogTab from "@/components/admin/BlogTab";
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -30,6 +31,7 @@ import {
 
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [forumUserId, setForumUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -110,6 +112,17 @@ const Admin = () => {
         setIsAdmin(false);
       } else {
         setIsAdmin(hasAdminRole === true);
+        // Get forum user id for blog tab
+        if (hasAdminRole) {
+          const { data: forumUserData } = await supabase
+            .from('forum_users')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .single();
+          if (forumUserData) {
+            setForumUserId(forumUserData.id);
+          }
+        }
       }
 
       setLoading(false);
@@ -1235,6 +1248,9 @@ const Admin = () => {
             </div>
           </div>
         )}
+
+        {/* Blog Tab */}
+        {activeTab === "blog" && forumUserId && <BlogTab forumUserId={forumUserId} />}
 
         {/* Settings Tab */}
         {activeTab === "settings" && <SettingsTab darkMode={darkMode} />}

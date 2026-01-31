@@ -15,6 +15,7 @@ import {
   Award,
   Plus,
   Trophy,
+  Newspaper,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -42,6 +43,7 @@ interface AppSidebarProps {
 const mainNavItems = [
   { title: 'Dashboard', url: '/', icon: Home },
   { title: 'Forum', url: '/forum', icon: MessageSquare },
+  { title: 'Blog', url: '/blog', icon: Newspaper },
   { title: 'Players', url: '/players', icon: Users },
   { title: 'Groups', url: '/groups', icon: UsersRound },
   { title: 'Achievements', url: '/achievements', icon: Award },

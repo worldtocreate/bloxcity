@@ -98,6 +98,53 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          excerpt: string | null
+          id: string
+          is_published: boolean
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_2fa_codes: {
         Row: {
           code: string
@@ -1729,6 +1776,7 @@ export type Database = {
           coins: number | null
           cover_url: string | null
           created_at: string | null
+          date_of_birth: string | null
           dm_encryption_pin_hash: string | null
           has_pending_warning: boolean | null
           hide_threads: boolean | null
@@ -1773,6 +1821,7 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           has_pending_warning?: boolean | null
           hide_threads?: boolean | null
@@ -1817,6 +1866,7 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           has_pending_warning?: boolean | null
           hide_threads?: boolean | null

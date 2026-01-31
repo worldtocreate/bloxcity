@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import { z } from 'zod';
@@ -18,10 +18,12 @@ export default function ForumRegister() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const [existingAuthUser, setExistingAuthUser] = useState<{ id: string; email?: string | null } | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -59,6 +61,17 @@ export default function ForumRegister() {
     .max(20, 'Username must be 3-20 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
 
+  const calculateAge = (dob: string): number => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -70,6 +83,29 @@ export default function ForumRegister() {
     }
 
     const normalizedUsername = parsedUsername.data.toLowerCase();
+
+    // Validate date of birth
+    if (!dateOfBirth) {
+      setError('Date of birth is required');
+      return;
+    }
+
+    const age = calculateAge(dateOfBirth);
+    if (age < 13) {
+      setError('You must be at least 13 years old to register');
+      return;
+    }
+
+    if (age > 120) {
+      setError('Please enter a valid date of birth');
+      return;
+    }
+
+    // Validate terms agreement
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy');
+      return;
+    }
 
     // If the user is already signed in, we're just creating the missing forum profile
     if (!existingAuthUser) {
@@ -133,7 +169,8 @@ export default function ForumRegister() {
         // Create forum profile for newly created auth user
         const { error: profileError } = await supabase.from('forum_users').insert({
           user_id: authData.user.id,
-          username: normalizedUsername
+          username: normalizedUsername,
+          date_of_birth: dateOfBirth
         });
 
         if (profileError) {
@@ -142,7 +179,7 @@ export default function ForumRegister() {
           return;
         }
 
-        toast.success('Account created! Welcome to the forum.');
+        toast.success('Account created! Please check your email to verify your account.');
         navigate('/');
         setLoading(false);
         return;
@@ -151,7 +188,8 @@ export default function ForumRegister() {
       // Signed in already: create missing forum profile
       const { error: profileError } = await supabase.from('forum_users').insert({
         user_id: userIdToUse,
-        username: normalizedUsername
+        username: normalizedUsername,
+        date_of_birth: dateOfBirth
       });
 
       if (profileError) {
@@ -168,6 +206,11 @@ export default function ForumRegister() {
 
     setLoading(false);
   };
+
+  // Calculate max date (13 years ago from today)
+  const today = new Date();
+  const maxDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+  const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate()).toISOString().split('T')[0];
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
@@ -226,6 +269,23 @@ export default function ForumRegister() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Date of Birth</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    max={maxDate}
+                    min={minDate}
+                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">You must be at least 13 years old</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
@@ -254,6 +314,22 @@ export default function ForumRegister() {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-[hsl(var(--bc-primary))] border-[hsl(var(--bc-border))] rounded focus:ring-[hsl(var(--bc-primary))]"
+                />
+                <label htmlFor="terms" className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-[hsl(var(--bc-primary))] hover:underline">Terms of Service</Link>
+                  {' '}and{' '}
+                  <Link to="/privacy" className="text-[hsl(var(--bc-primary))] hover:underline">Privacy Policy</Link>
+                </label>
               </div>
             </>
           )}
