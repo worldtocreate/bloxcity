@@ -39,15 +39,6 @@ export default function ForumCategory() {
     forumUser: ForumUser | null;
     isAdmin: boolean;
   }>();
-
-  // Debug logging
-  console.log('[ForumCategory] Context:', { 
-    hasUser: !!user, 
-    hasForumUser: !!forumUser, 
-    forumUserUsername: forumUser?.username,
-    isAdmin,
-    slug
-  });
   
   const [category, setCategory] = useState<Category | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -99,7 +90,7 @@ export default function ForumCategory() {
     setLoading(false);
   };
 
-  const canCreateThread = forumUser && (!category?.is_admin_only || isAdmin);
+  const canCreateThread = !!forumUser && (!category?.is_admin_only || isAdmin);
 
   if (loading) {
     return (
@@ -133,7 +124,7 @@ export default function ForumCategory() {
           </h1>
           <p className="text-[hsl(var(--bc-text-muted))]">{category?.description}</p>
         </div>
-        {canCreateThread && (
+        {canCreateThread ? (
           <Link
             to={`/forum/category/${slug}/new`}
             className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
@@ -141,7 +132,15 @@ export default function ForumCategory() {
             <Plus className="w-4 h-4" />
             New Thread
           </Link>
-        )}
+        ) : user ? (
+          <Link
+            to="/forum/register"
+            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Create forum profile
+          </Link>
+        ) : null}
       </div>
 
       {/* Threads */}
