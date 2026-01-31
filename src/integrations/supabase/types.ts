@@ -264,28 +264,25 @@ export type Database = {
           color: string | null
           created_at: string
           description: string | null
-          icon: string | null
           id: string
+          image_url: string | null
           name: string
-          rarity: string | null
         }
         Insert: {
           color?: string | null
           created_at?: string
           description?: string | null
-          icon?: string | null
           id?: string
+          image_url?: string | null
           name: string
-          rarity?: string | null
         }
         Update: {
           color?: string | null
           created_at?: string
           description?: string | null
-          icon?: string | null
           id?: string
+          image_url?: string | null
           name?: string
-          rarity?: string | null
         }
         Relationships: []
       }
