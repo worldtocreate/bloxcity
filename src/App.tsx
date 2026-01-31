@@ -47,7 +47,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Main Forum Routes (now at root) */}
+            {/* Main Routes with ForumLayout */}
             <Route path="/" element={<ForumLayout />}>
               <Route index element={<ForumDashboard />} />
               <Route path="forum" element={<ForumHome />} />
@@ -61,38 +61,19 @@ const App = () => (
               <Route path="players" element={<Players />} />
               <Route path="groups" element={<Groups />} />
               <Route path="group/:slug" element={<GroupDetail />} />
+              <Route path="staff" element={<ForumStaff />} />
+              <Route path="updates" element={<Updates />} />
+              <Route path="games" element={<Games />} />
+              <Route path="market" element={<Market />} />
+              <Route path="character" element={<Character />} />
+              <Route path="trading" element={<Trading />} />
+              <Route path="login" element={<ForumLogin />} />
+              <Route path="register" element={<ForumRegister />} />
+              <Route path="forgot-password" element={<ForumForgotPassword />} />
+              <Route path="reserve" element={<ForumReserve />} />
+              <Route path="check-status" element={<ForumCheckStatus />} />
+              <Route path="faq" element={<ForumFAQ />} />
             </Route>
-            <Route path="/staff" element={<ForumStaff />} />
-            <Route path="/updates" element={<Updates />} />
-            <Route path="/games" element={<Games />} />
-            <Route path="/market" element={<Market />} />
-            <Route path="/character" element={<Character />} />
-            <Route path="/trading" element={<Trading />} />
-            <Route path="/login" element={<ForumLogin />} />
-            <Route path="/register" element={<ForumRegister />} />
-            <Route path="/forgot-password" element={<ForumForgotPassword />} />
-            <Route path="/reserve" element={<ForumReserve />} />
-            <Route path="/check-status" element={<ForumCheckStatus />} />
-            <Route path="/faq" element={<ForumFAQ />} />
-            
-            {/* Admin & Auth */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />
-            
-            {/* Legacy redirects from old /forum/* paths */}
-            <Route path="/forum" element={<Navigate to="/" replace />} />
-            <Route path="/forum/category/:slug" element={<Navigate to="/category/:slug" replace />} />
-            <Route path="/forum/thread/:threadId" element={<Navigate to="/thread/:threadId" replace />} />
-            <Route path="/forum/settings" element={<Navigate to="/settings" replace />} />
-            <Route path="/forum/user/:username" element={<Navigate to="/user/:username" replace />} />
-            <Route path="/forum/messages" element={<Navigate to="/messages" replace />} />
-            <Route path="/forum/login" element={<Navigate to="/login" replace />} />
-            <Route path="/forum/register" element={<Navigate to="/register" replace />} />
-            <Route path="/forum/forgot-password" element={<Navigate to="/forgot-password" replace />} />
-            <Route path="/forum/reserve" element={<Navigate to="/reserve" replace />} />
-            <Route path="/forum/check-status" element={<Navigate to="/check-status" replace />} />
-            <Route path="/reserve/check-status" element={<Navigate to="/check-status" replace />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
