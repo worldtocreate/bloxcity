@@ -1,6 +1,6 @@
 import { 
   BarChart3, Users, Mail, Ban, Shield, Activity, 
-  Globe, Settings, MessageSquare, FileText, Wrench, UserCog, Megaphone, Flag, Megaphone as AdIcon 
+  Globe, Settings, MessageSquare, FileText, Wrench, UserCog, Megaphone, Flag, Megaphone as AdIcon, Award
 } from "lucide-react";
 import { AdminTab } from "./types";
 
@@ -21,6 +21,7 @@ const tabs: { id: AdminTab; label: string; icon: React.ComponentType<{ className
   { id: "user-mgmt", label: "User Mgmt", icon: UserCog },
   { id: "reports", label: "Reports", icon: Flag },
   { id: "ads", label: "Ads", icon: AdIcon },
+  { id: "achievements", label: "Achievements", icon: Award },
   { id: "updates", label: "Updates", icon: Megaphone },
   { id: "admins", label: "Admin Users", icon: Shield },
   { id: "logs", label: "Activity Logs", icon: Activity },

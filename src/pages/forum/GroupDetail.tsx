@@ -25,6 +25,8 @@ interface GroupData {
   coins_vault: number;
   require_approval: boolean;
   created_at: string;
+  is_private: boolean;
+  vault_is_private: boolean;
   owner: {
     id: string;
     username: string;
@@ -110,6 +112,7 @@ export default function GroupDetail() {
       .select(`
         id, name, slug, description, icon_url, cover_url, owner_id,
         is_verified, member_count, coins_vault, require_approval, created_at,
+        is_private, vault_is_private,
         owner:owner_id (id, username, avatar_url, is_verified)
       `)
       .eq('slug', slug)
@@ -362,10 +365,13 @@ export default function GroupDetail() {
                   <Users className="w-4 h-4" />
                   {group.member_count.toLocaleString()} members
                 </span>
-                <span className="flex items-center gap-1">
-                  <Coins className="w-4 h-4 text-yellow-500" />
-                  {group.coins_vault.toLocaleString()} in vault
-                </span>
+                {(!group.vault_is_private || isOwner || isSiteAdmin) && (
+                  <span className="flex items-center gap-1">
+                    <Coins className="w-4 h-4 text-yellow-500" />
+                    {group.coins_vault.toLocaleString()} in vault
+                    {group.vault_is_private && <span className="text-xs ml-1">(private)</span>}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2 mt-2 text-sm">

@@ -12,6 +12,8 @@ import FriendButton from '@/components/forum/FriendButton';
 import FriendsList from '@/components/forum/FriendsList';
 import ReportButton from '@/components/forum/ReportButton';
 import ProfileViews from '@/components/forum/ProfileViews';
+import UserAchievements from '@/components/forum/UserAchievements';
+import UserGroups from '@/components/forum/UserGroups';
 
 interface ProfileData {
   id: string;
@@ -588,6 +590,16 @@ export default function ForumUserProfile() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Achievements Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+        <UserAchievements forumUserId={profile.id} />
+      </div>
+
+      {/* Groups Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+        <UserGroups forumUserId={profile.id} />
       </div>
 
       {/* Threads Section */}
