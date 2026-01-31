@@ -68,7 +68,7 @@ export default function ForumLayout() {
     
     return () => {
       // Restore original meta tags when leaving forum
-      document.title = 'BLOX City - Reserve Your Username';
+      document.title = 'BLOX City';
       metaDescription?.setAttribute('content', originalDescription);
       ogTitle?.setAttribute('content', originalOgTitle);
       ogDescription?.setAttribute('content', originalOgDescription);

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  Coins, Gift, Heart, Flag, MessageCircle, Clock, Users, 
-  Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User
+  Coins, Heart, Flag, MessageCircle, Clock, Users, 
+  Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User, UsersRound, Gift
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -404,12 +404,12 @@ export default function ForumDashboard() {
               <p className="text-sm text-[hsl(var(--bc-text-muted))]">Explore community discussions</p>
             </Link>
             <Link
-              to="/reserve"
+              to="/groups"
               className="bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl p-6 transition group"
             >
-              <Gift className="w-8 h-8 text-[hsl(var(--bc-accent))] mb-3" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-accent))]">Reserve Username</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your name for launch</p>
+              <UsersRound className="w-8 h-8 text-[hsl(var(--bc-accent))] mb-3" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-accent))]">Browse Groups</h3>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Join community groups</p>
             </Link>
           </div>
         </div>
