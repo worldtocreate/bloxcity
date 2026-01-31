@@ -37,13 +37,32 @@ export default function Create() {
   const [loadingAdStatus, setLoadingAdStatus] = useState(true);
   const [submittingAd, setSubmittingAd] = useState(false);
   const [myAds, setMyAds] = useState<any[]>([]);
+  const [adType, setAdType] = useState<'banner' | 'skyscraper'>('banner');
   const [adFormData, setAdFormData] = useState({
     title: '',
     description: '',
     destination_url: '',
   });
   const [adImageFile, setAdImageFile] = useState<File | null>(null);
+  const [adImagePreview, setAdImagePreview] = useState<string | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
   const adFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Ad type configurations (Roblox-style)
+  const AD_TYPES = {
+    banner: { 
+      name: 'Banner Ad', 
+      description: 'Displayed at the top of pages',
+      width: 728, 
+      height: 90 
+    },
+    skyscraper: { 
+      name: 'Skyscraper Ad', 
+      description: 'Displayed on the side of pages',
+      width: 160, 
+      height: 600 
+    }
+  } as const;
 
   // Check ad submission eligibility on mount
   useEffect(() => {
@@ -217,6 +236,42 @@ export default function Create() {
     return publicUrl;
   };
 
+  const handleAdImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    // Read image to check dimensions
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const requiredWidth = AD_TYPES[adType].width;
+        const requiredHeight = AD_TYPES[adType].height;
+
+        setImageDimensions({ width: img.width, height: img.height });
+        
+        if (img.width !== requiredWidth || img.height !== requiredHeight) {
+          toast.error(`Image must be exactly ${requiredWidth}x${requiredHeight} pixels. Your image is ${img.width}x${img.height}.`);
+          setAdImageFile(null);
+          setAdImagePreview(null);
+          return;
+        }
+
+        setAdImageFile(file);
+        setAdImagePreview(event.target?.result as string);
+        toast.success('Image dimensions verified!');
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmitAd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forumUser) return;
@@ -244,6 +299,7 @@ export default function Create() {
           description: adFormData.description,
           destination_url: adFormData.destination_url,
           image_url: imageUrl,
+          ad_type: adType,
           status: 'pending'
         });
 
@@ -252,6 +308,8 @@ export default function Create() {
       toast.success("Ad submitted for review!");
       setAdFormData({ title: '', description: '', destination_url: '' });
       setAdImageFile(null);
+      setAdImagePreview(null);
+      setImageDimensions(null);
       setCanSubmitAd(false);
       fetchMyAds();
     } catch (error: any) {
@@ -426,6 +484,42 @@ export default function Create() {
               </div>
             ) : (
               <form onSubmit={handleSubmitAd} className="space-y-4">
+                {/* Ad Type Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                    Ad Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(Object.entries(AD_TYPES) as [keyof typeof AD_TYPES, typeof AD_TYPES[keyof typeof AD_TYPES]][]).map(([type, config]) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setAdType(type);
+                          // Clear image when changing type
+                          setAdImageFile(null);
+                          setAdImagePreview(null);
+                          setImageDimensions(null);
+                          if (adFileInputRef.current) {
+                            adFileInputRef.current.value = '';
+                          }
+                        }}
+                        className={`p-4 rounded-lg border-2 text-left transition ${
+                          adType === type
+                            ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10'
+                            : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]/50'
+                        }`}
+                      >
+                        <div className="font-medium text-[hsl(var(--bc-text))]">{config.name}</div>
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">{config.description}</div>
+                        <div className="text-xs font-mono text-[hsl(var(--bc-primary))] mt-2">
+                          {config.width} × {config.height} px
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-1">
                     Ad Title
@@ -470,22 +564,86 @@ export default function Create() {
                   />
                 </div>
 
+                {/* Ad Image Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-1">
+                  <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
                     <Upload className="w-4 h-4 inline mr-1" />
                     Ad Image
                   </label>
+                  
+                  {/* Preview and size guide */}
+                  <div className={`relative border-2 border-dashed rounded-lg p-4 transition mb-3 ${
+                    adImagePreview 
+                      ? 'border-green-500 bg-green-500/5' 
+                      : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]'
+                  }`}>
+                    {adImagePreview ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center">
+                          <img 
+                            src={adImagePreview} 
+                            alt="Ad preview" 
+                            className="max-w-full rounded border border-[hsl(var(--bc-border))]"
+                            style={{ 
+                              maxWidth: adType === 'banner' ? '100%' : '160px',
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-green-600">
+                            <Check className="w-4 h-4" />
+                            <span className="text-sm font-medium">
+                              {imageDimensions?.width} × {imageDimensions?.height} px ✓
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAdImageFile(null);
+                              setAdImagePreview(null);
+                              setImageDimensions(null);
+                              if (adFileInputRef.current) {
+                                adFileInputRef.current.value = '';
+                              }
+                            }}
+                            className="text-red-500 hover:text-red-600 text-sm font-medium"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div 
+                        className="text-center cursor-pointer"
+                        onClick={() => adFileInputRef.current?.click()}
+                      >
+                        <div className={`mx-auto border-2 border-dashed border-[hsl(var(--bc-primary))]/30 rounded flex items-center justify-center bg-[hsl(var(--bc-bg-light))] mb-3 ${
+                          adType === 'banner' ? 'w-full aspect-[728/90]' : 'w-40 aspect-[160/600]'
+                        }`}>
+                          <div className="text-center p-2">
+                            <Upload className="w-6 h-6 text-[hsl(var(--bc-text-muted))] mx-auto mb-1" />
+                            <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                              {AD_TYPES[adType].width} × {AD_TYPES[adType].height}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                          Click to upload your ad image
+                        </p>
+                        <p className="text-xs text-[hsl(var(--bc-primary))] mt-1 font-medium">
+                          Must be exactly {AD_TYPES[adType].width} × {AD_TYPES[adType].height} pixels
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
                   <input
                     ref={adFileInputRef}
                     type="file"
-                    accept="image/*"
-                    onChange={(e) => setAdImageFile(e.target.files?.[0] || null)}
-                    className="w-full px-3 py-2 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg text-[hsl(var(--bc-text))]"
-                    required
+                    accept="image/png,image/jpeg,image/gif"
+                    onChange={handleAdImageSelect}
+                    className="hidden"
                   />
-                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
-                    Recommended size: 728x90 or 300x250
-                  </p>
                 </div>
 
                 <button

@@ -330,6 +330,7 @@ export type Database = {
       }
       forum_ads: {
         Row: {
+          ad_type: string
           click_count: number | null
           coins_earned: number | null
           created_at: string
@@ -347,6 +348,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          ad_type?: string
           click_count?: number | null
           coins_earned?: number | null
           created_at?: string
@@ -364,6 +366,7 @@ export type Database = {
           title: string
         }
         Update: {
+          ad_type?: string
           click_count?: number | null
           coins_earned?: number | null
           created_at?: string
