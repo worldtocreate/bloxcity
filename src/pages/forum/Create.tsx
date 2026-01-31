@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -46,12 +46,12 @@ export default function Create() {
   const adFileInputRef = useRef<HTMLInputElement>(null);
 
   // Check ad submission eligibility on mount
-  useState(() => {
+  useEffect(() => {
     if (forumUser) {
       checkCanSubmitAd();
       fetchMyAds();
     }
-  });
+  }, [forumUser]);
 
   const checkCanSubmitAd = async () => {
     const { data } = await supabase.rpc('can_submit_ad');
