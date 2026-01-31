@@ -1,10 +1,16 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext, Navigate } from "react-router-dom";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+
+interface OutletContext {
+  forumUser: { id: string; username: string } | null;
+  loading: boolean;
+}
 
 const ForumReserve = () => {
+  const { forumUser, loading: authLoading } = useOutletContext<OutletContext>();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -22,6 +28,20 @@ const ForumReserve = () => {
     };
     fetchCount();
   }, [submitted]);
+
+  // Redirect to login if not authenticated
+  if (!authLoading && !forumUser) {
+    return <Navigate to="/login" state={{ from: '/reserve' }} replace />;
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
+      </div>
+    );
+  }
 
   const handleReserve = async (e: React.FormEvent) => {
     e.preventDefault();

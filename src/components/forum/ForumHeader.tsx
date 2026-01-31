@@ -53,6 +53,13 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
               {forumUser && (
                 <UnreadBadge forumUserId={forumUser.id} />
               )}
+              <Link 
+                to="/reserve"
+                className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+              >
+                <Ticket className="w-4 h-4" />
+                <span className="hidden sm:inline">Reserve</span>
+              </Link>
               {isAdmin && (
                 <Link 
                   to="/admin"
@@ -96,13 +103,6 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
             </>
           ) : (
             <>
-              <Link 
-                to="/reserve"
-                className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
-              >
-                <Ticket className="w-4 h-4" />
-                <span className="hidden sm:inline">Reserve</span>
-              </Link>
               <Link 
                 to="/login"
                 className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"

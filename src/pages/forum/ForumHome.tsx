@@ -139,36 +139,38 @@ export default function ForumHome() {
         ))}
       </div>
 
-      {/* Username Reservation Section - Now at bottom */}
-      <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
-        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Link
-            to="/reserve"
-            className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-              <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
-            </div>
-          </Link>
-          <Link
-            to="/check-status"
-            className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
-              <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
-            </div>
-          </Link>
+      {/* Username Reservation Section - Only for logged-in users */}
+      {isLoggedIn && (
+        <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-5 border border-[hsl(var(--bc-border))]">
+          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Username Reservation</h2>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Link
+              to="/reserve"
+              className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-primary),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl transition group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
+                <Ticket className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Reserve Username</h3>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">Secure your username for BLOX City</p>
+              </div>
+            </Link>
+            <Link
+              to="/check-status"
+              className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsla(var(--bc-green),0.1)] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-green))] rounded-xl transition group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-green),0.1)] flex items-center justify-center">
+                <Search className="w-6 h-6 text-[hsl(var(--bc-green))]" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Check Status</h3>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">Look up your reservation status</p>
+              </div>
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

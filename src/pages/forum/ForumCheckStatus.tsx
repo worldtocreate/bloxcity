@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, ArrowLeft } from "lucide-react";
+import { Link, useOutletContext, Navigate } from "react-router-dom";
+import { Search, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
 type ReservationStatus = 'pending' | 'approved' | 'denied' | null;
 
+interface OutletContext {
+  forumUser: { id: string; username: string } | null;
+  loading: boolean;
+}
+
 const ForumCheckStatus = () => {
+  const { forumUser, loading: authLoading } = useOutletContext<OutletContext>();
   const [checkEmail, setCheckEmail] = useState("");
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkError, setCheckError] = useState("");
@@ -16,6 +22,20 @@ const ForumCheckStatus = () => {
     status?: ReservationStatus;
     denialReason?: string;
   } | null>(null);
+
+  // Redirect to login if not authenticated
+  if (!authLoading && !forumUser) {
+    return <Navigate to="/login" state={{ from: '/check-status' }} replace />;
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
+      </div>
+    );
+  }
 
   const handleCheckStatus = async (e: React.FormEvent) => {
     e.preventDefault();
