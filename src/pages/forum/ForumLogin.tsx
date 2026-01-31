@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
-import TwoFactorVerify from '@/components/forum/TwoFactorVerify';
+import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
 
 export default function ForumLogin() {
   const navigate = useNavigate();
@@ -40,6 +40,26 @@ export default function ForumLogin() {
     }
   };
 
+  const checkTrustedDevice = async (userEmail: string): Promise<boolean> => {
+    const deviceToken = getTrustedDeviceToken(userEmail);
+    if (!deviceToken) return false;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('forum-2fa-verify', {
+        body: { action: 'check_trusted', email: userEmail, deviceToken }
+      });
+      
+      if (error || !data?.trusted) {
+        // Clear invalid token
+        clearTrustedDeviceToken(userEmail);
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -50,6 +70,15 @@ export default function ForumLogin() {
     const twoFAStatus = await check2FA(email);
     
     if (twoFAStatus.requires2FA && twoFAStatus.method !== 'none') {
+      // Check if device is trusted (remember me was used before)
+      const isTrusted = await checkTrustedDevice(email);
+      
+      if (isTrusted) {
+        // Device is trusted, skip 2FA
+        await performLogin(email, password);
+        return;
+      }
+      
       // Store credentials and show 2FA screen
       setPendingAuth({ email, password });
       setTwoFAMethod(twoFAStatus.method as 'totp' | 'email');

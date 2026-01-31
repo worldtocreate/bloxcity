@@ -10,10 +10,14 @@ const corsHeaders = {
 };
 
 interface VerifyRequest {
-  action: "check" | "send_email_code" | "verify";
+  action: "check" | "check_trusted" | "send_email_code" | "verify";
   email?: string;
   code?: string;
   useBackup?: boolean;
+  rememberDevice?: boolean;
+  deviceId?: string;
+  deviceToken?: string;
+  userAgent?: string;
 }
 
 async function hashCode(code: string): Promise<string> {
@@ -85,6 +89,44 @@ function generateEmailCode(): string {
   const code = Array.from(bytes).map(b => b % 10).join('') + 
                Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b % 10).join('');
   return code;
+}
+
+function generateDeviceToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function createTrustedDevice(
+  supabaseAdmin: any,
+  forumUserId: string,
+  deviceId: string | undefined,
+  userAgent: string | undefined
+): Promise<string> {
+  const deviceToken = generateDeviceToken();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+  // Remove any existing trusted devices for this user/device combo
+  if (deviceId) {
+    await supabaseAdmin
+      .from('forum_2fa_trusted_devices')
+      .delete()
+      .eq('forum_user_id', forumUserId)
+      .eq('device_info', deviceId);
+  }
+
+  // Create new trusted device
+  await supabaseAdmin
+    .from('forum_2fa_trusted_devices')
+    .insert({
+      forum_user_id: forumUserId,
+      device_token: deviceToken,
+      device_info: deviceId || null,
+      user_agent: userAgent || null,
+      expires_at: expiresAt.toISOString()
+    });
+
+  return deviceToken;
 }
 
 async function sendVerificationEmail(email: string, code: string, username: string): Promise<boolean> {
@@ -166,7 +208,75 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { action, email, code, useBackup }: VerifyRequest = await req.json();
+    const { action, email, code, useBackup, rememberDevice, deviceId, deviceToken, userAgent }: VerifyRequest = await req.json();
+
+    if (action === "check_trusted") {
+      // Check if a device token is valid (trusted device)
+      if (!email || !deviceToken) {
+        return new Response(
+          JSON.stringify({ trusted: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Find user by email
+      const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (!authUser) {
+        return new Response(
+          JSON.stringify({ trusted: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: forumUser } = await supabaseAdmin
+        .from('forum_users')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .single();
+
+      if (!forumUser) {
+        return new Response(
+          JSON.stringify({ trusted: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check for valid trusted device
+      const { data: trustedDevice } = await supabaseAdmin
+        .from('forum_2fa_trusted_devices')
+        .select('id, expires_at')
+        .eq('forum_user_id', forumUser.id)
+        .eq('device_token', deviceToken)
+        .single();
+
+      if (trustedDevice && new Date(trustedDevice.expires_at) > new Date()) {
+        // Update last used timestamp
+        await supabaseAdmin
+          .from('forum_2fa_trusted_devices')
+          .update({ last_used_at: new Date().toISOString() })
+          .eq('id', trustedDevice.id);
+
+        return new Response(
+          JSON.stringify({ trusted: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Delete expired token if found
+      if (trustedDevice) {
+        await supabaseAdmin
+          .from('forum_2fa_trusted_devices')
+          .delete()
+          .eq('id', trustedDevice.id);
+      }
+
+      return new Response(
+        JSON.stringify({ trusted: false }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (action === "check") {
       if (!email) {
@@ -347,8 +457,14 @@ Deno.serve(async (req) => {
           .update({ backup_codes_used: backupCodesUsed })
           .eq('forum_user_id', forumUser.id);
 
+        // Create trusted device if requested
+        let newDeviceToken: string | undefined;
+        if (rememberDevice) {
+          newDeviceToken = await createTrustedDevice(supabaseAdmin, forumUser.id, deviceId, userAgent);
+        }
+
         return new Response(
-          JSON.stringify({ verified: true }),
+          JSON.stringify({ verified: true, deviceToken: newDeviceToken }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -371,8 +487,14 @@ Deno.serve(async (req) => {
           );
         }
 
+        // Create trusted device if requested
+        let newDeviceToken: string | undefined;
+        if (rememberDevice) {
+          newDeviceToken = await createTrustedDevice(supabaseAdmin, forumUser.id, deviceId, userAgent);
+        }
+
         return new Response(
-          JSON.stringify({ verified: true }),
+          JSON.stringify({ verified: true, deviceToken: newDeviceToken }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -403,8 +525,14 @@ Deno.serve(async (req) => {
           .update({ used_at: new Date().toISOString() })
           .eq('id', storedCode.id);
 
+        // Create trusted device if requested
+        let newDeviceToken: string | undefined;
+        if (rememberDevice) {
+          newDeviceToken = await createTrustedDevice(supabaseAdmin, forumUser.id, deviceId, userAgent);
+        }
+
         return new Response(
-          JSON.stringify({ verified: true }),
+          JSON.stringify({ verified: true, deviceToken: newDeviceToken }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
