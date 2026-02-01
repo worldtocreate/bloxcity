@@ -159,10 +159,7 @@ export default function Players() {
 
                 
 
-                {/* Stats */}
-                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-2">
-                  {player.post_count.toLocaleString()} posts
-                </p>
+                
               </Link>
             ))}
           </div>
