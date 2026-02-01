@@ -91,5 +91,6 @@ export type AdminTab =
   | "achievements"
   | "groups"
   | "gold-checkmarks"
+  | "verification-requests"
   | "maintenance"
   | "settings";

@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          role?: string
+        }
+        Relationships: []
+      }
       banned_words: {
         Row: {
           created_at: string
@@ -2058,6 +2079,7 @@ export type Database = {
           forum_user_id: string
           id: string
           reason: string | null
+          request_type: string
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -2068,6 +2090,7 @@ export type Database = {
           forum_user_id: string
           id?: string
           reason?: string | null
+          request_type?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -2078,6 +2101,7 @@ export type Database = {
           forum_user_id?: string
           id?: string
           reason?: string | null
+          request_type?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -2270,18 +2294,21 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          admin_pin_hash: string | null
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
+          admin_pin_hash?: string | null
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
+          admin_pin_hash?: string | null
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
