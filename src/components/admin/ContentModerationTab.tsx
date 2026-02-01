@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2 } from 'lucide-react';
+import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2, Mail, BadgeCheck, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DeletedPost {
@@ -42,15 +42,27 @@ interface GroupMediaRequest {
   };
 }
 
+interface AffiliateRequest {
+  id: string;
+  status: string;
+  admin_approved: boolean;
+  email_sent_at: string | null;
+  user_accepted: boolean;
+  created_at: string;
+  gold_user: { username: string; avatar_url: string | null };
+  affiliate_user: { username: string; avatar_url: string | null };
+}
+
 interface ContentModerationTabProps {
   darkMode: boolean;
 }
 
 export default function ContentModerationTab({ darkMode }: ContentModerationTabProps) {
-  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'group-media' | 'logs'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'group-media' | 'affiliates' | 'logs'>('posts');
   const [deletedPosts, setDeletedPosts] = useState<DeletedPost[]>([]);
   const [deletedThreads, setDeletedThreads] = useState<DeletedThread[]>([]);
   const [groupMediaRequests, setGroupMediaRequests] = useState<GroupMediaRequest[]>([]);
+  const [affiliateRequests, setAffiliateRequests] = useState<AffiliateRequest[]>([]);
   const [moderationLogs, setModerationLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,6 +101,13 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         .order('created_at', { ascending: false });
       
       setGroupMediaRequests((data || []) as unknown as GroupMediaRequest[]);
+    } else if (activeTab === 'affiliates') {
+      const { data } = await supabase
+        .from('forum_affiliate_requests')
+        .select('id, status, admin_approved, email_sent_at, user_accepted, created_at, gold_user:gold_user_id (username, avatar_url), affiliate_user:affiliate_user_id (username, avatar_url)')
+        .order('created_at', { ascending: false });
+      
+      setAffiliateRequests((data || []) as unknown as AffiliateRequest[]);
     } else if (activeTab === 'logs') {
       const { data } = await supabase
         .from('forum_moderation_logs')
@@ -100,6 +119,61 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
     }
     
     setLoading(false);
+  };
+
+  const handleApproveAffiliate = async (requestId: string) => {
+    setProcessing(requestId);
+    try {
+      const { error } = await supabase
+        .from('forum_affiliate_requests')
+        .update({ 
+          admin_approved: true, 
+          admin_approved_at: new Date().toISOString() 
+        })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      toast.success('Request approved! Now send the email to the affiliate.');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to approve');
+    }
+    setProcessing(null);
+  };
+
+  const handleSendAffiliateEmail = async (requestId: string) => {
+    setProcessing(requestId);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'send_affiliate_email', requestId }
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      toast.success('Email sent to affiliate!');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send email');
+    }
+    setProcessing(null);
+  };
+
+  const handleDenyAffiliate = async (requestId: string) => {
+    setProcessing(requestId);
+    try {
+      const { error } = await supabase
+        .from('forum_affiliate_requests')
+        .update({ status: 'denied' })
+        .eq('id', requestId);
+      
+      if (error) throw error;
+      toast.success('Request denied');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to deny');
+    }
+    setProcessing(null);
   };
 
   const handleRestore = async (targetType: 'post' | 'thread', targetId: string) => {
@@ -257,6 +331,22 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
           {groupMediaRequests.length > 0 && (
             <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
               {groupMediaRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('affiliates')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeTab === 'affiliates'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <BadgeCheck className="w-4 h-4" />
+          Affiliates
+          {affiliateRequests.filter(r => r.status === 'pending').length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {affiliateRequests.filter(r => r.status === 'pending').length}
             </span>
           )}
         </button>
@@ -425,6 +515,120 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
                         Deny
                       </button>
                     </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Affiliate Requests */}
+      {activeTab === 'affiliates' && (
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          {loading ? (
+            <div className={`p-8 text-center ${mutedClass}`}>Loading...</div>
+          ) : affiliateRequests.length === 0 ? (
+            <div className={`p-8 text-center ${mutedClass}`}>
+              <BadgeCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No affiliate requests</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-700">
+              {affiliateRequests.map(request => (
+                <div key={request.id} className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        {request.gold_user?.avatar_url ? (
+                          <img src={request.gold_user.avatar_url} alt="" className="w-10 h-10 rounded-full ring-2 ring-yellow-500" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-yellow-600 flex items-center justify-center ring-2 ring-yellow-500">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <div>
+                          <span className={`font-medium ${textClass}`}>{request.gold_user?.username}</span>
+                          <span className="text-yellow-500 ml-1">✓</span>
+                        </div>
+                      </div>
+                      <span className={mutedClass}>→</span>
+                      <div className="flex items-center gap-2">
+                        {request.affiliate_user?.avatar_url ? (
+                          <img src={request.affiliate_user.avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <span className={`font-medium ${textClass}`}>{request.affiliate_user?.username}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Status indicators */}
+                      <div className="flex flex-col items-end gap-1 mr-4">
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          request.status === 'accepted' ? 'bg-green-600 text-white' :
+                          request.status === 'denied' ? 'bg-red-600 text-white' :
+                          'bg-yellow-600 text-white'
+                        }`}>
+                          {request.status}
+                        </span>
+                        {request.admin_approved && (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> Admin approved
+                          </span>
+                        )}
+                        {request.email_sent_at && (
+                          <span className="text-xs text-blue-400 flex items-center gap-1">
+                            <Mail className="w-3 h-3" /> Email sent
+                          </span>
+                        )}
+                        {request.user_accepted && (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <Check className="w-3 h-3" /> User accepted
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      {request.status === 'pending' && !request.admin_approved && (
+                        <>
+                          <button
+                            onClick={() => handleApproveAffiliate(request.id)}
+                            disabled={processing === request.id}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
+                          >
+                            {processing === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleDenyAffiliate(request.id)}
+                            disabled={processing === request.id}
+                            className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition"
+                          >
+                            <X className="w-4 h-4" />
+                            Deny
+                          </button>
+                        </>
+                      )}
+                      {request.admin_approved && !request.email_sent_at && request.status === 'pending' && (
+                        <button
+                          onClick={() => handleSendAffiliateEmail(request.id)}
+                          disabled={processing === request.id}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
+                        >
+                          {processing === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                          Send Email
+                        </button>
+                      )}
+                      {request.email_sent_at && !request.user_accepted && request.status === 'pending' && (
+                        <span className={`text-sm ${mutedClass}`}>Awaiting user response...</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`text-xs ${mutedClass} mt-2`}>
+                    Created: {new Date(request.created_at).toLocaleString()}
                   </div>
                 </div>
               ))}
