@@ -1940,6 +1940,7 @@ export type Database = {
           self_disabled_at: string | null
           self_disabled_reason: string | null
           self_disabled_until: string | null
+          settings_pin_hash: string | null
           signature: string | null
           social_discord: string | null
           social_x: string | null
@@ -1985,6 +1986,7 @@ export type Database = {
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
+          settings_pin_hash?: string | null
           signature?: string | null
           social_discord?: string | null
           social_x?: string | null
@@ -2030,6 +2032,7 @@ export type Database = {
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
+          settings_pin_hash?: string | null
           signature?: string | null
           social_discord?: string | null
           social_x?: string | null

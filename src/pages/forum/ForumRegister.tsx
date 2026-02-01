@@ -96,6 +96,7 @@ export default function ForumRegister() {
         body: { 
           action: 'verify',
           username: normalizedUsername,
+          email: email.trim(),
           recaptchaToken
         }
       });
