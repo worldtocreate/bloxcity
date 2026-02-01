@@ -22,6 +22,7 @@ import ForumNewThread from "./pages/forum/ForumNewThread";
 import ForumLogin from "./pages/forum/ForumLogin";
 import ForumRegister from "./pages/forum/ForumRegister";
 import ForumForgotPassword from "./pages/forum/ForumForgotPassword";
+import ForumResetPassword from "./pages/forum/ForumResetPassword";
 import ForumSettings from "./pages/forum/ForumSettings";
 import ForumUserProfile from "./pages/forum/ForumUserProfile";
 import ForumMessages from "./pages/forum/ForumMessages";
@@ -162,6 +163,7 @@ const App = () => (
               <Route path="login" element={<ForumLogin />} />
               <Route path="register" element={<ForumRegister />} />
               <Route path="forgot-password" element={<ForumForgotPassword />} />
+              <Route path="reset-password" element={<ForumResetPassword />} />
               <Route path="faq" element={<ForumFAQ />} />
               <Route path="friends" element={<Friends />} />
               <Route path="achievements" element={<Achievements />} />
