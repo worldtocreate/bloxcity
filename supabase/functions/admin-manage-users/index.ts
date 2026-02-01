@@ -52,7 +52,169 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, targetUserId, role, email, requestId } = await req.json();
+    const { action, targetUserId, role, email, requestId, forumUserId, requestType, approved, reason } = await req.json();
+
+    // ========== SEND VERIFICATION REQUEST EMAIL ==========
+    if (action === "send_verification_email") {
+      if (!forumUserId || !requestType) {
+        return new Response(
+          JSON.stringify({ error: "forumUserId and requestType are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`Sending verification email for ${requestType} to forum user ${forumUserId}`);
+
+      // Get forum user details
+      const { data: forumUser } = await supabaseAdmin
+        .from("forum_users")
+        .select("id, username, user_id")
+        .eq("id", forumUserId)
+        .single();
+
+      if (!forumUser) {
+        return new Response(
+          JSON.stringify({ error: "Forum user not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get the user's email from auth.users
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+        forumUser.user_id
+      );
+
+      if (authError || !authUser?.user?.email) {
+        return new Response(
+          JSON.stringify({ error: "Could not find user email" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const checkmarkType = requestType === "gold" ? "Gold" : "Blue";
+      const checkmarkEmoji = requestType === "gold" ? "👑" : "✓";
+      const checkmarkColor = requestType === "gold" ? "#fbbf24" : "#3b82f6";
+
+      let emailHtml = "";
+      let subject = "";
+
+      if (approved) {
+        subject = `🎉 Your ${checkmarkType} Checkmark Request Has Been Approved!`;
+        emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0b; color: #ffffff; padding: 20px; }
+              .container { max-width: 500px; margin: 0 auto; background: #1a1a1d; border-radius: 12px; padding: 32px; }
+              .header { text-align: center; margin-bottom: 24px; }
+              .title { font-size: 24px; font-weight: bold; color: #ffffff; margin: 0; }
+              .content { color: #d1d5db; line-height: 1.6; }
+              .badge { display: inline-flex; align-items: center; gap: 8px; background: ${requestType === "gold" ? "#422006" : "#1e3a5f"}; padding: 12px 20px; border-radius: 9999px; color: ${checkmarkColor}; font-size: 18px; font-weight: bold; margin: 16px 0; }
+              .button { display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 24px 0; }
+              .footer { color: #6b7280; font-size: 12px; margin-top: 24px; text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 class="title">🎉 Congratulations!</h1>
+              </div>
+              
+              <div class="content">
+                <p>Hi <strong>${forumUser.username}</strong>,</p>
+                
+                <p>Great news! Your request for a <strong>${checkmarkType} Checkmark</strong> has been approved!</p>
+                
+                <p style="text-align: center;">
+                  <span class="badge">${checkmarkEmoji} ${checkmarkType} Verified</span>
+                </p>
+                
+                <p>Your checkmark is now visible on your profile and next to your username across BLOX City.</p>
+                
+                <p style="text-align: center;">
+                  <a href="https://bloxcity.lovable.app/user/${forumUser.username}" class="button">View Your Profile</a>
+                </p>
+              </div>
+              
+              <div class="footer">
+                <p>Thank you for being a valued member of BLOX City!</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      } else {
+        subject = `Update on Your ${checkmarkType} Checkmark Request`;
+        emailHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0b; color: #ffffff; padding: 20px; }
+              .container { max-width: 500px; margin: 0 auto; background: #1a1a1d; border-radius: 12px; padding: 32px; }
+              .header { text-align: center; margin-bottom: 24px; }
+              .title { font-size: 24px; font-weight: bold; color: #ffffff; margin: 0; }
+              .content { color: #d1d5db; line-height: 1.6; }
+              .reason-box { background: #2d1f1f; border: 1px solid #7f1d1d; border-radius: 8px; padding: 16px; margin: 16px 0; }
+              .footer { color: #6b7280; font-size: 12px; margin-top: 24px; text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1 class="title">Request Update</h1>
+              </div>
+              
+              <div class="content">
+                <p>Hi <strong>${forumUser.username}</strong>,</p>
+                
+                <p>We've reviewed your request for a <strong>${checkmarkType} Checkmark</strong>. Unfortunately, we're unable to approve it at this time.</p>
+                
+                <div class="reason-box">
+                  <strong>Reason:</strong><br/>
+                  ${reason || "Your request does not meet our current criteria for verification."}
+                </div>
+                
+                <p>You may submit a new request in the future if your circumstances change.</p>
+                
+                <p>If you have any questions, please reach out to our support team.</p>
+              </div>
+              
+              <div class="footer">
+                <p>Thank you for your understanding.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      }
+
+      // Send the email
+      const emailResponse = await resend.emails.send({
+        from: "BLOX City <verify@bloxcity.net>",
+        to: [authUser.user.email],
+        subject,
+        html: emailHtml,
+      });
+
+      console.log("Verification email sent:", emailResponse);
+
+      // Log the action
+      await supabaseAdmin.from("admin_activity_logs").insert({
+        admin_user_id: user.id,
+        admin_email: user.email,
+        action: approved ? "approve_verification" : "deny_verification",
+        target_type: "verification_request",
+        target_id: forumUserId,
+        details: { username: forumUser.username, requestType, approved, reason }
+      });
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // ========== SEND AFFILIATE EMAIL ==========
     if (action === "send_affiliate_email") {

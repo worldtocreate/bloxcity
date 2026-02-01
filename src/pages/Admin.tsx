@@ -23,6 +23,8 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import AdminPinGate from "@/components/admin/AdminPinGate";
+import VerificationRequestsTab from "@/components/admin/VerificationRequestsTab";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -146,6 +148,7 @@ const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pinAuthenticated, setPinAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [darkMode, setDarkMode] = useState(false);
   
@@ -583,6 +586,17 @@ const Admin = () => {
     );
   }
 
+  // Show PIN gate if not authenticated
+  if (!pinAuthenticated && user) {
+    return (
+      <AdminPinGate
+        userId={user.id}
+        onAuthenticated={() => setPinAuthenticated(true)}
+        darkMode={darkMode}
+      />
+    );
+  }
+
   const activeSubscribers = subscribers.filter(s => s.is_active).length;
 
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
@@ -611,6 +625,9 @@ const Admin = () => {
         
         {/* Gold Checkmarks Tab */}
         {activeTab === "gold-checkmarks" && <GoldCheckmarksTab darkMode={darkMode} />}
+        
+        {/* Verification Requests Tab */}
+        {activeTab === "verification-requests" && <VerificationRequestsTab darkMode={darkMode} />}
 
         {/* Reservations Tab */}
         {activeTab === "reservations" && (

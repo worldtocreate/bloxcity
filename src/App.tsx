@@ -46,6 +46,7 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
+import Request from "./pages/forum/Request";
 
 // Inline AcceptAffiliate to avoid module persistence issues
 function AcceptAffiliate() {
@@ -331,6 +332,7 @@ const App = () => (
               <Route path="friends" element={<Friends />} />
               <Route path="achievements" element={<Achievements />} />
               <Route path="create" element={<Create />} />
+              <Route path="request" element={<Request />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
             </Route>
 
