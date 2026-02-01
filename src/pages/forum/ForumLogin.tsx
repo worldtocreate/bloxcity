@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Lock, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
@@ -31,6 +31,11 @@ export default function ForumLogin() {
   const [showReactivateModal, setShowReactivateModal] = useState(false);
   const [disabledAccountInfo, setDisabledAccountInfo] = useState<DisabledAccountInfo | null>(null);
   const [reactivating, setReactivating] = useState(false);
+
+  // Forgot username states
+  const [showForgotUsername, setShowForgotUsername] = useState(false);
+  const [forgotUsernameEmail, setForgotUsernameEmail] = useState('');
+  const [sendingUsernameRecovery, setSendingUsernameRecovery] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -254,6 +259,33 @@ export default function ForumLogin() {
     setDisabledAccountInfo(null);
   };
 
+  const handleForgotUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedEmail = forgotUsernameEmail.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email address.');
+      return;
+    }
+
+    setSendingUsernameRecovery(true);
+    try {
+      const { error } = await supabase.functions.invoke('forum-register', {
+        body: { action: 'recover_username', email: trimmedEmail }
+      });
+
+      if (error) {
+        toast.error('Failed to send recovery email. Please try again.');
+        return;
+      }
+
+      toast.success('If an account exists with that email, we\'ve sent the username(s) to your inbox.');
+      setShowForgotUsername(false);
+      setForgotUsernameEmail('');
+    } finally {
+      setSendingUsernameRecovery(false);
+    }
+  };
+
   const getReasonText = (reason: string | null): string => {
     switch (reason) {
       case 'need_a_break': return 'You needed a break from the forum';
@@ -324,6 +356,75 @@ export default function ForumLogin() {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show forgot username form
+  if (showForgotUsername) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+            </Link>
+          </div>
+
+          <form onSubmit={handleForgotUsername} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 space-y-4">
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 bg-[hsl(var(--bc-primary))]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                <User className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+              </div>
+              <h2 className="text-xl font-bold text-[hsl(var(--bc-text))]">Forgot Username?</h2>
+              <p className="text-[hsl(var(--bc-text-muted))] text-sm mt-1">
+                Enter your email and we'll send you the username(s) associated with it.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+                <input
+                  type="email"
+                  value={forgotUsernameEmail}
+                  onChange={(e) => setForgotUsernameEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={sendingUsernameRecovery}
+              className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
+            >
+              {sendingUsernameRecovery ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send Username Recovery Email'
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowForgotUsername(false);
+                setForgotUsernameEmail('');
+              }}
+              className="w-full border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] font-medium py-3 rounded-lg transition hover:bg-[hsl(var(--bc-bg-light))]"
+            >
+              Back to Login
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -428,8 +529,15 @@ export default function ForumLogin() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Link to="/forgot-password" className="text-sm text-[hsl(var(--bc-primary))] hover:underline">
+          <div className="flex justify-between text-sm">
+            <button
+              type="button"
+              onClick={() => setShowForgotUsername(true)}
+              className="text-[hsl(var(--bc-primary))] hover:underline"
+            >
+              Forgot username?
+            </button>
+            <Link to="/forgot-password" className="text-[hsl(var(--bc-primary))] hover:underline">
               Forgot password?
             </Link>
           </div>
