@@ -23,6 +23,7 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import GoldCheckmarksTab from "@/components/admin/GoldCheckmarksTab";
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -494,6 +495,9 @@ const Admin = () => {
       <main className="max-w-7xl mx-auto p-6">
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && <DashboardTab darkMode={darkMode} />}
+        
+        {/* Gold Checkmarks Tab */}
+        {activeTab === "gold-checkmarks" && <GoldCheckmarksTab darkMode={darkMode} />}
 
         {/* Reservations Tab */}
         {activeTab === "reservations" && (

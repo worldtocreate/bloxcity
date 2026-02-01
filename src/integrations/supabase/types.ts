@@ -98,6 +98,53 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          excerpt: string | null
+          id: string
+          is_published: boolean
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          excerpt?: string | null
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_2fa_codes: {
         Row: {
           code: string
@@ -387,6 +434,109 @@ export type Database = {
           {
             foreignKeyName: "forum_ads_forum_user_id_fkey"
             columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_affiliate_requests: {
+        Row: {
+          admin_approved: boolean
+          admin_approved_at: string | null
+          admin_approved_by: string | null
+          affiliate_user_id: string
+          created_at: string
+          email_sent_at: string | null
+          email_token: string | null
+          gold_user_id: string
+          id: string
+          status: string
+          user_accepted: boolean
+          user_accepted_at: string | null
+        }
+        Insert: {
+          admin_approved?: boolean
+          admin_approved_at?: string | null
+          admin_approved_by?: string | null
+          affiliate_user_id: string
+          created_at?: string
+          email_sent_at?: string | null
+          email_token?: string | null
+          gold_user_id: string
+          id?: string
+          status?: string
+          user_accepted?: boolean
+          user_accepted_at?: string | null
+        }
+        Update: {
+          admin_approved?: boolean
+          admin_approved_at?: string | null
+          admin_approved_by?: string | null
+          affiliate_user_id?: string
+          created_at?: string
+          email_sent_at?: string | null
+          email_token?: string | null
+          gold_user_id?: string
+          id?: string
+          status?: string
+          user_accepted?: boolean
+          user_accepted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_affiliate_requests_admin_approved_by_fkey"
+            columns: ["admin_approved_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_affiliate_requests_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_affiliate_requests_gold_user_id_fkey"
+            columns: ["gold_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_affiliates: {
+        Row: {
+          affiliate_user_id: string
+          created_at: string
+          gold_user_id: string
+          id: string
+        }
+        Insert: {
+          affiliate_user_id: string
+          created_at?: string
+          gold_user_id: string
+          id?: string
+        }
+        Update: {
+          affiliate_user_id?: string
+          created_at?: string
+          gold_user_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_affiliates_affiliate_user_id_fkey"
+            columns: ["affiliate_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_affiliates_gold_user_id_fkey"
+            columns: ["gold_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -709,6 +859,45 @@ export type Database = {
           {
             foreignKeyName: "forum_friendships_user_2_id_fkey"
             columns: ["user_2_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_gold_checkmarks: {
+        Row: {
+          forum_user_id: string
+          granted_at: string
+          granted_by: string | null
+          hide_affiliates: boolean
+          id: string
+        }
+        Insert: {
+          forum_user_id: string
+          granted_at?: string
+          granted_by?: string | null
+          hide_affiliates?: boolean
+          id?: string
+        }
+        Update: {
+          forum_user_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          hide_affiliates?: boolean
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_gold_checkmarks_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: true
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_gold_checkmarks_granted_by_fkey"
+            columns: ["granted_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -1729,6 +1918,7 @@ export type Database = {
           coins: number | null
           cover_url: string | null
           created_at: string | null
+          date_of_birth: string | null
           dm_encryption_pin_hash: string | null
           has_pending_warning: boolean | null
           hide_threads: boolean | null
@@ -1773,6 +1963,7 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           has_pending_warning?: boolean | null
           hide_threads?: boolean | null
@@ -1817,6 +2008,7 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           has_pending_warning?: boolean | null
           hide_threads?: boolean | null
@@ -2111,7 +2303,17 @@ export type Database = {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
       }
+      get_affiliate_info: {
+        Args: { _forum_user_id: string }
+        Returns: {
+          gold_avatar_url: string
+          gold_user_id: string
+          gold_username: string
+          is_affiliate: boolean
+        }[]
+      }
       get_reservation_count: { Args: never; Returns: number }
+      has_gold_checkmark: { Args: { _forum_user_id: string }; Returns: boolean }
       has_pending_verification_request: {
         Args: { _forum_user_id: string }
         Returns: boolean
