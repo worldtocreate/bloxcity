@@ -472,10 +472,11 @@ export default function ForumUserProfile() {
           <div className="h-24 bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))]" />
         )}
         
-        <div className="relative px-6 pb-6">
-          {/* Avatar - overlapping banner */}
-          <div className="absolute -top-12 left-6">
-            <div className="relative">
+        <div className="px-4 sm:px-6 pb-6">
+          {/* Avatar and User Info Row */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10 sm:-mt-12">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
               <UserAvatar
                 avatarUrl={profile.avatar_url}
                 username={profile.username}
@@ -486,94 +487,91 @@ export default function ForumUserProfile() {
               />
               {/* Online status indicator */}
               {profile.last_seen_at && new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000) && (
-                <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-[hsl(var(--bc-bg-card))] rounded-full" />
+                <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 border-2 border-[hsl(var(--bc-bg-card))] rounded-full z-10" />
               )}
             </div>
-          </div>
 
-          {/* Actions - aligned right */}
-          <div className="flex justify-end pt-4">
-            {!isOwnProfile && forumUser && (
-              <div className="flex gap-2">
-                <FriendButton
-                  currentUserId={forumUser.id}
-                  targetUserId={profile.id}
-                  targetUsername={profile.username}
-                />
-                <button
-                  onClick={() => navigate(`/messages?to=${profile.username}`)}
-                  disabled={!profile.allow_dms && !isAdmin}
-                  className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] disabled:cursor-not-allowed text-white rounded-lg transition text-sm font-medium"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Message
-                </button>
-                {!isAdmin && (
-                  <button
-                    onClick={handleBlock}
-                    disabled={blocking}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium ${
-                      isBlocked
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))]'
-                    }`}
-                  >
-                    <Ban className="w-4 h-4" />
-                    {isBlocked ? 'Unblock' : 'Block'}
-                  </button>
+            {/* User Info - Next to avatar */}
+            <div className="flex-1 min-w-0 pb-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
+                <VerificationBadge size="lg" forumUserId={profile.id} isVerified={profile.is_verified} />
+                {profile.membership_tier && <MembershipBadge tier={profile.membership_tier} size="md" />}
+                {profile.is_suspended && (
+                  <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
                 )}
-                <ReportButton
-                  reporterId={forumUser.id}
-                  reportedType="profile"
-                  reportedId={profile.id}
-                  reportedName={profile.username}
-                  variant="icon"
-                />
               </div>
-            )}
+
+              {/* Member since & Online Status */}
+              <div className="flex items-center gap-3 flex-wrap mt-1">
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  Member since {formatDate(profile.created_at)}
+                </p>
+                {profile.last_seen_at && (
+                  <>
+                    <span className="text-[hsl(var(--bc-text-muted))]">•</span>
+                    {new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000) ? (
+                      <span className="text-sm text-green-500 font-medium flex items-center gap-1">
+                        <span className="w-2 h-2 bg-green-500 rounded-full" />
+                        Online
+                      </span>
+                    ) : (
+                      <span className="text-sm text-[hsl(var(--bc-text-muted))]">
+                        Last seen {getTimeSince(profile.last_seen_at)}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* User Info */}
-          <div className="mt-4">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
-              <VerificationBadge size="lg" forumUserId={profile.id} isVerified={profile.is_verified} />
-              {profile.membership_tier && <MembershipBadge tier={profile.membership_tier} size="md" />}
-              {profile.is_suspended && (
-                <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
+          {/* Actions */}
+          {!isOwnProfile && forumUser && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              <FriendButton
+                currentUserId={forumUser.id}
+                targetUserId={profile.id}
+                targetUsername={profile.username}
+              />
+              <button
+                onClick={() => navigate(`/messages?to=${profile.username}`)}
+                disabled={!profile.allow_dms && !isAdmin}
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] disabled:cursor-not-allowed text-white rounded-lg transition text-sm font-medium"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Message
+              </button>
+              {!isAdmin && (
+                <button
+                  onClick={handleBlock}
+                  disabled={blocking}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium ${
+                    isBlocked
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))]'
+                  }`}
+                >
+                  <Ban className="w-4 h-4" />
+                  {isBlocked ? 'Unblock' : 'Block'}
+                </button>
               )}
+              <ReportButton
+                reporterId={forumUser.id}
+                reportedType="profile"
+                reportedId={profile.id}
+                reportedName={profile.username}
+                variant="icon"
+              />
             </div>
+          )}
 
-            {/* Member since & Online Status */}
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
-                Member since {formatDate(profile.created_at)}
-              </p>
-              {profile.last_seen_at && (
-                <>
-                  <span className="text-[hsl(var(--bc-text-muted))]">•</span>
-                  {new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000) ? (
-                    <span className="text-sm text-green-500 font-medium flex items-center gap-1">
-                      <span className="w-2 h-2 bg-green-500 rounded-full" />
-                      Online
-                    </span>
-                  ) : (
-                    <span className="text-sm text-[hsl(var(--bc-text-muted))]">
-                      Last seen {getTimeSince(profile.last_seen_at)}
-                    </span>
-                  )}
-                </>
-              )}
+          {/* Signature */}
+          {profile.signature && (
+            <div className="p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg border-l-4 border-[hsl(var(--bc-primary))] mt-4">
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] italic">"{profile.signature}"</p>
             </div>
-
-
-            {/* Signature */}
-            {profile.signature && (
-              <div className="p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg border-l-4 border-[hsl(var(--bc-primary))]">
-                <p className="text-sm text-[hsl(var(--bc-text-muted))] italic">"{profile.signature}"</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 

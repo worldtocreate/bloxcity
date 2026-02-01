@@ -125,11 +125,19 @@ export function AffiliateBadge({
 }: VerifiedBadgeProps & { goldUsername: string; goldAvatarUrl: string | null }) {
   const [open, setOpen] = useState(false);
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(true);
+  };
+
   return (
     <>
       <button 
-        className={`inline-flex items-center gap-0.5 flex-shrink-0 cursor-pointer focus:outline-none ${className}`}
-        onClick={() => setOpen(true)}
+        type="button"
+        className={`inline-flex items-center gap-0.5 flex-shrink-0 cursor-pointer focus:outline-none hover:opacity-80 transition-opacity z-10 ${className}`}
+        onClick={handleClick}
+        aria-label={`Verified affiliate of ${goldUsername}`}
       >
         <BadgeCheck 
           className={`${sizeClasses[size]} text-blue-500`}
@@ -171,13 +179,15 @@ export function AffiliateBadge({
               <span>@{goldUsername}</span>
               <BadgeCheck className="w-5 h-5 text-yellow-500" />
             </DialogTitle>
-            <DialogDescription className="text-[hsl(var(--bc-text-muted))] text-center space-y-3 pt-3">
-              <p>
-                This account is <strong className="text-[hsl(var(--bc-text))]">verified</strong> because it's an official affiliate of <strong className="text-[hsl(var(--bc-text))]">@{goldUsername}</strong> on BLOX City.
-              </p>
-              <p>
-                Affiliate accounts are verified by gold-checkmark users and represent trusted members of their network.
-              </p>
+            <DialogDescription asChild>
+              <div className="text-[hsl(var(--bc-text-muted))] text-center space-y-3 pt-3">
+                <p>
+                  This account is <strong className="text-[hsl(var(--bc-text))]">verified</strong> because it's an official affiliate of <strong className="text-[hsl(var(--bc-text))]">@{goldUsername}</strong> on BLOX City.
+                </p>
+                <p>
+                  Affiliate accounts are verified by gold-checkmark users and represent trusted members of their network.
+                </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center pt-2 flex-col sm:flex-row gap-2">
