@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, LogOut, Settings, Shield, User, Coins, Menu } from 'lucide-react';
+import { LogIn, LogOut, Settings, Shield, User, Coins, Menu, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -15,6 +16,25 @@ interface ForumHeaderProps {
 
 export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderProps) {
   const navigate = useNavigate();
+  const [cash, setCash] = useState(0);
+
+  useEffect(() => {
+    if (forumUser) {
+      fetchCash();
+    }
+  }, [forumUser]);
+
+  const fetchCash = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('forum_users')
+      .select('cash')
+      .eq('id', forumUser.id)
+      .single();
+    if (data) {
+      setCash((data as any).cash || 0);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -41,11 +61,23 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
 
         {/* Right side: User actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Coins Display */}
-          <div className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] px-2 sm:px-3 py-1.5 rounded-lg">
+          {/* Coins Display - clickable to /convert */}
+          <Link 
+            to="/convert"
+            className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
+          >
             <Coins className="w-4 h-4 text-yellow-500" />
             <span className="font-medium text-sm">{forumUser?.coins?.toLocaleString() || 0}</span>
-          </div>
+          </Link>
+          
+          {/* Cash Display - clickable to /convert */}
+          <Link 
+            to="/convert"
+            className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
+          >
+            <DollarSign className="w-4 h-4 text-green-500" />
+            <span className="font-medium text-sm">${cash.toFixed(2)}</span>
+          </Link>
 
           {user ? (
             <>
