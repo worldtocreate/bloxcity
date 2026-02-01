@@ -498,6 +498,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 type ForumUserLite = { id: string; username: string; avatar_url: string | null };
 type GoldUserRow = { id: string; forum_user_id: string; granted_at: string; forum_users?: { username: string } | null };
 type AffiliateRequestRow = { id: string; status: string; admin_approved: boolean; created_at: string; gold_user?: { username: string } | null; affiliate_user?: { username: string } | null };
+type AffiliateRow = { id: string; gold_user_id: string; affiliate_user_id: string; created_at: string; gold_user?: { username: string } | null; affiliate_user?: { username: string } | null };
 
 const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
   const { toast } = useToast();
@@ -506,10 +507,18 @@ const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
   const [searchResults, setSearchResults] = useState<ForumUserLite[]>([]);
   const [goldUsers, setGoldUsers] = useState<GoldUserRow[]>([]);
   const [pending, setPending] = useState<AffiliateRequestRow[]>([]);
+  
+  // Force affiliate state
+  const [forceAffiliateMode, setForceAffiliateMode] = useState(false);
+  const [selectedGoldUser, setSelectedGoldUser] = useState<{ id: string; username: string } | null>(null);
+  const [affiliateQuery, setAffiliateQuery] = useState("");
+  const [affiliateSearchResults, setAffiliateSearchResults] = useState<ForumUserLite[]>([]);
+  const [affiliateSearching, setAffiliateSearching] = useState(false);
+  const [affiliates, setAffiliates] = useState<AffiliateRow[]>([]);
 
   useEffect(() => { void refreshAll(); }, []);
 
-  const refreshAll = async () => { await Promise.all([fetchGoldUsers(), fetchPendingRequests()]); };
+  const refreshAll = async () => { await Promise.all([fetchGoldUsers(), fetchPendingRequests(), fetchAffiliates()]); };
 
   const fetchGoldUsers = async () => {
     const { data } = await supabase.from("forum_gold_checkmarks")
@@ -525,12 +534,27 @@ const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
     if (data) setPending(data as unknown as AffiliateRequestRow[]);
   };
 
+  const fetchAffiliates = async () => {
+    const { data } = await supabase.from("forum_affiliates")
+      .select("id, gold_user_id, affiliate_user_id, created_at, gold_user:forum_users!forum_affiliates_gold_user_id_fkey(username), affiliate_user:forum_users!forum_affiliates_affiliate_user_id_fkey(username)")
+      .order("created_at", { ascending: false });
+    if (data) setAffiliates(data as unknown as AffiliateRow[]);
+  };
+
   const onSearch = async () => {
     if (!query.trim()) return;
     setSearching(true);
     const { data } = await supabase.from("forum_users").select("id, username, avatar_url").ilike("username", `%${query.trim()}%`).limit(10);
     setSearching(false);
     if (data) setSearchResults(data as ForumUserLite[]);
+  };
+
+  const onAffiliateSearch = async () => {
+    if (!affiliateQuery.trim()) return;
+    setAffiliateSearching(true);
+    const { data } = await supabase.from("forum_users").select("id, username, avatar_url").ilike("username", `%${affiliateQuery.trim()}%`).limit(10);
+    setAffiliateSearching(false);
+    if (data) setAffiliateSearchResults(data as ForumUserLite[]);
   };
 
   const grantGold = async (forumUserId: string, username: string) => {
@@ -561,6 +585,34 @@ const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
     await fetchPendingRequests();
   };
 
+  const forceAffiliate = async (affiliateUserId: string, affiliateUsername: string) => {
+    if (!selectedGoldUser) return;
+    const { error } = await supabase.from("forum_affiliates").insert({
+      gold_user_id: selectedGoldUser.id,
+      affiliate_user_id: affiliateUserId
+    });
+    if (error) { 
+      toast({ title: "Error", description: error.message, variant: "destructive" }); 
+      return; 
+    }
+    toast({ 
+      title: "Affiliate Added", 
+      description: `${affiliateUsername} is now an affiliate of ${selectedGoldUser.username}` 
+    });
+    setAffiliateSearchResults([]); 
+    setAffiliateQuery(""); 
+    setSelectedGoldUser(null);
+    setForceAffiliateMode(false);
+    await fetchAffiliates();
+  };
+
+  const removeAffiliate = async (id: string, affiliateUsername: string) => {
+    const { error } = await supabase.from("forum_affiliates").delete().eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Removed", description: `${affiliateUsername} is no longer an affiliate` });
+    await fetchAffiliates();
+  };
+
   const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
 
   return (
@@ -576,6 +628,81 @@ const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
         </CardContent>
       </Card>
 
+      {/* Force Affiliate Card */}
+      <Card className={cardClass}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-blue-500" />
+            Force Affiliate User
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!forceAffiliateMode ? (
+            <div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Force add a user as an affiliate to a Gold checkmark holder without requiring their acceptance.
+              </p>
+              <Button onClick={() => setForceAffiliateMode(true)} variant="outline">
+                <UserPlus className="h-4 w-4 mr-2" />Start Force Affiliate
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {!selectedGoldUser ? (
+                <div>
+                  <p className="text-sm font-medium mb-2">Step 1: Select Gold User</p>
+                  <div className="space-y-2">
+                    {goldUsers.map((g) => (
+                      <div key={g.id} className="flex items-center justify-between rounded-md border p-2">
+                        <span className="flex items-center gap-2">
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                          {g.forum_users?.username ?? "Unknown"}
+                        </span>
+                        <Button size="sm" onClick={() => setSelectedGoldUser({ id: g.forum_user_id, username: g.forum_users?.username ?? "" })}>
+                          Select
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="ghost" onClick={() => setForceAffiliateMode(false)} className="mt-2">Cancel</Button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium mb-2">
+                    Step 2: Select user to affiliate to <span className="text-yellow-500">{selectedGoldUser.username}</span>
+                  </p>
+                  <div className="flex gap-2 mb-2">
+                    <Input 
+                      value={affiliateQuery} 
+                      onChange={(e) => setAffiliateQuery(e.target.value)} 
+                      onKeyDown={(e) => e.key === "Enter" && onAffiliateSearch()} 
+                      placeholder="Search username to affiliate…" 
+                      className={darkMode ? "bg-gray-700 border-gray-600" : ""} 
+                    />
+                    <Button onClick={onAffiliateSearch} disabled={affiliateSearching}><Search className="h-4 w-4" /></Button>
+                  </div>
+                  {affiliateSearchResults.length > 0 && (
+                    <div className="space-y-2 mb-2">
+                      {affiliateSearchResults.map((u) => (
+                        <div key={u.id} className="flex items-center justify-between rounded-md border p-2">
+                          <span>{u.username}</span>
+                          <Button size="sm" onClick={() => forceAffiliate(u.id, u.username)}>
+                            Make Affiliate
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Button variant="ghost" onClick={() => { setSelectedGoldUser(null); setAffiliateQuery(""); setAffiliateSearchResults([]); }}>
+                    Back
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className={cardClass}>
         <CardHeader><CardTitle>Pending Affiliate Requests</CardTitle></CardHeader>
         <CardContent>
@@ -583,6 +710,30 @@ const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
             <Table>
               <TableHeader><TableRow><TableHead>Gold User</TableHead><TableHead>Affiliate</TableHead><TableHead>Requested</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>{pending.map((r) => (<TableRow key={r.id}><TableCell>{r.gold_user?.username ?? "Unknown"}</TableCell><TableCell>{r.affiliate_user?.username ?? "Unknown"}</TableCell><TableCell>{new Date(r.created_at).toLocaleDateString()}</TableCell><TableCell className="text-right"><div className="inline-flex gap-2"><Button size="sm" variant="outline" onClick={() => approveRequest(r.id)}><CheckIcon className="h-4 w-4" /></Button><Button size="sm" variant="destructive" onClick={() => rejectRequest(r.id)}><XIcon className="h-4 w-4" /></Button></div></TableCell></TableRow>))}</TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Current Affiliates */}
+      <Card className={cardClass}>
+        <CardHeader><CardTitle>Current Affiliates</CardTitle></CardHeader>
+        <CardContent>
+          {affiliates.length === 0 ? <p className="text-sm text-muted-foreground">No affiliates.</p> : (
+            <Table>
+              <TableHeader><TableRow><TableHead>Gold User</TableHead><TableHead>Affiliate</TableHead><TableHead>Since</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+              <TableBody>{affiliates.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell className="flex items-center gap-2"><Crown className="h-4 w-4 text-yellow-500" />{a.gold_user?.username ?? "Unknown"}</TableCell>
+                  <TableCell>{a.affiliate_user?.username ?? "Unknown"}</TableCell>
+                  <TableCell>{new Date(a.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="destructive" onClick={() => removeAffiliate(a.id, a.affiliate_user?.username ?? "User")}>
+                      <TrashIcon className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}</TableBody>
             </Table>
           )}
         </CardContent>
