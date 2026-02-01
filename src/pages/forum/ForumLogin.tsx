@@ -122,11 +122,11 @@ export default function ForumLogin() {
     setError('');
     setLoading(true);
 
-    // First, look up the user's email by username
+    // First, look up the user's email by username (case-insensitive)
     const { data: forumUserData, error: lookupError } = await supabase
       .from('forum_users')
       .select('user_id')
-      .eq('username', username.toLowerCase())
+      .ilike('username', username)
       .single();
 
     if (lookupError || !forumUserData) {
