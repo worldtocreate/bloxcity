@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
 
       // Send the email
       const emailResponse = await resend.emails.send({
-        from: "BLOX City <verification@bloxcity.net>",
+        from: "BLOX City <verify@bloxcity.net>",
         to: [authUser.user.email],
         subject: `You've been invited to become an affiliate of @${goldUser.username}`,
         html: `
