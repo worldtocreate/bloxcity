@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send, Sparkles, Users } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send, Sparkles, Users, Award } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
@@ -12,6 +12,7 @@ import UserAvatar, { AVATAR_EFFECTS, AvatarEffect } from '@/components/forum/Use
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
 import ImageCropper from '@/components/forum/ImageCropper';
 import { GoldBadge } from '@/components/forum/VerifiedBadge';
+// AffiliatesTab is defined inline below
 
 interface CoverRequest {
   id: string;
@@ -179,6 +180,9 @@ export default function ForumSettings() {
   const [cropperImage, setCropperImage] = useState<string | null>(null);
   const [cropperType, setCropperType] = useState<'avatar' | 'cover'>('avatar');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  
+  // Gold checkmark
+  const [hasGoldCheckmark, setHasGoldCheckmark] = useState(false);
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -201,8 +205,15 @@ export default function ForumSettings() {
       fetchVerificationRequest();
       fetchPinnedThreads();
       fetchSessions();
+      fetchGoldCheckmark();
     }
   }, [forumUser]);
+
+  const fetchGoldCheckmark = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase.rpc('has_gold_checkmark', { _forum_user_id: forumUser.id });
+    setHasGoldCheckmark(data || false);
+  };
 
   const fetchBlockedUsers = async () => {
     if (!forumUser) return;
@@ -1582,6 +1593,21 @@ export default function ForumSettings() {
           {savingPrivacy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Privacy Settings'}
         </button>
       </div>
+
+      {/* Affiliates Section - Gold Checkmark Users Only */}
+      {hasGoldCheckmark && (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+            <Award className="w-5 h-5 text-yellow-500" />
+            Affiliates
+            <GoldBadge />
+          </h2>
+          <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+            As a gold checkmark holder, you can add other users as affiliates. They'll receive a blue checkmark linked to your profile.
+          </p>
+          <p className="text-[hsl(var(--bc-text-muted))] text-sm">Affiliates management coming soon.</p>
+        </div>
+      )}
 
       {/* Pinned Threads */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">

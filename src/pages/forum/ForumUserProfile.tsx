@@ -14,7 +14,7 @@ import ReportButton from '@/components/forum/ReportButton';
 import ProfileViews from '@/components/forum/ProfileViews';
 import UserAchievements from '@/components/forum/UserAchievements';
 import UserGroups from '@/components/forum/UserGroups';
-import ProfileAffiliates from '@/components/forum/ProfileAffiliates';
+// ProfileAffiliates component - to be added
 import { useVerificationStatus } from '@/components/forum/VerifiedBadge';
 
 interface ProfileData {
