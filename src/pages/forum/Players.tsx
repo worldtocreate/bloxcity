@@ -157,12 +157,7 @@ export default function Players() {
                   {player.is_verified && <VerifiedBadge size="sm" />}
                 </h3>
 
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <UserLevelBadge level={player.level} size="sm" />
-                  {player.membership_tier && ['bronze', 'silver', 'platinum'].includes(player.membership_tier) && (
-                    <MembershipBadge tier={player.membership_tier as 'bronze' | 'silver' | 'platinum'} size="sm" />
-                  )}
-                </div>
+                
 
                 {/* Stats */}
                 <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-2">
