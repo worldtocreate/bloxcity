@@ -1936,6 +1936,7 @@ export type Database = {
           allow_dms: boolean | null
           avatar_effect: string | null
           avatar_url: string | null
+          cash: number | null
           coins: number | null
           cover_url: string | null
           created_at: string | null
@@ -1982,6 +1983,7 @@ export type Database = {
           allow_dms?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
+          cash?: number | null
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
@@ -2028,6 +2030,7 @@ export type Database = {
           allow_dms?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
+          cash?: number | null
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null

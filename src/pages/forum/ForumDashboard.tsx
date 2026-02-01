@@ -3,7 +3,7 @@ import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Coins, Heart, Flag, MessageCircle, Clock, Users, 
-  Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User, UsersRound, Gift
+  Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User, UsersRound, Gift, DollarSign
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -332,6 +332,17 @@ export default function ForumDashboard() {
     
     setPostingStatus(true);
     try {
+      // Check for profanity
+      const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
+        body: { content: statusText }
+      });
+
+      if (profanityCheck.data?.hasProfanity) {
+        toast.error('Your status contains inappropriate content. Please revise.');
+        setPostingStatus(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('forum_users')
         .update({ 

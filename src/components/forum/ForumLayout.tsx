@@ -170,40 +170,15 @@ export default function ForumLayout() {
     return <Maintenance message={maintenanceSettings.message} password={maintenanceSettings.password} />;
   }
 
-  // Check if user is suspended (only after loading completes)
+  // Check if user is suspended (only after loading completes) - show blank page
   if (!loading && forumUser?.is_suspended) {
     const now = new Date();
     const endsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
-    const reviewDate = (forumUser as any).suspension_review_date ? new Date((forumUser as any).suspension_review_date) : null;
     
     if (!endsAt || now < endsAt) {
+      // Blank page for suspended users
       return (
-        <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]">
-          <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
-          <div className="flex items-center justify-center p-4 py-20">
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-md text-center">
-              <h1 className="text-2xl font-bold text-red-600 mb-4">Account Suspended</h1>
-              <p className="text-[hsl(var(--bc-text))] mb-4">
-                Your forum account has been suspended.
-              </p>
-              {forumUser.suspension_reason && (
-                <p className="text-[hsl(var(--bc-text-muted))] mb-4">
-                  <strong>Reason:</strong> {forumUser.suspension_reason}
-                </p>
-              )}
-              {endsAt && (
-                <p className="text-[hsl(var(--bc-text-muted))] mb-2">
-                  <strong>Ends:</strong> {endsAt.toLocaleDateString()} at {endsAt.toLocaleTimeString()}
-                </p>
-              )}
-              {reviewDate && (
-                <p className="text-[hsl(var(--bc-text-muted))]">
-                  <strong>Review Date:</strong> {reviewDate.toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+        <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]" />
       );
     }
   }
