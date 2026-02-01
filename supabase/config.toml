@@ -62,3 +62,15 @@ verify_jwt = false
 
 [functions.send-verification-notification]
 verify_jwt = false
+
+[functions.forum-2fa-setup]
+verify_jwt = false
+
+[functions.forum-2fa-verify]
+verify_jwt = false
+
+[functions.send-affiliate-email]
+verify_jwt = false
+
+[functions.accept-affiliate]
+verify_jwt = false
