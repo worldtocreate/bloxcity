@@ -24,8 +24,19 @@ import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
 
-// Inline placeholders to prevent missing-module build failures
+// Full AdminPinGate implementation with PIN setup and verification
+import { Lock, Eye, EyeOff, Shield, KeyRound } from "lucide-react";
+
+const hashPin = async (pin: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin + "bloxcity_admin_salt_v1");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+};
+
 const AdminPinGate = ({
+  userId,
   onAuthenticated,
   darkMode,
 }: {
@@ -33,24 +44,447 @@ const AdminPinGate = ({
   onAuthenticated: () => void;
   darkMode: boolean;
 }) => {
+  const [mode, setMode] = useState<"loading" | "setup" | "verify">("loading");
+  const [pin, setPin] = useState(["", "", "", ""]);
+  const [confirmPin, setConfirmPin] = useState(["", "", "", ""]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [storedHash, setStoredHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkPinStatus = async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("admin_pin_hash")
+        .eq("user_id", userId)
+        .single();
+      
+      if (data?.admin_pin_hash) {
+        setStoredHash(data.admin_pin_hash);
+        setMode("verify");
+      } else {
+        setMode("setup");
+      }
+    };
+    checkPinStatus();
+  }, [userId]);
+
+  const handlePinChange = (index: number, value: string, isConfirm = false) => {
+    if (!/^\d*$/.test(value)) return;
+    const newPin = isConfirm ? [...confirmPin] : [...pin];
+    newPin[index] = value.slice(-1);
+    if (isConfirm) {
+      setConfirmPin(newPin);
+    } else {
+      setPin(newPin);
+    }
+    setError("");
+
+    if (value && index < 3) {
+      const nextInput = document.getElementById(isConfirm ? `confirm-pin-${index + 1}` : `pin-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number, isConfirm = false) => {
+    if (e.key === "Backspace" && index > 0) {
+      const currentVal = isConfirm ? confirmPin[index] : pin[index];
+      if (!currentVal) {
+        const prevInput = document.getElementById(isConfirm ? `confirm-pin-${index - 1}` : `pin-${index - 1}`);
+        prevInput?.focus();
+      }
+    }
+  };
+
+  const handleSetupPin = async () => {
+    const pinStr = pin.join("");
+    const confirmStr = confirmPin.join("");
+
+    if (pinStr.length !== 4) {
+      setError("Please enter a 4-digit PIN");
+      return;
+    }
+    if (pinStr !== confirmStr) {
+      setError("PINs do not match");
+      return;
+    }
+
+    setLoading(true);
+    const pinHash = await hashPin(pinStr);
+
+    const { error: updateError } = await supabase
+      .from("user_roles")
+      .update({ admin_pin_hash: pinHash })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      setError("Failed to save PIN. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    onAuthenticated();
+  };
+
+  const handleVerifyPin = async () => {
+    const pinStr = pin.join("");
+    if (pinStr.length !== 4) {
+      setError("Please enter your 4-digit PIN");
+      return;
+    }
+
+    setLoading(true);
+    const pinHash = await hashPin(pinStr);
+
+    if (pinHash === storedHash) {
+      onAuthenticated();
+    } else {
+      setError("Incorrect PIN");
+      setPin(["", "", "", ""]);
+      document.getElementById("pin-0")?.focus();
+    }
+    setLoading(false);
+  };
+
+  const inputClass = `w-14 h-14 text-center text-2xl font-bold rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+    darkMode
+      ? "bg-gray-700 border-gray-600 text-white"
+      : "bg-white border-gray-300 text-gray-800"
+  }`;
+
+  if (mode === "loading") {
+    return (
+      <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"} flex items-center justify-center`}>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center p-4`}>
-      <div className={`${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-800'} border rounded-2xl p-8 max-w-md w-full text-center`}>
-        <h1 className="text-2xl font-bold mb-2">Admin PIN</h1>
-        <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-6`}>PIN gate placeholder (restored to fix build).</p>
-        <button onClick={onAuthenticated} className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition">
-          Continue
-        </button>
+    <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"} flex items-center justify-center p-4`}>
+      <div className={`${darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-8 max-w-md w-full`}>
+        <div className="text-center mb-6">
+          <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${darkMode ? "bg-blue-500/20" : "bg-blue-100"}`}>
+            {mode === "setup" ? (
+              <KeyRound className="w-8 h-8 text-blue-500" />
+            ) : (
+              <Shield className="w-8 h-8 text-blue-500" />
+            )}
+          </div>
+          <h1 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-800"}`}>
+            {mode === "setup" ? "Set Up Admin PIN" : "Enter Admin PIN"}
+          </h1>
+          <p className={`mt-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            {mode === "setup"
+              ? "Create a 4-digit PIN to secure admin access"
+              : "Enter your PIN to access the admin panel"}
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <label className={`block text-sm font-medium mb-3 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+              {mode === "setup" ? "Create PIN" : "Your PIN"}
+            </label>
+            <div className="flex justify-center gap-3">
+              {[0, 1, 2, 3].map((i) => (
+                <input
+                  key={i}
+                  id={`pin-${i}`}
+                  type={showPin ? "text" : "password"}
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={pin[i]}
+                  onChange={(e) => handlePinChange(i, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(e, i)}
+                  className={inputClass}
+                  autoFocus={i === 0}
+                />
+              ))}
+            </div>
+          </div>
+
+          {mode === "setup" && (
+            <div>
+              <label className={`block text-sm font-medium mb-3 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                Confirm PIN
+              </label>
+              <div className="flex justify-center gap-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <input
+                    key={i}
+                    id={`confirm-pin-${i}`}
+                    type={showPin ? "text" : "password"}
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={confirmPin[i]}
+                    onChange={(e) => handlePinChange(i, e.target.value, true)}
+                    onKeyDown={(e) => handleKeyDown(e, i, true)}
+                    className={inputClass}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowPin(!showPin)}
+            className={`flex items-center gap-2 mx-auto text-sm ${darkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPin ? "Hide PIN" : "Show PIN"}
+          </button>
+
+          {error && (
+            <p className="text-red-500 text-sm text-center">{error}</p>
+          )}
+
+          <button
+            onClick={mode === "setup" ? handleSetupPin : handleVerifyPin}
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-50"
+          >
+            {loading ? "Processing..." : mode === "setup" ? "Set PIN & Continue" : "Verify & Continue"}
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
+// Full VerificationRequestsTab implementation
 const VerificationRequestsTab = ({ darkMode }: { darkMode: boolean }) => {
+  const { toast } = useToast();
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [denialReason, setDenialReason] = useState("");
+  const [showDenialModal, setShowDenialModal] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"pending" | "approved" | "denied" | "all">("pending");
+
+  useEffect(() => {
+    fetchRequests();
+  }, [filter]);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    let query = supabase
+      .from("forum_verification_requests")
+      .select(`
+        id,
+        request_type,
+        reason,
+        status,
+        created_at,
+        denial_reason,
+        reviewed_at,
+        forum_user_id,
+        forum_users!forum_verification_requests_forum_user_id_fkey (
+          id,
+          username,
+          avatar_url,
+          is_verified
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error fetching requests:", error);
+    } else {
+      setRequests(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleDecision = async (requestId: string, decision: "approved" | "denied", reason?: string) => {
+    setProcessing(requestId);
+    
+    const { data, error } = await supabase.functions.invoke("admin-manage-users", {
+      body: {
+        action: "review_verification",
+        requestId,
+        decision,
+        denialReason: reason,
+      },
+    });
+
+    if (error || data?.error) {
+      toast({
+        title: "Error",
+        description: error?.message || data?.error || "Failed to process request",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: decision === "approved" ? "Approved" : "Denied",
+        description: `Request has been ${decision}`,
+      });
+      fetchRequests();
+    }
+
+    setProcessing(null);
+    setShowDenialModal(null);
+    setDenialReason("");
+  };
+
+  const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
+  const textClass = darkMode ? "text-white" : "text-gray-800";
+  const mutedClass = darkMode ? "text-gray-400" : "text-gray-500";
+
   return (
-    <div className="space-y-4">
-      <div className={`${darkMode ? 'text-white' : 'text-gray-800'} text-xl font-semibold`}>Verification Requests</div>
-      <div className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Tab placeholder (restored to fix build).</div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className={`text-xl font-semibold ${textClass}`}>Verification Requests</h2>
+        <div className="flex gap-2">
+          {(["pending", "approved", "denied", "all"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                filter === f
+                  ? "bg-blue-600 text-white"
+                  : darkMode
+                  ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        </div>
+      ) : requests.length === 0 ? (
+        <div className={`${cardClass} border rounded-xl p-8 text-center`}>
+          <p className={mutedClass}>No {filter === "all" ? "" : filter} requests found.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {requests.map((req) => (
+            <div key={req.id} className={`${cardClass} border rounded-xl p-4`}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={req.forum_users?.avatar_url || "/placeholder.svg"}
+                    alt=""
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold ${textClass}`}>
+                        {req.forum_users?.username || "Unknown"}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          req.request_type === "gold"
+                            ? "bg-yellow-500/20 text-yellow-500"
+                            : "bg-blue-500/20 text-blue-500"
+                        }`}
+                      >
+                        {req.request_type === "gold" ? "Gold" : "Blue"} Checkmark
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          req.status === "pending"
+                            ? "bg-orange-500/20 text-orange-500"
+                            : req.status === "approved"
+                            ? "bg-green-500/20 text-green-500"
+                            : "bg-red-500/20 text-red-500"
+                        }`}
+                      >
+                        {req.status}
+                      </span>
+                    </div>
+                    <p className={`text-sm ${mutedClass}`}>
+                      Requested {new Date(req.created_at).toLocaleDateString()}
+                    </p>
+                    {req.reason && (
+                      <p className={`text-sm mt-1 ${mutedClass}`}>
+                        <span className="font-medium">Reason:</span> {req.reason}
+                      </p>
+                    )}
+                    {req.denial_reason && (
+                      <p className="text-sm mt-1 text-red-400">
+                        <span className="font-medium">Denied:</span> {req.denial_reason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {req.status === "pending" && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleDecision(req.id, "approved")}
+                      disabled={processing === req.id}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                    >
+                      {processing === req.id ? "..." : "Approve"}
+                    </button>
+                    <button
+                      onClick={() => setShowDenialModal(req.id)}
+                      disabled={processing === req.id}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                    >
+                      Deny
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Denial Modal */}
+      {showDenialModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${cardClass} border rounded-xl p-6 max-w-md w-full`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Request</h3>
+            <textarea
+              value={denialReason}
+              onChange={(e) => setDenialReason(e.target.value)}
+              placeholder="Enter reason for denial..."
+              className={`w-full p-3 rounded-lg border resize-none h-24 ${
+                darkMode
+                  ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                  : "bg-white border-gray-300 text-gray-800"
+              }`}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowDenialModal(null);
+                  setDenialReason("");
+                }}
+                className={`flex-1 py-2 rounded-lg font-medium ${
+                  darkMode ? "bg-gray-700 text-white hover:bg-gray-600" : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDecision(showDenialModal, "denied", denialReason)}
+                disabled={!denialReason.trim() || processing === showDenialModal}
+                className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50"
+              >
+                {processing === showDenialModal ? "Denying..." : "Deny Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
