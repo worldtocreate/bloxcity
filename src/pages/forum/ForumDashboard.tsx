@@ -14,7 +14,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
 import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 import UserAdBanner from '@/components/forum/UserAdBanner';
-import RecentBlogPosts from '@/components/forum/RecentBlogPosts';
 
 interface FriendStatus {
   id: string;
@@ -413,9 +412,6 @@ export default function ForumDashboard() {
               <p className="text-sm text-[hsl(var(--bc-text-muted))]">Join community groups</p>
             </Link>
           </div>
-
-          {/* Recent Blog Posts */}
-          <RecentBlogPosts />
         </div>
 
         {/* Sidebar with Skyscraper Ad */}

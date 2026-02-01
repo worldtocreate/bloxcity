@@ -1,8 +1,7 @@
 import { 
   BarChart3, Users, Mail, Ban, Shield, Activity, 
-  Globe, Settings, MessageSquare, FileText, Wrench, UserCog, Megaphone, Flag, Megaphone as AdIcon, Award, UsersRound, Newspaper
+  Globe, Settings, MessageSquare, FileText, Wrench, UserCog, Megaphone, Flag, Megaphone as AdIcon, Award, UsersRound
 } from "lucide-react";
-import type { ComponentType } from "react";
 import { AdminTab } from "./types";
 
 interface AdminTabsProps {
@@ -11,7 +10,7 @@ interface AdminTabsProps {
   darkMode: boolean;
 }
 
-const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: string }> }[] = [
+const tabs: { id: AdminTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
   { id: "reservations", label: "Reservations", icon: Users },
   { id: "newsletter", label: "Newsletter", icon: Mail },
@@ -24,7 +23,6 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "ads", label: "Ads", icon: AdIcon },
   { id: "achievements", label: "Achievements", icon: Award },
   { id: "groups", label: "Groups", icon: UsersRound },
-  { id: "blog", label: "Blog", icon: Newspaper },
   { id: "updates", label: "Updates", icon: Megaphone },
   { id: "admins", label: "Admin Users", icon: Shield },
   { id: "logs", label: "Activity Logs", icon: Activity },

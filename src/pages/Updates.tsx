@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -26,7 +25,7 @@ interface SiteUpdate {
   created_at: string;
 }
 
-const categoryConfig: Record<string, { icon: ComponentType<{ className?: string }>; color: string; bgColor: string }> = {
+const categoryConfig: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; bgColor: string }> = {
   feature: { icon: Sparkles, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
   bugfix: { icon: Bug, color: 'text-red-500', bgColor: 'bg-red-500/10' },
   improvement: { icon: Zap, color: 'text-amber-500', bgColor: 'bg-amber-500/10' },

@@ -1,6 +1,5 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail } from "lucide-react";
 import { useState } from "react";
-import type { FormEvent } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +11,7 @@ const Index = () => {
   const [newsletterError, setNewsletterError] = useState("");
   const [newsletterLoading, setNewsletterLoading] = useState(false);
 
-  const handleNewsletterSubscribe = async (e: FormEvent) => {
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail.trim()) return;
 

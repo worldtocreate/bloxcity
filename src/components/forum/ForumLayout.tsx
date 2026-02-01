@@ -364,12 +364,10 @@ export default function ForumLayout() {
           
           <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-auto">
             <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
-              <div className="flex items-center justify-center gap-4 text-sm flex-wrap">
+              <div className="flex items-center justify-center gap-4 text-sm">
                 <Link to="/users" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Members</Link>
                 <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Staff</Link>
                 <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">FAQ</Link>
-                <Link to="/terms" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Terms of Service</Link>
-                <Link to="/privacy" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Privacy Policy</Link>
               </div>
               <p className="text-[hsl(var(--bc-text-muted))] text-sm">
                 © 2026 BLOX City, Inc. All rights reserved.

@@ -91,5 +91,4 @@ export type AdminTab =
   | "achievements"
   | "groups"
   | "maintenance"
-  | "blog"
   | "settings";

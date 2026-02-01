@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Lock, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
@@ -15,10 +14,13 @@ interface DisabledAccountInfo {
 
 export default function ForumLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [sendingLoginLink, setSendingLoginLink] = useState(false);
   
   // 2FA states
   const [requires2FA, setRequires2FA] = useState(false);
@@ -59,6 +61,7 @@ export default function ForumLogin() {
       });
       
       if (error || !data?.trusted) {
+        // Clear invalid token
         clearTrustedDeviceToken(userEmail);
         return false;
       }
@@ -117,58 +120,35 @@ export default function ForumLogin() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailNotConfirmed(false);
     setLoading(true);
 
-    // First, look up the user's email by username (case-insensitive)
-    const { data: forumUserData, error: lookupError } = await supabase
-      .from('forum_users')
-      .select('user_id')
-      .ilike('username', username)
-      .single();
-
-    if (lookupError || !forumUserData) {
-      setError('Invalid username or password');
-      setLoading(false);
-      return;
-    }
-
-    // Get the email from auth.users via edge function or profiles
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('user_id', forumUserData.user_id)
-      .single();
-
-    if (!profileData?.email) {
-      setError('Invalid username or password');
-      setLoading(false);
-      return;
-    }
-
-    const userEmail = profileData.email;
-
-    // Check if 2FA is enabled for this user
-    const twoFAStatus = await check2FA(userEmail);
+    // First check if 2FA is enabled for this user
+    const twoFAStatus = await check2FA(email);
     
     if (twoFAStatus.requires2FA && twoFAStatus.method !== 'none') {
-      const isTrusted = await checkTrustedDevice(userEmail);
+      // Check if device is trusted (remember me was used before)
+      const isTrusted = await checkTrustedDevice(email);
       
       if (isTrusted) {
-        await performLogin(userEmail, password);
+        // Device is trusted, skip 2FA
+        await performLogin(email, password);
         return;
       }
       
-      setPendingAuth({ email: userEmail, password });
+      // Store credentials and show 2FA screen
+      setPendingAuth({ email, password });
       setTwoFAMethod(twoFAStatus.method as 'totp' | 'email');
       setRequires2FA(true);
       setLoading(false);
       return;
     }
 
-    await performLogin(userEmail, password);
+    // No 2FA, proceed with normal login
+    await performLogin(email, password);
   };
 
   const performLogin = async (userEmail: string, userPassword: string) => {
@@ -179,7 +159,12 @@ export default function ForumLogin() {
     });
 
     if (authError) {
-      setError('Invalid username or password');
+      const msg = authError.message || 'Login failed';
+      // When email confirmations are enabled, password grant returns this error.
+      if (msg.toLowerCase().includes('email not confirmed')) {
+        setEmailNotConfirmed(true);
+      }
+      setError(msg);
       setLoading(false);
       return;
     }
@@ -206,6 +191,61 @@ export default function ForumLogin() {
     setRequires2FA(false);
     setPendingAuth(null);
     setPassword('');
+  };
+
+  const handleResendVerification = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email first.');
+      return;
+    }
+
+    setResendingVerification(true);
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: trimmedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (resendError) {
+        toast.error(resendError.message || 'Failed to resend verification email.');
+        return;
+      }
+
+      toast.success('Verification email sent! Check your inbox.');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
+  const handleSendLoginLink = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email first.');
+      return;
+    }
+
+    setSendingLoginLink(true);
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: trimmedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (otpError) {
+        toast.error(otpError.message || 'Failed to send login link.');
+        return;
+      }
+
+      toast.success('Login link sent! Open it from your email to sign in.');
+    } finally {
+      setSendingLoginLink(false);
+    }
   };
 
   const handleCancelReactivation = async () => {
@@ -330,15 +370,43 @@ export default function ForumLogin() {
             </div>
           )}
 
+          {emailNotConfirmed && (
+            <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 space-y-2">
+              <p className="text-sm text-[hsl(var(--bc-text))]">
+                Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification || loading}
+                  className="inline-flex items-center gap-2 rounded-md bg-[hsl(var(--bc-primary))] text-white px-3 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Resend verification
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendLoginLink}
+                  disabled={sendingLoginLink || loading}
+                  className="inline-flex items-center gap-2 rounded-md border border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text))] px-3 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Send login link
+                </button>
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Username</label>
+            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email</label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
                 className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
                 required
               />
