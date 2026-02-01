@@ -14,8 +14,107 @@ import ReportButton from '@/components/forum/ReportButton';
 import ProfileViews from '@/components/forum/ProfileViews';
 import UserAchievements from '@/components/forum/UserAchievements';
 import UserGroups from '@/components/forum/UserGroups';
-import ProfileAffiliates from '@/components/forum/ProfileAffiliates';
 import { useVerificationStatus } from '@/components/forum/VerifiedBadge';
+
+type AffiliateUser = {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+};
+
+function AffiliatesSectionProfileInline({
+  forumUserId,
+  isOwnProfile,
+}: {
+  forumUserId: string;
+  isOwnProfile: boolean;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [isHidden, setIsHidden] = useState(false);
+  const [affiliates, setAffiliates] = useState<AffiliateUser[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      setLoading(true);
+      setIsHidden(false);
+      setAffiliates([]);
+
+      const { data: goldData } = await supabase
+        .from('forum_gold_checkmarks')
+        .select('hide_affiliates')
+        .eq('forum_user_id', forumUserId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (!goldData) {
+        setLoading(false);
+        return;
+      }
+
+      if (goldData.hide_affiliates && !isOwnProfile) {
+        setIsHidden(true);
+        setLoading(false);
+        return;
+      }
+
+      const { data: affRows } = await supabase
+        .from('forum_affiliates')
+        .select('affiliate_user_id')
+        .eq('gold_user_id', forumUserId);
+
+      if (cancelled) return;
+
+      const affiliateIds = (affRows ?? []).map((r) => r.affiliate_user_id).filter(Boolean);
+      if (affiliateIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: users } = await supabase
+        .from('forum_users')
+        .select('id, username, avatar_url')
+        .in('id', affiliateIds);
+
+      if (cancelled) return;
+
+      setAffiliates((users ?? []) as AffiliateUser[]);
+      setLoading(false);
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [forumUserId, isOwnProfile]);
+
+  if (loading || isHidden || affiliates.length === 0) return null;
+
+  return (
+    <section className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+      <h2 className="text-sm font-semibold text-[hsl(var(--bc-text))] mb-3 flex items-center gap-2">
+        <User className="w-4 h-4" />
+        Affiliates
+      </h2>
+      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+        {affiliates.map((u) => (
+          <Link
+            key={u.id}
+            to={`/forum/user/${u.username}`}
+            className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
+          >
+            <UserAvatar avatarUrl={u.avatar_url} username={u.username} size="sm" />
+            <span className="text-xs text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-text))] truncate max-w-full">
+              {u.username}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 interface ProfileData {
   id: string;
@@ -535,7 +634,7 @@ export default function ForumUserProfile() {
       </div>
 
       {/* Affiliates Section - for gold checkmark users */}
-      <ProfileAffiliates forumUserId={profile.id} isOwnProfile={isOwnProfile} />
+      <AffiliatesSectionProfileInline forumUserId={profile.id} isOwnProfile={isOwnProfile} />
 
       {/* Groups Section */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
