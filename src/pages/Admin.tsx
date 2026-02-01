@@ -23,21 +23,120 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
-// NOTE: Kept inline to avoid missing-module build failures.
-const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => (
-  <div
-    className={
-      darkMode
-        ? "bg-gray-800 border border-gray-700 rounded-2xl p-6 text-gray-200"
-        : "bg-white border border-gray-200 rounded-2xl p-6 text-gray-800"
-    }
-  >
-    <h2 className="text-xl font-semibold mb-2">Gold Checkmarks</h2>
-    <p className={darkMode ? "text-gray-400" : "text-gray-500"}>
-      This section is temporarily unavailable while we finalize the module wiring.
-    </p>
-  </div>
-);
+import { useToast } from "@/hooks/use-toast";
+import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+type ForumUserLite = { id: string; username: string; avatar_url: string | null };
+type GoldUserRow = { id: string; forum_user_id: string; granted_at: string; forum_users?: { username: string } | null };
+type AffiliateRequestRow = { id: string; status: string; admin_approved: boolean; created_at: string; gold_user?: { username: string } | null; affiliate_user?: { username: string } | null };
+
+const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
+  const { toast } = useToast();
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<ForumUserLite[]>([]);
+  const [goldUsers, setGoldUsers] = useState<GoldUserRow[]>([]);
+  const [pending, setPending] = useState<AffiliateRequestRow[]>([]);
+
+  useEffect(() => { void refreshAll(); }, []);
+
+  const refreshAll = async () => { await Promise.all([fetchGoldUsers(), fetchPendingRequests()]); };
+
+  const fetchGoldUsers = async () => {
+    const { data } = await supabase.from("forum_gold_checkmarks")
+      .select("id, forum_user_id, granted_at, forum_users!forum_gold_checkmarks_forum_user_id_fkey(username)")
+      .order("granted_at", { ascending: false });
+    if (data) setGoldUsers(data as unknown as GoldUserRow[]);
+  };
+
+  const fetchPendingRequests = async () => {
+    const { data } = await supabase.from("forum_affiliate_requests")
+      .select("id, status, admin_approved, created_at, gold_user:forum_users!forum_affiliate_requests_gold_user_id_fkey(username), affiliate_user:forum_users!forum_affiliate_requests_affiliate_user_id_fkey(username)")
+      .eq("status", "pending").eq("admin_approved", false).order("created_at", { ascending: false });
+    if (data) setPending(data as unknown as AffiliateRequestRow[]);
+  };
+
+  const onSearch = async () => {
+    if (!query.trim()) return;
+    setSearching(true);
+    const { data } = await supabase.from("forum_users").select("id, username, avatar_url").ilike("username", `%${query.trim()}%`).limit(10);
+    setSearching(false);
+    if (data) setSearchResults(data as ForumUserLite[]);
+  };
+
+  const grantGold = async (forumUserId: string, username: string) => {
+    const { error } = await supabase.from("forum_gold_checkmarks").insert({ forum_user_id: forumUserId });
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Granted", description: `Gold checkmark granted to ${username}` });
+    setSearchResults([]); setQuery(""); await fetchGoldUsers();
+  };
+
+  const revokeGold = async (id: string, username: string) => {
+    const { error } = await supabase.from("forum_gold_checkmarks").delete().eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Revoked", description: `Gold checkmark revoked from ${username}` });
+    await refreshAll();
+  };
+
+  const approveRequest = async (id: string) => {
+    const { error } = await supabase.from("forum_affiliate_requests").update({ admin_approved: true, admin_approved_at: new Date().toISOString() }).eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Approved", description: "Affiliate request approved" });
+    await fetchPendingRequests();
+  };
+
+  const rejectRequest = async (id: string) => {
+    const { error } = await supabase.from("forum_affiliate_requests").update({ status: "rejected" }).eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Rejected", description: "Affiliate request rejected" });
+    await fetchPendingRequests();
+  };
+
+  const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
+
+  return (
+    <div className="space-y-6">
+      <Card className={cardClass}>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5 text-yellow-500" />Grant Gold Checkmark</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onSearch()} placeholder="Search username…" className={darkMode ? "bg-gray-700 border-gray-600" : ""} />
+            <Button onClick={onSearch} disabled={searching}><Search className="h-4 w-4" /></Button>
+          </div>
+          {searchResults.length > 0 && <div className="space-y-2">{searchResults.map((u) => (<div key={u.id} className="flex items-center justify-between rounded-md border p-2"><span>{u.username}</span><Button size="sm" onClick={() => grantGold(u.id, u.username)}>Grant</Button></div>))}</div>}
+        </CardContent>
+      </Card>
+
+      <Card className={cardClass}>
+        <CardHeader><CardTitle>Pending Affiliate Requests</CardTitle></CardHeader>
+        <CardContent>
+          {pending.length === 0 ? <p className="text-sm text-muted-foreground">No pending requests.</p> : (
+            <Table>
+              <TableHeader><TableRow><TableHead>Gold User</TableHead><TableHead>Affiliate</TableHead><TableHead>Requested</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+              <TableBody>{pending.map((r) => (<TableRow key={r.id}><TableCell>{r.gold_user?.username ?? "Unknown"}</TableCell><TableCell>{r.affiliate_user?.username ?? "Unknown"}</TableCell><TableCell>{new Date(r.created_at).toLocaleDateString()}</TableCell><TableCell className="text-right"><div className="inline-flex gap-2"><Button size="sm" variant="outline" onClick={() => approveRequest(r.id)}><CheckIcon className="h-4 w-4" /></Button><Button size="sm" variant="destructive" onClick={() => rejectRequest(r.id)}><XIcon className="h-4 w-4" /></Button></div></TableCell></TableRow>))}</TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className={cardClass}>
+        <CardHeader><CardTitle>Gold Checkmark Users</CardTitle></CardHeader>
+        <CardContent>
+          {goldUsers.length === 0 ? <p className="text-sm text-muted-foreground">No gold users.</p> : (
+            <Table>
+              <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Granted</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+              <TableBody>{goldUsers.map((u) => (<TableRow key={u.id}><TableCell className="flex items-center gap-2"><Crown className="h-4 w-4 text-yellow-500" />{u.forum_users?.username ?? "Unknown"}</TableCell><TableCell>{new Date(u.granted_at).toLocaleDateString()}</TableCell><TableCell className="text-right"><Button size="sm" variant="destructive" onClick={() => revokeGold(u.id, u.forum_users?.username ?? "User")}><TrashIcon className="h-4 w-4" /></Button></TableCell></TableRow>))}</TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
