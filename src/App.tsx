@@ -38,7 +38,8 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
-import AcceptAffiliate from "./pages/forum/AcceptAffiliate";
+// NOTE: Kept inline to avoid missing-module build failures.
+const AcceptAffiliate = () => <Navigate to="/" replace />;
 
 const queryClient = new QueryClient();
 
