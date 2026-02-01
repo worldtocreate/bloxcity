@@ -1120,6 +1120,8 @@ export default function ForumSettings() {
 
   const canChangeUsername = () => {
     if (!forumUser) return false;
+    // Bypass cooldown if username was purged (starts with "purged_")
+    if (forumUser.username.startsWith('purged_')) return true;
     const lastChange = (forumUser as any).last_username_change_at;
     if (!lastChange) return true;
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
