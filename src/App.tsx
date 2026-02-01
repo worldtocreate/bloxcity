@@ -1,13 +1,18 @@
 // v3
 import { useState, useEffect } from "react";
+import type { FormEvent } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, BadgeCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
@@ -22,7 +27,6 @@ import ForumNewThread from "./pages/forum/ForumNewThread";
 import ForumLogin from "./pages/forum/ForumLogin";
 import ForumRegister from "./pages/forum/ForumRegister";
 import ForumForgotPassword from "./pages/forum/ForumForgotPassword";
-import ForumResetPassword from "./pages/forum/ForumResetPassword";
 import ForumSettings from "./pages/forum/ForumSettings";
 import ForumUserProfile from "./pages/forum/ForumUserProfile";
 import ForumMessages from "./pages/forum/ForumMessages";
@@ -124,6 +128,165 @@ function AcceptAffiliate() {
             </Link>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Inline ForumResetPassword to avoid file/module persistence issues
+function ForumResetPassword() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [hasValidSession, setHasValidSession] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) setHasValidSession(true);
+      setChecking(false);
+    });
+
+    supabase.auth.getSession().then(({ data: sessionData }) => {
+      if (sessionData.session) setHasValidSession(true);
+      setChecking(false);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both passwords are the same.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSuccess(true);
+    toast({
+      title: "Password updated",
+      description: "Your password has been successfully reset.",
+    });
+
+    setTimeout(async () => {
+      await supabase.auth.signOut();
+      navigate("/login");
+    }, 1500);
+  };
+
+  if (checking) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
+  if (!hasValidSession) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Invalid or Expired Link</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-4">
+            This password reset link is invalid or has expired. Please request a new one.
+          </p>
+          <Button onClick={() => navigate("/forgot-password")} className="w-full">
+            Request New Link
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-500" />
+          </div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Password Reset Successful</h1>
+          <p className="text-[hsl(var(--bc-text-muted))]">Redirecting you to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full">
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))]">Reset Your Password</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] text-sm mt-1">Enter your new password below</p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="password">New Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              "Reset Password"
+            )}
+          </Button>
+        </form>
       </div>
     </div>
   );
