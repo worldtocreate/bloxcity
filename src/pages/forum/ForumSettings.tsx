@@ -536,6 +536,17 @@ export default function ForumSettings() {
   
   // Gold checkmark
   const [hasGoldCheckmark, setHasGoldCheckmark] = useState(false);
+  
+  // Settings PIN confirmation
+  const [settingsPin, setSettingsPin] = useState('');
+  const [settingsPinConfirm, setSettingsPinConfirm] = useState('');
+  const [savingSettingsPin, setSavingSettingsPin] = useState(false);
+  const [showPinConfirmModal, setShowPinConfirmModal] = useState(false);
+  const [pinConfirmInput, setPinConfirmInput] = useState('');
+  const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
+  
+  // Check if user has settings PIN
+  const hasSettingsPin = !!(forumUser as any)?.settings_pin_hash;
 
   useEffect(() => {
     if (forumUser && !initialized) {
@@ -1030,6 +1041,66 @@ export default function ForumSettings() {
       setConfirmPin('');
     }
     setSettingPin(false);
+  };
+
+  // Settings PIN functions
+  const handleSetSettingsPin = async () => {
+    if (!forumUser) return;
+    
+    if (!isValidPin(settingsPin)) {
+      toast.error('PIN must be exactly 4 digits');
+      return;
+    }
+
+    if (settingsPin !== settingsPinConfirm) {
+      toast.error('PINs do not match');
+      return;
+    }
+
+    setSavingSettingsPin(true);
+    const hashedPin = await hashPin(settingsPin);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ settings_pin_hash: hashedPin })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to set settings PIN');
+    } else {
+      toast.success('Settings PIN set! You will need to confirm it before saving changes.');
+      setSettingsPin('');
+      setSettingsPinConfirm('');
+    }
+    setSavingSettingsPin(false);
+  };
+
+  const confirmWithPin = (action: () => Promise<void>) => {
+    if (!hasSettingsPin) {
+      // No PIN set, just execute the action
+      action();
+      return;
+    }
+    // Show PIN confirmation modal
+    setPendingAction(() => action);
+    setPinConfirmInput('');
+    setShowPinConfirmModal(true);
+  };
+
+  const handlePinConfirmSubmit = async () => {
+    if (!forumUser || !pendingAction) return;
+    
+    const enteredHash = await hashPin(pinConfirmInput);
+    
+    if (enteredHash !== (forumUser as any).settings_pin_hash) {
+      toast.error('Incorrect PIN');
+      return;
+    }
+    
+    setShowPinConfirmModal(false);
+    setPinConfirmInput('');
+    await pendingAction();
+    setPendingAction(null);
   };
 
   const handleSavePrivacy = async () => {
@@ -1905,6 +1976,69 @@ export default function ForumSettings() {
         )}
       </div>
 
+      {/* Settings Protection PIN */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <Shield className="w-5 h-5" />
+          Settings Protection PIN
+        </h2>
+        
+        {hasSettingsPin ? (
+          <div className="flex items-center gap-2 text-green-500">
+            <Shield className="w-5 h-5" />
+            <span>Settings PIN is active. You'll need to confirm it before saving changes.</span>
+          </div>
+        ) : (
+          <>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4">
+              <p className="text-amber-700 dark:text-amber-300 text-sm">
+                <strong>Recommended:</strong> Set a 4-digit PIN to protect your account settings from unauthorized changes.
+              </p>
+            </div>
+            <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+              Once set, you'll need to enter this PIN before saving any settings changes.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div>
+                <label className="text-xs text-[hsl(var(--bc-text-muted))] block mb-1">PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={settingsPin}
+                  onChange={(e) => setSettingsPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-24 text-center text-lg tracking-widest bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-2 text-[hsl(var(--bc-text))]"
+                  placeholder="••••"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[hsl(var(--bc-text-muted))] block mb-1">Confirm PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={settingsPinConfirm}
+                  onChange={(e) => setSettingsPinConfirm(e.target.value.replace(/\D/g, ''))}
+                  className="w-24 text-center text-lg tracking-widest bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-2 text-[hsl(var(--bc-text))]"
+                  placeholder="••••"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={handleSetSettingsPin}
+                  disabled={settingsPin.length !== 4 || settingsPinConfirm.length !== 4 || savingSettingsPin}
+                  className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition"
+                >
+                  {savingSettingsPin ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set PIN'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Privacy Settings */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
@@ -2360,6 +2494,54 @@ export default function ForumSettings() {
           onCancel={handleCropCancel}
           type={cropperType}
         />
+      )}
+
+      {/* PIN Confirmation Modal */}
+      {showPinConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 w-full max-w-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))]/10 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Confirm PIN</h3>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">Enter your 4-digit PIN to save changes</p>
+              </div>
+            </div>
+            <input
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              value={pinConfirmInput}
+              onChange={(e) => setPinConfirmInput(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && pinConfirmInput.length === 4 && handlePinConfirmSubmit()}
+              className="w-full text-center text-2xl tracking-[0.5em] bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] mb-4"
+              placeholder="••••"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowPinConfirmModal(false);
+                  setPinConfirmInput('');
+                  setPendingAction(null);
+                }}
+                className="flex-1 px-4 py-2 border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePinConfirmSubmit}
+                disabled={pinConfirmInput.length !== 4}
+                className="flex-1 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

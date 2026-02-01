@@ -6,6 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const MAX_ACCOUNTS_PER_EMAIL = 5;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -18,6 +20,41 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Check email usage limit action
+    if (action === 'check_email_limit') {
+      if (!email || typeof email !== "string") {
+        return new Response(
+          JSON.stringify({ error: "Email is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const trimmedEmail = email.trim().toLowerCase();
+
+      // Count how many accounts use this email
+      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error("Error fetching auth users:", authError);
+        return new Response(
+          JSON.stringify({ allowed: true, count: 0 }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const matchingUsers = authUsers.users.filter(
+        (u) => u.email?.toLowerCase() === trimmedEmail
+      );
+
+      const count = matchingUsers.length;
+      const allowed = count < MAX_ACCOUNTS_PER_EMAIL;
+
+      return new Response(
+        JSON.stringify({ allowed, count, max: MAX_ACCOUNTS_PER_EMAIL }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Username recovery action
     if (action === 'recover_username') {
@@ -54,7 +91,6 @@ Deno.serve(async (req) => {
       
       if (authError) {
         console.error("Error fetching auth users:", authError);
-        // Return success anyway to prevent email enumeration
         return new Response(
           JSON.stringify({ success: true }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -67,7 +103,6 @@ Deno.serve(async (req) => {
       );
 
       if (matchingAuthUsers.length === 0) {
-        // Return success to prevent email enumeration
         console.log(`No users found for email: ${trimmedEmail}`);
         return new Response(
           JSON.stringify({ success: true }),
@@ -136,7 +171,6 @@ Deno.serve(async (req) => {
         </html>
       `;
 
-      // Try primary domain first, fallback to test domain
       let emailResult;
       try {
         emailResult = await resend.emails.send({
@@ -184,6 +218,25 @@ Deno.serve(async (req) => {
             JSON.stringify({ error: 'reCAPTCHA verification failed. Please try again.' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
+        }
+      }
+
+      // Check email limit if email is provided
+      if (email) {
+        const trimmedEmail = email.trim().toLowerCase();
+        const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (authUsers) {
+          const matchingUsers = authUsers.users.filter(
+            (u) => u.email?.toLowerCase() === trimmedEmail
+          );
+          
+          if (matchingUsers.length >= MAX_ACCOUNTS_PER_EMAIL) {
+            return new Response(
+              JSON.stringify({ error: 'Email usage limit exceeded. You can only create up to 5 accounts with the same email.' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
         }
       }
 

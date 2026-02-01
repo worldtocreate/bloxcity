@@ -95,16 +95,25 @@ export default function ForumLayout() {
   }, [user, emailVerified]);
 
   const checkTwoFAStatus = async () => {
-    if (!forumUser) return;
+    if (!forumUser) {
+      setCheckingTwoFA(false);
+      return;
+    }
     
-    const { data } = await supabase
-      .from('forum_2fa_settings')
-      .select('is_enabled, method')
-      .eq('forum_user_id', forumUser.id)
-      .single();
-    
-    setTwoFAStatus(data as TwoFASettings | null);
-    setCheckingTwoFA(false);
+    try {
+      const { data } = await supabase
+        .from('forum_2fa_settings')
+        .select('is_enabled, method')
+        .eq('forum_user_id', forumUser.id)
+        .maybeSingle();
+      
+      setTwoFAStatus(data as TwoFASettings | null);
+    } catch (error) {
+      console.error('Error checking 2FA status:', error);
+      setTwoFAStatus(null);
+    } finally {
+      setCheckingTwoFA(false);
+    }
   };
 
   const fetchAnnouncement = async () => {
