@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
@@ -90,7 +91,7 @@ export default function ForumUsers() {
     setLoading(false);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     setSearchParams({ q: searchQuery, page: '1' });
   };

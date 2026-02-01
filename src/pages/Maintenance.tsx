@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wrench, Lock, Twitter } from 'lucide-react';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
@@ -13,7 +14,7 @@ export default function Maintenance({ message, password = 'admin123' }: Maintena
   const [inputPassword, setInputPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (inputPassword === password) {
       sessionStorage.setItem('maintenance_bypass', 'true');

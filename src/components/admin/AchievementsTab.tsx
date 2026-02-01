@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import type { ChangeEvent } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Award, Plus, Search, Trash2, UserPlus, X, Loader2, Upload, Image } from 'lucide-react';
 import { toast } from 'sonner';
@@ -66,7 +67,7 @@ export default function AchievementsTab({ darkMode }: AchievementsTabProps) {
     setLoading(false);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
