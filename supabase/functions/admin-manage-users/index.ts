@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
 
     // ========== ACCEPT AFFILIATE (public action - no auth required for token-based) ==========
     if (action === "accept_affiliate") {
-      const { token } = await req.json();
+      const token = requestId; // Token is passed as requestId from frontend
       
       if (!token) {
         return new Response(
