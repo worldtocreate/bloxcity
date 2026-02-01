@@ -14,7 +14,7 @@ import ReportButton from '@/components/forum/ReportButton';
 import ProfileViews from '@/components/forum/ProfileViews';
 import UserAchievements from '@/components/forum/UserAchievements';
 import UserGroups from '@/components/forum/UserGroups';
-// ProfileAffiliates component - to be added
+import ProfileAffiliates from '@/components/forum/ProfileAffiliates';
 import { useVerificationStatus } from '@/components/forum/VerifiedBadge';
 
 interface ProfileData {
@@ -533,6 +533,9 @@ export default function ForumUserProfile() {
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
         <UserAchievements forumUserId={profile.id} />
       </div>
+
+      {/* Affiliates Section - for gold checkmark users */}
+      <ProfileAffiliates forumUserId={profile.id} isOwnProfile={isOwnProfile} />
 
       {/* Groups Section */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
