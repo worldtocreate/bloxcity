@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star, Heart } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
-import VerifiedBadge from '@/components/forum/VerifiedBadge';
+import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
@@ -14,6 +14,8 @@ import ReportButton from '@/components/forum/ReportButton';
 import ProfileViews from '@/components/forum/ProfileViews';
 import UserAchievements from '@/components/forum/UserAchievements';
 import UserGroups from '@/components/forum/UserGroups';
+import ProfileAffiliates from '@/components/forum/ProfileAffiliates';
+import { useVerificationStatus } from '@/components/forum/VerifiedBadge';
 
 interface ProfileData {
   id: string;
@@ -436,7 +438,7 @@ export default function ForumUserProfile() {
           <div className="mt-4">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{profile.username}</h1>
-              {profile.is_verified && <VerifiedBadge size="lg" />}
+              <VerificationBadge size="lg" forumUserId={profile.id} isVerified={profile.is_verified} />
               {profile.membership_tier && <MembershipBadge tier={profile.membership_tier} size="md" />}
               {profile.is_suspended && (
                 <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
