@@ -12,7 +12,360 @@ import UserAvatar, { AVATAR_EFFECTS, AvatarEffect } from '@/components/forum/Use
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
 import ImageCropper from '@/components/forum/ImageCropper';
 import { GoldBadge } from '@/components/forum/VerifiedBadge';
-// AffiliatesTab is defined inline below
+
+// Affiliates Section Component for Gold Checkmark Users
+function AffiliatesSection({ forumUser }: { forumUser: ForumUser | null }) {
+  const [searchUsername, setSearchUsername] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResult, setSearchResult] = useState<{ id: string; username: string; avatar_url: string | null } | null>(null);
+  const [searchError, setSearchError] = useState('');
+  const [affiliates, setAffiliates] = useState<Array<{ id: string; affiliate_user_id: string; username: string; avatar_url: string | null }>>([]);
+  const [pendingRequests, setPendingRequests] = useState<Array<{ id: string; affiliate_user_id: string; username: string; avatar_url: string | null; status: string; admin_approved: boolean; user_accepted: boolean }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [hideAffiliates, setHideAffiliates] = useState(false);
+  const [savingHide, setSavingHide] = useState(false);
+
+  useEffect(() => {
+    if (forumUser) {
+      fetchAffiliatesData();
+    }
+  }, [forumUser]);
+
+  const fetchAffiliatesData = async () => {
+    if (!forumUser) return;
+    
+    // Fetch hide_affiliates setting
+    const { data: goldData } = await supabase
+      .from('forum_gold_checkmarks')
+      .select('hide_affiliates')
+      .eq('forum_user_id', forumUser.id)
+      .single();
+    
+    if (goldData) {
+      setHideAffiliates(goldData.hide_affiliates || false);
+    }
+
+    // Fetch current affiliates
+    const { data: affiliatesData } = await supabase
+      .from('forum_affiliates')
+      .select('id, affiliate_user_id')
+      .eq('gold_user_id', forumUser.id);
+
+    if (affiliatesData && affiliatesData.length > 0) {
+      const affiliateIds = affiliatesData.map(a => a.affiliate_user_id);
+      const { data: usersData } = await supabase
+        .from('forum_users')
+        .select('id, username, avatar_url')
+        .in('id', affiliateIds);
+
+      if (usersData) {
+        const merged = affiliatesData.map(a => {
+          const user = usersData.find(u => u.id === a.affiliate_user_id);
+          return {
+            id: a.id,
+            affiliate_user_id: a.affiliate_user_id,
+            username: user?.username || 'Unknown',
+            avatar_url: user?.avatar_url || null
+          };
+        });
+        setAffiliates(merged);
+      }
+    }
+
+    // Fetch pending requests
+    const { data: requestsData } = await supabase
+      .from('forum_affiliate_requests')
+      .select('id, affiliate_user_id, status, admin_approved, user_accepted')
+      .eq('gold_user_id', forumUser.id)
+      .in('status', ['pending', 'admin_approved']);
+
+    if (requestsData && requestsData.length > 0) {
+      const requestIds = requestsData.map(r => r.affiliate_user_id);
+      const { data: usersData } = await supabase
+        .from('forum_users')
+        .select('id, username, avatar_url')
+        .in('id', requestIds);
+
+      if (usersData) {
+        const merged = requestsData.map(r => {
+          const user = usersData.find(u => u.id === r.affiliate_user_id);
+          return {
+            id: r.id,
+            affiliate_user_id: r.affiliate_user_id,
+            status: r.status,
+            admin_approved: r.admin_approved,
+            user_accepted: r.user_accepted,
+            username: user?.username || 'Unknown',
+            avatar_url: user?.avatar_url || null
+          };
+        });
+        setPendingRequests(merged);
+      }
+    }
+
+    setLoading(false);
+  };
+
+  const handleSearch = async () => {
+    if (!searchUsername.trim()) return;
+    setSearching(true);
+    setSearchError('');
+    setSearchResult(null);
+
+    const { data, error } = await supabase
+      .from('forum_users')
+      .select('id, username, avatar_url')
+      .ilike('username', searchUsername.trim())
+      .single();
+
+    if (error || !data) {
+      setSearchError('User not found');
+    } else if (data.id === forumUser?.id) {
+      setSearchError('You cannot add yourself as an affiliate');
+    } else if (affiliates.some(a => a.affiliate_user_id === data.id)) {
+      setSearchError('This user is already your affiliate');
+    } else if (pendingRequests.some(r => r.affiliate_user_id === data.id)) {
+      setSearchError('A request is already pending for this user');
+    } else {
+      // Check if user already has gold checkmark
+      const { data: hasGold } = await supabase.rpc('has_gold_checkmark', { _forum_user_id: data.id });
+      if (hasGold) {
+        setSearchError('Gold checkmark users cannot be affiliates');
+      } else {
+        // Check if user is already an affiliate of someone else
+        const { data: existingAffiliate } = await supabase
+          .from('forum_affiliates')
+          .select('id')
+          .eq('affiliate_user_id', data.id)
+          .single();
+        
+        if (existingAffiliate) {
+          setSearchError('This user is already an affiliate of another user');
+        } else {
+          setSearchResult(data);
+        }
+      }
+    }
+    setSearching(false);
+  };
+
+  const handleAddAffiliate = async () => {
+    if (!searchResult || !forumUser) return;
+    setAdding(true);
+
+    const { error } = await supabase
+      .from('forum_affiliate_requests')
+      .insert({
+        gold_user_id: forumUser.id,
+        affiliate_user_id: searchResult.id,
+        status: 'pending'
+      });
+
+    if (error) {
+      toast.error('Failed to send affiliate request');
+    } else {
+      toast.success('Affiliate request sent! Awaiting admin approval.');
+      setSearchResult(null);
+      setSearchUsername('');
+      fetchAffiliatesData();
+    }
+    setAdding(false);
+  };
+
+  const handleRemoveAffiliate = async (affiliateId: string) => {
+    const { error } = await supabase
+      .from('forum_affiliates')
+      .delete()
+      .eq('id', affiliateId);
+
+    if (error) {
+      toast.error('Failed to remove affiliate');
+    } else {
+      toast.success('Affiliate removed');
+      setAffiliates(prev => prev.filter(a => a.id !== affiliateId));
+    }
+  };
+
+  const handleCancelRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from('forum_affiliate_requests')
+      .delete()
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to cancel request');
+    } else {
+      toast.success('Request cancelled');
+      setPendingRequests(prev => prev.filter(r => r.id !== requestId));
+    }
+  };
+
+  const handleToggleHide = async () => {
+    if (!forumUser) return;
+    setSavingHide(true);
+
+    const { error } = await supabase
+      .from('forum_gold_checkmarks')
+      .update({ hide_affiliates: !hideAffiliates })
+      .eq('forum_user_id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to update setting');
+    } else {
+      setHideAffiliates(!hideAffiliates);
+      toast.success(hideAffiliates ? 'Affiliates are now visible on your profile' : 'Affiliates are now hidden from your profile');
+    }
+    setSavingHide(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--bc-text-muted))]" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+      <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+        <Award className="w-5 h-5 text-yellow-500" />
+        Affiliates
+        <GoldBadge size="sm" />
+      </h2>
+      <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+        As a gold checkmark holder, you can add other users as affiliates. They'll receive a blue checkmark linked to your profile.
+      </p>
+
+      {/* Hide affiliates toggle */}
+      <label className="flex items-center justify-between py-3 border-b border-[hsl(var(--bc-border))] mb-4">
+        <div>
+          <span className="text-[hsl(var(--bc-text))]">Hide affiliates on profile</span>
+          <p className="text-xs text-[hsl(var(--bc-text-muted))]">When enabled, affiliates won't be shown on your profile</p>
+        </div>
+        <button
+          onClick={handleToggleHide}
+          disabled={savingHide}
+          className={`w-12 h-6 rounded-full transition ${hideAffiliates ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
+        >
+          <div className={`w-5 h-5 rounded-full bg-white transform transition ${hideAffiliates ? 'translate-x-6' : 'translate-x-0.5'}`} />
+        </button>
+      </label>
+
+      {/* Add affiliate search */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Add Affiliate</label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={searchUsername}
+            onChange={(e) => setSearchUsername(e.target.value)}
+            placeholder="Enter username..."
+            className="flex-1 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-2 text-[hsl(var(--bc-text))]"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <button
+            onClick={handleSearch}
+            disabled={searching || !searchUsername.trim()}
+            className="px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white rounded-lg transition"
+          >
+            {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+          </button>
+        </div>
+        
+        {searchError && (
+          <p className="text-red-500 text-sm mt-2">{searchError}</p>
+        )}
+        
+        {searchResult && (
+          <div className="mt-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <UserAvatar avatarUrl={searchResult.avatar_url} username={searchResult.username} size="sm" />
+              <span className="text-[hsl(var(--bc-text))] font-medium">{searchResult.username}</span>
+            </div>
+            <button
+              onClick={handleAddAffiliate}
+              disabled={adding}
+              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:bg-[hsl(var(--bc-text-muted))] text-white rounded-lg text-sm transition flex items-center gap-1"
+            >
+              {adding ? <Loader2 className="w-3 h-3 animate-spin" /> : <BadgeCheck className="w-3 h-3" />}
+              Add as Affiliate
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Pending requests */}
+      {pendingRequests.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Pending Requests
+          </h3>
+          <div className="space-y-2">
+            {pendingRequests.map((request) => (
+              <div key={request.id} className="p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <UserAvatar avatarUrl={request.avatar_url} username={request.username} size="sm" />
+                  <div>
+                    <span className="text-[hsl(var(--bc-text))] font-medium">{request.username}</span>
+                    <div className="flex items-center gap-2 text-xs text-[hsl(var(--bc-text-muted))]">
+                      <span className={request.admin_approved ? 'text-green-500' : 'text-yellow-500'}>
+                        Admin: {request.admin_approved ? '✓ Approved' : '⏳ Pending'}
+                      </span>
+                      <span className={request.user_accepted ? 'text-green-500' : 'text-yellow-500'}>
+                        User: {request.user_accepted ? '✓ Accepted' : '⏳ Pending'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleCancelRequest(request.id)}
+                  className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Current affiliates */}
+      <div>
+        <h3 className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2 flex items-center gap-2">
+          <Users className="w-4 h-4" />
+          Current Affiliates ({affiliates.length})
+        </h3>
+        {affiliates.length === 0 ? (
+          <p className="text-[hsl(var(--bc-text-muted))] text-sm py-4 text-center">No affiliates yet</p>
+        ) : (
+          <div className="space-y-2">
+            {affiliates.map((affiliate) => (
+              <div key={affiliate.id} className="p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <UserAvatar avatarUrl={affiliate.avatar_url} username={affiliate.username} size="sm" />
+                  <span className="text-[hsl(var(--bc-text))] font-medium">{affiliate.username}</span>
+                  <BadgeCheck className="w-4 h-4 text-blue-500" />
+                </div>
+                <button
+                  onClick={() => handleRemoveAffiliate(affiliate.id)}
+                  className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition flex items-center gap-1 text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface CoverRequest {
   id: string;
@@ -1596,17 +1949,7 @@ export default function ForumSettings() {
 
       {/* Affiliates Section - Gold Checkmark Users Only */}
       {hasGoldCheckmark && (
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5 text-yellow-500" />
-            Affiliates
-            <GoldBadge />
-          </h2>
-          <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
-            As a gold checkmark holder, you can add other users as affiliates. They'll receive a blue checkmark linked to your profile.
-          </p>
-          <p className="text-[hsl(var(--bc-text-muted))] text-sm">Affiliates management coming soon.</p>
-        </div>
+        <AffiliatesSection forumUser={forumUser} />
       )}
 
       {/* Pinned Threads */}
