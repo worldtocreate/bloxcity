@@ -34,12 +34,6 @@ const FAQ = () => {
                 This is an independent revival project by fans, for fans. We are not associated with Isaac Hymer, Kyle Vickers, or the original BLOX City ownership. Our goal is to recreate the classic experience that made the original platform special.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger>How does username reservation work?</AccordionTrigger>
-              <AccordionContent>
-                Simply enter your desired username and email address. Our team will review your reservation, and if approved, you'll receive a reservation code via email that you can use to claim your username when we launch.
-              </AccordionContent>
-            </AccordionItem>
             <AccordionItem value="item-4">
               <AccordionTrigger>Will my old BLOX City account work?</AccordionTrigger>
               <AccordionContent>
