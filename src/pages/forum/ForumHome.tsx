@@ -101,7 +101,7 @@ export default function ForumHome() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-4">
-
+</div>
         {/* Categories */}
         <div className="space-y-3">
           {categories.map((category) => (
