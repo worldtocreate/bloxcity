@@ -51,7 +51,7 @@ function AcceptAffiliate() {
 
   useEffect(() => {
     if (token) {
-      supabase.functions.invoke('admin-manage-users', { body: { action: 'accept_affiliate', token } })
+      supabase.functions.invoke('admin-manage-users', { body: { action: 'accept_affiliate', requestId: token } })
         .then(({ data, error }) => {
           if (error) {
             setStatus('error');
