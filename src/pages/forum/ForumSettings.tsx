@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send, Sparkles } from 'lucide-react';
@@ -459,7 +460,7 @@ export default function ForumSettings() {
     setDisabling(false);
   };
 
-  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !forumUser || !user) return;
 
@@ -575,7 +576,7 @@ export default function ForumSettings() {
     setPendingFile(null);
   };
 
-  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !forumUser || !user) return;
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, Send, Mail } from 'lucide-react';
@@ -48,7 +49,7 @@ export default function ForumNewThread() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim() || !forumUser || !category) return;
 

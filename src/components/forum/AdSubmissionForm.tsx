@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { Upload, Link as LinkIcon, AlertCircle, Check, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -83,7 +84,7 @@ export default function AdSubmissionForm({ forumUserId }: AdSubmissionFormProps)
     return publicUrl;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     if (!validateUrl(formData.destination_url)) {

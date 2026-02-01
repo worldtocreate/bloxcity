@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate, useOutletContext, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -91,7 +92,7 @@ export default function Create() {
   };
 
   // Group handlers
-  const handleGroupIconSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGroupIconSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
@@ -236,7 +237,7 @@ export default function Create() {
     return publicUrl;
   };
 
-  const handleAdImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -272,7 +273,7 @@ export default function Create() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmitAd = async (e: React.FormEvent) => {
+  const handleSubmitAd = async (e: FormEvent) => {
     e.preventDefault();
     if (!forumUser) return;
     

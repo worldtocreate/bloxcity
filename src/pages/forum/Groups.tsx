@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import type { ChangeEvent } from 'react';
 import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -114,7 +115,7 @@ export default function Groups() {
     }
   };
 
-  const handleIconSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
