@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2, Mail } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
-import VerifiedBadge from '@/components/forum/VerifiedBadge';
+import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 
 interface Post {
   id: string;
@@ -419,7 +419,7 @@ export default function ForumThread() {
                           className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] flex items-center gap-1 transition"
                         >
                           {post.author.username}
-                          {post.author.is_verified && <VerifiedBadge size="sm" />}
+                          <VerificationBadge size="sm" forumUserId={post.author.id} isVerified={post.author.is_verified} />
                           <AdminBadge userId={post.author?.user_id || ''} />
                         </Link>
                         <div className="text-xs text-[hsl(var(--bc-text-muted))]">

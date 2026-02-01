@@ -3,7 +3,7 @@ import { Link, useOutletContext, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import UserAvatar from '@/components/forum/UserAvatar';
-import VerifiedBadge from '@/components/forum/VerifiedBadge';
+import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
 import { ForumUser } from '@/hooks/useForumAuth';
@@ -162,7 +162,7 @@ export default function ForumUsers() {
                     <span className="font-medium text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">
                       {user.username}
                     </span>
-                    {user.is_verified && <VerifiedBadge size="sm" />}
+                    <VerificationBadge size="sm" forumUserId={user.id} isVerified={user.is_verified} />
                     {user.is_admin && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Admin</span>
                     )}

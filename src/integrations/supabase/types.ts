@@ -2325,6 +2325,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
       redeem_membership: { Args: { tier_name: string }; Returns: undefined }
     }
     Enums: {
