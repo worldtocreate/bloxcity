@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,156 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, username, recaptchaToken } = await req.json();
+    const { action, username, recaptchaToken, email } = await req.json();
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Username recovery action
+    if (action === 'recover_username') {
+      if (!email || typeof email !== "string") {
+        return new Response(
+          JSON.stringify({ error: "Email is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const trimmedEmail = email.trim().toLowerCase();
+
+      // Basic email validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        return new Response(
+          JSON.stringify({ error: "Invalid email format" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      if (!resendApiKey) {
+        console.error("RESEND_API_KEY not configured");
+        return new Response(
+          JSON.stringify({ error: "Email service not configured" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const resend = new Resend(resendApiKey);
+
+      // Look up auth users by email
+      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error("Error fetching auth users:", authError);
+        // Return success anyway to prevent email enumeration
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Filter users matching this email
+      const matchingAuthUsers = authUsers.users.filter(
+        (u) => u.email?.toLowerCase() === trimmedEmail
+      );
+
+      if (matchingAuthUsers.length === 0) {
+        // Return success to prevent email enumeration
+        console.log(`No users found for email: ${trimmedEmail}`);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get usernames from forum_users table
+      const userIds = matchingAuthUsers.map((u) => u.id);
+      const { data: forumUsers, error: forumError } = await supabaseAdmin
+        .from("forum_users")
+        .select("username")
+        .in("user_id", userIds);
+
+      if (forumError) {
+        console.error("Error fetching forum users:", forumError);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const usernames = forumUsers?.map((u) => u.username) || [];
+
+      if (usernames.length === 0) {
+        console.log(`No forum usernames found for email: ${trimmedEmail}`);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Send email with usernames
+      const usernameList =
+        usernames.length === 1
+          ? `<strong>${usernames[0]}</strong>`
+          : usernames.map((u) => `<li><strong>${u}</strong></li>`).join("");
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background-color: #f4f4f5; padding: 40px 20px;">
+            <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+              <h1 style="color: #18181b; font-size: 24px; margin: 0 0 16px;">Username Recovery</h1>
+              <p style="color: #52525b; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+                You requested to recover your username${usernames.length > 1 ? "s" : ""} for BLOX City. Here ${usernames.length > 1 ? "are the accounts" : "is the account"} associated with your email:
+              </p>
+              ${
+                usernames.length === 1
+                  ? `<p style="color: #18181b; font-size: 18px; background: #f4f4f5; padding: 16px; border-radius: 8px; text-align: center;">${usernameList}</p>`
+                  : `<ul style="color: #18181b; font-size: 16px; background: #f4f4f5; padding: 16px 16px 16px 32px; border-radius: 8px; margin: 0 0 24px;">${usernameList}</ul>`
+              }
+              <p style="color: #71717a; font-size: 14px; line-height: 1.5; margin: 24px 0 0;">
+                If you didn't request this, you can safely ignore this email.
+              </p>
+              <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;">
+              <p style="color: #a1a1aa; font-size: 12px; margin: 0; text-align: center;">
+                BLOX City
+              </p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Try primary domain first, fallback to test domain
+      let emailResult;
+      try {
+        emailResult = await resend.emails.send({
+          from: "BLOX City <noreply@bloxcity.net>",
+          to: [trimmedEmail],
+          subject: "Your BLOX City Username",
+          html: htmlContent,
+        });
+      } catch (primaryError) {
+        console.log("Primary domain failed, trying fallback:", primaryError);
+        emailResult = await resend.emails.send({
+          from: "BLOX City <onboarding@resend.dev>",
+          to: [trimmedEmail],
+          subject: "Your BLOX City Username",
+          html: htmlContent,
+        });
+      }
+
+      console.log("Username recovery email sent:", emailResult);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (action === 'verify') {
       // Verify reCAPTCHA
@@ -39,11 +189,6 @@ Deno.serve(async (req) => {
 
       // Check username availability
       if (username) {
-        const supabaseAdmin = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
-
         const { data: existingUser } = await supabaseAdmin
           .from('forum_users')
           .select('id')
