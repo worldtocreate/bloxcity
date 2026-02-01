@@ -102,11 +102,6 @@ export default function ForumHome() {
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-4">
           <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
-            <Users className="w-6 h-6 text-[hsl(var(--bc-blue))] mx-auto mb-2" />
-            <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.users.toLocaleString()}</div>
-            <div className="text-sm text-[hsl(var(--bc-text-muted))]">Members</div>
-          </div>
-          <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl p-4 text-center border border-[hsl(var(--bc-border))]">
             <MessageSquare className="w-6 h-6 text-[hsl(var(--bc-green))] mx-auto mb-2" />
             <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{stats.threads.toLocaleString()}</div>
             <div className="text-sm text-[hsl(var(--bc-text-muted))]">Threads</div>
