@@ -3,8 +3,8 @@ import { LogIn, LogOut, Settings, Shield, User, Coins, Menu } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import { VerificationBadge } from './VerifiedBadge';
 import UnreadBadge from './UnreadBadge';
-import VerifiedBadge from './VerifiedBadge';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 
 interface ForumHeaderProps {
@@ -80,7 +80,7 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
                 )}
                 <span className="text-[hsl(var(--bc-text))] font-medium hidden md:flex items-center gap-1">
                   {forumUser?.username || 'User'}
-                  {forumUser?.is_verified && <VerifiedBadge size="md" />}
+                  <VerificationBadge size="md" forumUserId={forumUser?.id} isVerified={forumUser?.is_verified} />
                   {isAdmin && <Shield className="w-3 h-3 text-[hsl(var(--bc-accent))]" />}
                 </span>
               </Link>

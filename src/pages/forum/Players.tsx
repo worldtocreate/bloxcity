@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Search, Loader2, User, ChevronLeft, ChevronRight, Shield } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import UserLevelBadge from '@/components/forum/UserLevelBadge';
-import VerifiedBadge from '@/components/forum/VerifiedBadge';
+import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 
 interface PlayerData {
@@ -154,7 +154,7 @@ export default function Players() {
                   player.is_admin ? 'text-red-500' : 'text-[hsl(var(--bc-text))]'
                 }`}>
                   {player.username}
-                  {player.is_verified && <VerifiedBadge size="sm" />}
+                  <VerificationBadge size="sm" forumUserId={player.id} isVerified={player.is_verified} />
                 </h3>
 
                 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Loader2 } from 'lucide-react';
 import UserAvatar from './UserAvatar';
-import VerifiedBadge from './VerifiedBadge';
+import { VerificationBadge } from './VerifiedBadge';
 
 interface Friend {
   id: string;
@@ -113,7 +113,7 @@ export default function FriendsList({ forumUserId, limit = 6, showTitle = true }
               <span className="text-xs text-[hsl(var(--bc-text))] truncate max-w-[60px]">
                 {friend.username}
               </span>
-              {friend.is_verified && <VerifiedBadge size="sm" />}
+              <VerificationBadge size="sm" forumUserId={friend.id} isVerified={friend.is_verified} />
             </div>
           </Link>
         ))}

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Mail, Send, User, ArrowLeft, Lock, Loader2, Shield } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
-import VerifiedBadge from '@/components/forum/VerifiedBadge';
+import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import { 
   encryptMessage, 
   decryptMessage, 
@@ -604,9 +604,7 @@ export default function ForumMessages() {
                     <span className="font-medium text-[hsl(var(--bc-text))] truncate">
                       {convo.other_user?.username || 'Unknown'}
                     </span>
-                    {convo.other_user?.is_verified && (
-                      <VerifiedBadge size="md" />
-                    )}
+                    <VerificationBadge size="md" forumUserId={convo.other_user?.id} isVerified={convo.other_user?.is_verified} />
                   </div>
                   <p className="text-xs text-[hsl(var(--bc-text-muted))] truncate">
                     {convo.last_message_preview || 'No messages'}
@@ -659,9 +657,7 @@ export default function ForumMessages() {
                       >
                         {convo.other_user.username}
                       </Link>
-                      {convo.other_user.is_verified && (
-                        <VerifiedBadge size="md" />
-                      )}
+                      <VerificationBadge size="md" forumUserId={convo.other_user.id} isVerified={convo.other_user.is_verified} />
                     </div>
                     <div className="ml-auto flex items-center gap-1 text-xs text-green-600">
                       <Lock className="w-3 h-3" />
@@ -695,7 +691,7 @@ export default function ForumMessages() {
                         {!isOwn && msg.sender && (
                           <div className="flex items-center gap-1 text-xs opacity-70 mb-1">
                             {msg.sender.username}
-                            {msg.sender.is_verified && <VerifiedBadge size="sm" />}
+                            <VerificationBadge size="sm" forumUserId={msg.sender_id} isVerified={msg.sender.is_verified} />
                           </div>
                         )}
                         <p className="break-words">{msg.decrypted_content}</p>

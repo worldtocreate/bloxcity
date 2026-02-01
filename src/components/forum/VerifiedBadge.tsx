@@ -8,10 +8,14 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 interface VerifiedBadgeProps {
@@ -112,7 +116,7 @@ export function GoldBadge({ size = 'md', className = '' }: VerifiedBadgeProps) {
   );
 }
 
-// Affiliate badge with gold user avatar
+// Affiliate badge with gold user avatar - Dialog styled like WelcomeDialog
 export function AffiliateBadge({ 
   size = 'md', 
   goldUsername, 
@@ -122,65 +126,77 @@ export function AffiliateBadge({
   const [open, setOpen] = useState(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button 
-          className={`inline-flex items-center gap-0.5 flex-shrink-0 cursor-pointer focus:outline-none ${className}`}
-          onClick={() => setOpen(true)}
-        >
-          <BadgeCheck 
-            className={`${sizeClasses[size]} text-blue-500`}
+    <>
+      <button 
+        className={`inline-flex items-center gap-0.5 flex-shrink-0 cursor-pointer focus:outline-none ${className}`}
+        onClick={() => setOpen(true)}
+      >
+        <BadgeCheck 
+          className={`${sizeClasses[size]} text-blue-500`}
+        />
+        {goldAvatarUrl ? (
+          <img 
+            src={goldAvatarUrl} 
+            alt={goldUsername}
+            className={`${avatarSizes[size]} rounded-full object-cover border border-blue-500`}
           />
-          {goldAvatarUrl ? (
-            <img 
-              src={goldAvatarUrl} 
-              alt={goldUsername}
-              className={`${avatarSizes[size]} rounded-full object-cover border border-blue-500`}
-            />
-          ) : (
-            <div className={`${avatarSizes[size]} rounded-full bg-blue-500 flex items-center justify-center`}>
-              <span className="text-white text-[8px] font-bold">
-                {goldUsername.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72 p-4 bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))]">
-        <div className="flex items-center gap-3 mb-3">
-          {goldAvatarUrl ? (
-            <img 
-              src={goldAvatarUrl} 
-              alt={goldUsername}
-              className="w-10 h-10 rounded-full object-cover border-2 border-yellow-500"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center">
-              <span className="text-white font-bold">
-                {goldUsername.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-          <div>
-            <div className="flex items-center gap-1">
-              <span className="font-semibold text-[hsl(var(--bc-text))]">@{goldUsername}</span>
-              <BadgeCheck className="w-4 h-4 text-yellow-500" />
-            </div>
-            <span className="text-xs text-[hsl(var(--bc-text-muted))]">Verified User</span>
+        ) : (
+          <div className={`${avatarSizes[size]} rounded-full bg-blue-500 flex items-center justify-center`}>
+            <span className="text-white text-[8px] font-bold">
+              {goldUsername.charAt(0).toUpperCase()}
+            </span>
           </div>
-        </div>
-        <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-3">
-          This account is verified because it's an affiliate of <strong className="text-[hsl(var(--bc-text))]">@{goldUsername}</strong> on BLOX City.
-        </p>
-        <Link
-          to={`/user/${goldUsername}`}
-          className="block text-center text-sm bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white py-2 rounded-lg transition"
-          onClick={() => setOpen(false)}
-        >
-          View Profile
-        </Link>
-      </PopoverContent>
-    </Popover>
+        )}
+      </button>
+      
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]">
+          <DialogHeader className="text-center sm:text-center">
+            <div className="mx-auto w-16 h-16 rounded-xl overflow-hidden mb-3 border-2 border-yellow-500">
+              {goldAvatarUrl ? (
+                <img 
+                  src={goldAvatarUrl} 
+                  alt={goldUsername}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-yellow-500 flex items-center justify-center">
+                  <span className="text-white text-2xl font-bold">
+                    {goldUsername.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+            <DialogTitle className="text-xl font-bold text-[hsl(var(--bc-text))] flex items-center justify-center gap-2">
+              <span>@{goldUsername}</span>
+              <BadgeCheck className="w-5 h-5 text-yellow-500" />
+            </DialogTitle>
+            <DialogDescription className="text-[hsl(var(--bc-text-muted))] text-center space-y-3 pt-3">
+              <p>
+                This account is <strong className="text-[hsl(var(--bc-text))]">verified</strong> because it's an official affiliate of <strong className="text-[hsl(var(--bc-text))]">@{goldUsername}</strong> on BLOX City.
+              </p>
+              <p>
+                Affiliate accounts are verified by gold-checkmark users and represent trusted members of their network.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center pt-2 flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))]"
+            >
+              Close
+            </Button>
+            <Link to={`/forum/user/${goldUsername}`} onClick={() => setOpen(false)}>
+              <Button className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white w-full">
+                View @{goldUsername}'s Profile
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
