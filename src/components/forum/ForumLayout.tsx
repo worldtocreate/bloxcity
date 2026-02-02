@@ -176,10 +176,7 @@ export default function ForumLayout() {
     const endsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
     
     if (!endsAt || now < endsAt) {
-      // Blank page for suspended users
-      return (
-        <div className="min-h-screen bg-[hsl(var(--bc-bg-light))]" />
-      );
+      return null;
     }
   }
 
