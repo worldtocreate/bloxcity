@@ -15,6 +15,9 @@ import {
   Award,
   Plus,
   Trophy,
+  BadgeCheck,
+  Sparkles,
+  HelpCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -44,11 +47,11 @@ const mainNavItems = [
   { title: 'Forum', url: '/forum', icon: MessageSquare },
   { title: 'Players', url: '/players', icon: Users },
   { title: 'Groups', url: '/groups', icon: UsersRound },
+  { title: 'Games', url: '/games', icon: Gamepad2 },
   { title: 'Achievements', url: '/achievements', icon: Award },
 ];
 
 const comingSoonItems = [
-  { title: 'Games', url: '/games', icon: Gamepad2 },
   { title: 'Market', url: '/market', icon: Store },
   { title: 'Character', url: '/character', icon: User },
   { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
@@ -174,6 +177,38 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
+                      to="/request"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/request')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <BadgeCheck className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Request Verification</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/upgrades"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/upgrades')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Sparkles className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Upgrades</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
                       to="/friends"
                       onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -206,6 +241,22 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
+                      to="/support"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/support')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <HelpCircle className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Support</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
                       to="/settings"
                       onClickCapture={handleLinkClick}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
@@ -224,8 +275,8 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
           </SidebarGroup>
         )}
 
-        {/* Leaderboard - show when expanded */}
-        {!collapsed && (
+        {/* Leaderboard - show when expanded and logged in */}
+        {!collapsed && isLoggedIn && (
           <SidebarGroup className="mt-4">
             <SidebarGroupContent>
               <div className="px-2">

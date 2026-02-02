@@ -48,6 +48,8 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
+import Upgrades from "./pages/forum/Upgrades";
+import Support from "./pages/forum/Support";
 
 // Inline Request component (verification request page)
 function Request() {
@@ -484,6 +486,8 @@ const App = () => (
               <Route path="create" element={<Create />} />
               <Route path="request" element={<Request />} />
               <Route path="convert" element={<Convert />} />
+              <Route path="upgrades" element={<Upgrades />} />
+              <Route path="support" element={<Support />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
             </Route>
 
