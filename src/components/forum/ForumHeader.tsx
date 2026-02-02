@@ -76,7 +76,7 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
             className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
           >
             <DollarSign className="w-4 h-4 text-green-500" />
-            <span className="font-medium text-sm">${cash.toFixed(2)}</span>
+            <span className="font-medium text-sm">{cash}</span>
           </Link>
 
           {user ? (

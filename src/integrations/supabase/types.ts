@@ -671,6 +671,48 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_coin_grants: {
+        Row: {
+          admin_id: string
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          recipient_id: string
+        }
+        Insert: {
+          admin_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          recipient_id: string
+        }
+        Update: {
+          admin_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_coin_grants_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_coin_grants_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_conversations: {
         Row: {
           created_at: string
@@ -880,6 +922,95 @@ export type Database = {
           {
             foreignKeyName: "forum_friendships_user_2_id_fkey"
             columns: ["user_2_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_game_favorites: {
+        Row: {
+          created_at: string
+          forum_user_id: string
+          game_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          forum_user_id: string
+          game_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          forum_user_id?: string
+          game_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_game_favorites_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_game_favorites_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "forum_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_games: {
+        Row: {
+          category: string
+          created_at: string
+          creator_id: string
+          description: string | null
+          favorite_count: number | null
+          id: string
+          is_private: boolean | null
+          max_players: number | null
+          play_count: number | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          favorite_count?: number | null
+          id?: string
+          is_private?: boolean | null
+          max_players?: number | null
+          play_count?: number | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          favorite_count?: number | null
+          id?: string
+          is_private?: boolean | null
+          max_players?: number | null
+          play_count?: number | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_games_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -1765,6 +1896,67 @@ export type Database = {
           },
         ]
       }
+      forum_support_tickets: {
+        Row: {
+          assigned_to: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          creator_id: string
+          id: string
+          priority: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          priority?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          priority?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_support_tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_support_tickets_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_support_tickets_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_threads: {
         Row: {
           author_id: string
@@ -1841,6 +2033,48 @@ export type Database = {
           },
         ]
       }
+      forum_ticket_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_staff_reply: boolean | null
+          sender_id: string
+          ticket_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_staff_reply?: boolean | null
+          sender_id: string
+          ticket_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_staff_reply?: boolean | null
+          sender_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_ticket_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "forum_support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_user_achievements: {
         Row: {
           achievement_id: string
@@ -1880,6 +2114,44 @@ export type Database = {
           },
           {
             foreignKeyName: "forum_user_achievements_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_user_inventory: {
+        Row: {
+          acquired_at: string
+          forum_user_id: string
+          id: string
+          item_id: string
+          item_image_url: string | null
+          item_name: string
+          item_type: string
+        }
+        Insert: {
+          acquired_at?: string
+          forum_user_id: string
+          id?: string
+          item_id: string
+          item_image_url?: string | null
+          item_name: string
+          item_type: string
+        }
+        Update: {
+          acquired_at?: string
+          forum_user_id?: string
+          id?: string
+          item_id?: string
+          item_image_url?: string | null
+          item_name?: string
+          item_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_user_inventory_forum_user_id_fkey"
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
@@ -1934,8 +2206,10 @@ export type Database = {
       forum_users: {
         Row: {
           allow_dms: boolean | null
+          allow_friend_requests: boolean | null
           avatar_effect: string | null
           avatar_url: string | null
+          bio: string | null
           cash: number | null
           coins: number | null
           cover_url: string | null
@@ -1943,8 +2217,10 @@ export type Database = {
           date_of_birth: string | null
           dm_encryption_pin_hash: string | null
           has_pending_warning: boolean | null
+          hide_online_status: boolean | null
           hide_threads: boolean | null
           id: string
+          inventory_privacy: string | null
           is_locked: boolean | null
           is_self_disabled: boolean | null
           is_suspended: boolean | null
@@ -1981,8 +2257,10 @@ export type Database = {
         }
         Insert: {
           allow_dms?: boolean | null
+          allow_friend_requests?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
+          bio?: string | null
           cash?: number | null
           coins?: number | null
           cover_url?: string | null
@@ -1990,8 +2268,10 @@ export type Database = {
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           has_pending_warning?: boolean | null
+          hide_online_status?: boolean | null
           hide_threads?: boolean | null
           id?: string
+          inventory_privacy?: string | null
           is_locked?: boolean | null
           is_self_disabled?: boolean | null
           is_suspended?: boolean | null
@@ -2028,8 +2308,10 @@ export type Database = {
         }
         Update: {
           allow_dms?: boolean | null
+          allow_friend_requests?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
+          bio?: string | null
           cash?: number | null
           coins?: number | null
           cover_url?: string | null
@@ -2037,8 +2319,10 @@ export type Database = {
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           has_pending_warning?: boolean | null
+          hide_online_status?: boolean | null
           hide_threads?: boolean | null
           id?: string
+          inventory_privacy?: string | null
           is_locked?: boolean | null
           is_self_disabled?: boolean | null
           is_suspended?: boolean | null
