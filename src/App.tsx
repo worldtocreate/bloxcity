@@ -38,6 +38,7 @@ import ForumUsers from "./pages/forum/ForumUsers";
 import ForumDashboard from "./pages/forum/ForumDashboard";
 import Updates from "./pages/Updates";
 import Games from "./pages/forum/Games";
+import GameDetail from "./pages/forum/GameDetail";
 import Market from "./pages/forum/Market";
 import Character from "./pages/forum/Character";
 import Trading from "./pages/forum/Trading";
@@ -621,6 +622,7 @@ const App = () => (
               <Route path="staff" element={<ForumStaff />} />
               <Route path="updates" element={<Updates />} />
               <Route path="games" element={<Games />} />
+              <Route path="game/:gameId" element={<GameDetail />} />
               <Route path="market" element={<Market />} />
               <Route path="character" element={<Character />} />
               <Route path="trading" element={<Trading />} />
