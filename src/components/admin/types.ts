@@ -92,5 +92,7 @@ export type AdminTab =
   | "groups"
   | "gold-checkmarks"
   | "verification-requests"
+  | "support-tickets"
+  | "game-thumbnails"
   | "maintenance"
   | "settings";

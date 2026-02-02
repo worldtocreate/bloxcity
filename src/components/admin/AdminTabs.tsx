@@ -1,6 +1,6 @@
 import { 
   BarChart3, Users, Mail, Ban, Shield, Activity, 
-  Globe, Settings, MessageSquare, FileText, Wrench, UserCog, Megaphone, Flag, Megaphone as AdIcon, Award, UsersRound, BadgeCheck, Crown
+  Globe, Settings, MessageSquare, FileText, Wrench, UserCog, Megaphone, Flag, Megaphone as AdIcon, Award, UsersRound, BadgeCheck, Crown, Headphones, Gamepad2
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { AdminTab } from "./types";
@@ -26,6 +26,8 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "groups", label: "Groups", icon: UsersRound },
   { id: "gold-checkmarks", label: "Gold Checkmarks", icon: Crown },
   { id: "verification-requests", label: "Verify Requests", icon: BadgeCheck },
+  { id: "support-tickets", label: "Support", icon: Headphones },
+  { id: "game-thumbnails", label: "Game Thumbs", icon: Gamepad2 },
   { id: "updates", label: "Updates", icon: Megaphone },
   { id: "admins", label: "Admin Users", icon: Shield },
   { id: "logs", label: "Activity Logs", icon: Activity },

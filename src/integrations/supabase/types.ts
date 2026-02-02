@@ -928,6 +928,61 @@ export type Database = {
           },
         ]
       }
+      forum_game_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          game_id: string
+          id: string
+          is_deleted: boolean | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          game_id: string
+          id?: string
+          is_deleted?: boolean | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          game_id?: string
+          id?: string
+          is_deleted?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_game_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_game_comments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_game_comments_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "forum_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_game_favorites: {
         Row: {
           created_at: string
@@ -975,6 +1030,7 @@ export type Database = {
           is_private: boolean | null
           max_players: number | null
           play_count: number | null
+          thumbnail_status: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -989,6 +1045,7 @@ export type Database = {
           is_private?: boolean | null
           max_players?: number | null
           play_count?: number | null
+          thumbnail_status?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -1003,6 +1060,7 @@ export type Database = {
           is_private?: boolean | null
           max_players?: number | null
           play_count?: number | null
+          thumbnail_status?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -1899,6 +1957,8 @@ export type Database = {
       forum_support_tickets: {
         Row: {
           assigned_to: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           closed_at: string | null
           closed_by: string | null
           created_at: string
@@ -1911,6 +1971,8 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
@@ -1923,6 +1985,8 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
@@ -1937,6 +2001,13 @@ export type Database = {
           {
             foreignKeyName: "forum_support_tickets_assigned_to_fkey"
             columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_support_tickets_claimed_by_fkey"
+            columns: ["claimed_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
