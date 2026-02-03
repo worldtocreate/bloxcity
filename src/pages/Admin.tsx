@@ -23,6 +23,12 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import { useToast } from "@/hooks/use-toast";
+import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Full AdminPinGate implementation with PIN setup and verification
 import { Lock, Eye, EyeOff, Shield, KeyRound } from "lucide-react";
@@ -488,12 +494,6 @@ const VerificationRequestsTab = ({ darkMode }: { darkMode: boolean }) => {
     </div>
   );
 };
-import { useToast } from "@/hooks/use-toast";
-import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type ForumUserLite = { id: string; username: string; avatar_url: string | null };
 type GoldUserRow = { id: string; forum_user_id: string; granted_at: string; forum_users?: { username: string } | null };
