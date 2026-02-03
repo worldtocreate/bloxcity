@@ -28,6 +28,7 @@ export interface ForumUser {
   last_coin_claim: string | null;
   status_text: string | null;
   status_updated_at: string | null;
+  serial_id: number;
 }
 
 export function useForumAuth() {
