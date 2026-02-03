@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { 
   Check, X, Clock, RefreshCw, Mail, Send, Image, 
   Ban, Trash2, Plus, CheckSquare, Square,
-  UserPlus, UserMinus, Search, Download
+  UserPlus, UserMinus, Search, Download, Loader2
 } from "lucide-react";
 
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -753,6 +753,285 @@ const GoldCheckmarksTab = ({ darkMode }: { darkMode: boolean }) => {
     </div>
   );
 };
+
+// Support Tickets Tab
+function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [replies, setReplies] = useState<any[]>([]);
+  const [reply, setReply] = useState("");
+  const [sending, setSending] = useState(false);
+  const [filter, setFilter] = useState<"open" | "in_progress" | "closed" | "all">("open");
+
+  const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
+  const textClass = darkMode ? "text-white" : "text-gray-800";
+  const mutedClass = darkMode ? "text-gray-400" : "text-gray-500";
+  const inputClass = darkMode
+    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+    : "bg-white border-gray-200 text-gray-900 placeholder-gray-500";
+
+  const fetchTickets = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from("forum_support_tickets")
+        .select("id, subject, status, creator_id, created_at, updated_at, claimed_by, claimed_at, closed_at")
+        .order("updated_at", { ascending: false });
+
+      if (filter !== "all") query = query.eq("status", filter);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setTickets(data || []);
+      if (!selectedId && (data?.length ?? 0) > 0) setSelectedId(data![0].id);
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to load tickets", variant: "destructive" });
+      setTickets([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReplies = async (ticketId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("forum_support_ticket_replies")
+        .select("id, ticket_id, author_id, message, created_at, is_staff_reply")
+        .eq("ticket_id", ticketId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      setReplies(data || []);
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to load replies", variant: "destructive" });
+      setReplies([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    fetchReplies(selectedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  const claimTicket = async () => {
+    if (!selectedId) return;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error("Not signed in");
+
+      const { error } = await supabase
+        .from("forum_support_tickets")
+        .update({ status: "in_progress", claimed_by: userId, claimed_at: new Date().toISOString() })
+        .eq("id", selectedId);
+      if (error) throw error;
+      await fetchTickets();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to claim ticket", variant: "destructive" });
+    }
+  };
+
+  const closeTicket = async () => {
+    if (!selectedId) return;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error("Not signed in");
+
+      const { error } = await supabase
+        .from("forum_support_tickets")
+        .update({ status: "closed", closed_by: userId, closed_at: new Date().toISOString() })
+        .eq("id", selectedId);
+      if (error) throw error;
+      await fetchTickets();
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to close ticket", variant: "destructive" });
+    }
+  };
+
+  const sendReply = async () => {
+    if (!selectedId) return;
+    const trimmed = reply.trim();
+    if (!trimmed) return;
+    setSending(true);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error("Not signed in");
+
+      const { error } = await supabase
+        .from("forum_support_ticket_replies")
+        .insert({ ticket_id: selectedId, author_id: userId, message: trimmed, is_staff_reply: true });
+      if (error) throw error;
+      setReply("");
+      await fetchReplies(selectedId);
+    } catch (e: any) {
+      toast({ title: "Error", description: e?.message || "Failed to send reply", variant: "destructive" });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const selected = useMemo(() => tickets.find((t) => t.id === selectedId) || null, [tickets, selectedId]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h2 className={`text-xl font-semibold ${textClass}`}>Support Tickets</h2>
+        <div className="flex gap-2">
+          {(["open", "in_progress", "closed", "all"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                filter === f
+                  ? "bg-blue-600 text-white"
+                  : darkMode
+                  ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {f === "in_progress" ? "In Progress" : f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+          <button
+            onClick={fetchTickets}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+              darkMode ? "bg-gray-700 text-gray-200 hover:bg-gray-600" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+        </div>
+      ) : tickets.length === 0 ? (
+        <div className={`${cardClass} border rounded-xl p-8 text-center`}>
+          <p className={mutedClass}>No tickets found.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className={`${cardClass} border rounded-xl overflow-hidden lg:col-span-1`}>
+            <div className={`px-4 py-3 border-b ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+              <p className={`text-sm font-medium ${textClass}`}>Tickets</p>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto">
+              {tickets.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedId(t.id)}
+                  className={`w-full text-left px-4 py-3 border-b transition ${
+                    darkMode ? "border-gray-700" : "border-gray-200"
+                  } ${
+                    selectedId === t.id
+                      ? darkMode
+                        ? "bg-gray-700"
+                        : "bg-gray-50"
+                      : "hover:bg-gray-50/60 dark:hover:bg-gray-700/40"
+                  }`}
+                >
+                  <p className={`text-sm font-semibold truncate ${textClass}`}>{t.subject}</p>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-xs ${mutedClass}`}>{new Date(t.created_at).toLocaleString()}</p>
+                    <span className={`text-xs ${mutedClass}`}>{t.status}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={`${cardClass} border rounded-xl p-4 lg:col-span-2`}>
+            {!selected ? (
+              <p className={mutedClass}>Select a ticket to view details.</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <h3 className={`text-lg font-semibold ${textClass}`}>{selected.subject}</h3>
+                    <p className={`text-sm ${mutedClass}`}>Status: {selected.status}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {!selected.claimed_by && selected.status !== "closed" && (
+                      <button
+                        onClick={claimTicket}
+                        className="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium transition"
+                      >
+                        Claim
+                      </button>
+                    )}
+                    {selected.status !== "closed" && (
+                      <button
+                        onClick={closeTicket}
+                        className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition"
+                      >
+                        Close
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className={`rounded-lg border ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
+                  <div className="p-4 max-h-[45vh] overflow-y-auto space-y-3">
+                    {replies.length === 0 ? (
+                      <p className={mutedClass}>No replies yet.</p>
+                    ) : (
+                      replies.map((r) => (
+                        <div
+                          key={r.id}
+                          className={`rounded-lg border p-3 ${darkMode ? "border-gray-700" : "border-gray-200"}`}
+                        >
+                          <p className={`text-xs ${mutedClass}`}>{new Date(r.created_at).toLocaleString()}</p>
+                          <p className={`mt-2 text-sm whitespace-pre-wrap ${textClass}`}>{r.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {selected.status !== "closed" && (
+                  <div className="space-y-2">
+                    <textarea
+                      value={reply}
+                      onChange={(e) => setReply(e.target.value)}
+                      placeholder="Write a reply..."
+                      className={`w-full min-h-[100px] px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${inputClass}`}
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        onClick={sendReply}
+                        disabled={sending || !reply.trim()}
+                        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition disabled:opacity-50"
+                      >
+                        {sending ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Sending
+                          </span>
+                        ) : (
+                          "Send"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 import { 
   Reservation, NewsletterSubscriber, BannedWord, 
   AdminUser, ActivityLog, AdminTab 
@@ -1746,6 +2025,9 @@ const Admin = () => {
 
         {/* Content Moderation Tab */}
         {activeTab === "content-mod" && <ContentModerationTab darkMode={darkMode} />}
+
+        {/* Support Tickets Tab */}
+        {activeTab === "support-tickets" && <SupportTicketsTab darkMode={darkMode} />}
 
         {/* User Management Tab */}
         {activeTab === "user-mgmt" && <UserManagementTab />}
