@@ -15,7 +15,7 @@ import {
   MessageSquare,
   Star
 } from 'lucide-react';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 
 interface SiteUpdate {
   id: string;
