@@ -2,8 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BLOX City Maintenance Page Styles */
+/* Shadcn UI Base Layer - Required for component theming */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 15% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 20%;
+    --primary: 217 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 96%;
+    --secondary-foreground: 220 15% 20%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 10% 45%;
+    --accent: 220 15% 96%;
+    --accent-foreground: 220 15% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 217 70% 55%;
+    --radius: 0.5rem;
+    
+    /* Sidebar variables - light mode */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 15% 20%;
+    --sidebar-primary: 217 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 96%;
+    --sidebar-accent-foreground: 220 15% 20%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 217 70% 55%;
+  }
 
+  .dark {
+    --background: 220 15% 10%;
+    --foreground: 220 15% 90%;
+    --card: 220 15% 13%;
+    --card-foreground: 220 15% 90%;
+    --popover: 220 15% 13%;
+    --popover-foreground: 220 15% 90%;
+    --primary: 217 70% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 220 15% 90%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 220 15% 18%;
+    --accent-foreground: 220 15% 90%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 25%;
+    --input: 220 15% 25%;
+    --ring: 217 70% 55%;
+    
+    /* Sidebar variables - dark mode */
+    --sidebar-background: 220 15% 13%;
+    --sidebar-foreground: 220 15% 90%;
+    --sidebar-primary: 217 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 18%;
+    --sidebar-accent-foreground: 220 15% 90%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: 217 70% 55%;
+  }
+}
+
+/* BLOX City Custom Variables */
 :root {
   --bc-red: 4 80% 55%;
   --bc-yellow: 45 95% 55%;
@@ -19,35 +86,15 @@
   --bc-text-muted: 220 10% 45%;
   --bc-border: 220 15% 88%;
   --bc-glow: 217 70% 60%;
-  
-  /* Sidebar variables - light mode (white theme) */
-  --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 220 15% 20%;
-  --sidebar-primary: 217 70% 55%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 15% 96%;
-  --sidebar-accent-foreground: 220 15% 20%;
-  --sidebar-border: 220 15% 88%;
-  --sidebar-ring: 217 70% 55%;
 }
 
-/* Dark mode overrides */
+/* Dark mode overrides for BLOX City variables */
 .dark {
   --bc-bg-light: 220 15% 10%;
   --bc-bg-card: 220 15% 13%;
   --bc-text: 220 15% 90%;
   --bc-text-muted: 220 10% 60%;
   --bc-border: 220 15% 25%;
-  
-  /* Sidebar variables - dark mode */
-  --sidebar-background: 220 15% 13%;
-  --sidebar-foreground: 220 15% 90%;
-  --sidebar-primary: 217 70% 55%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 220 15% 18%;
-  --sidebar-accent-foreground: 220 15% 90%;
-  --sidebar-border: 220 15% 25%;
-  --sidebar-ring: 217 70% 55%;
 }
 
 * {
