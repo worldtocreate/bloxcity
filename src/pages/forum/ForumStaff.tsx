@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Loader2, ArrowLeft } from 'lucide-react';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import UserAvatar from '@/components/forum/UserAvatar';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
