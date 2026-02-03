@@ -1468,12 +1468,6 @@ export default function ForumSettings() {
 
           <div className="flex-1">
             <div className="mb-3">
-              <label className="text-sm text-[hsl(var(--bc-text-muted))]">User ID</label>
-              <div className="text-[hsl(var(--bc-text))] font-medium">
-                #{(forumUser as any).serial_id || '—'}
-              </div>
-            </div>
-            <div className="mb-3">
               <label className="text-sm text-[hsl(var(--bc-text-muted))]">Username</label>
               <div className="text-[hsl(var(--bc-text))] font-medium flex items-center gap-2 flex-wrap">
                 {forumUser.username}

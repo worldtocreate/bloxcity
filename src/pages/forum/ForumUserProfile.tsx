@@ -20,7 +20,6 @@ type AffiliateUser = {
   id: string;
   username: string;
   avatar_url: string | null;
-  serial_id: number;
 };
 
 function AffiliatesSectionProfileInline({
@@ -76,7 +75,7 @@ function AffiliatesSectionProfileInline({
 
       const { data: users } = await supabase
         .from('forum_users')
-        .select('id, username, avatar_url, serial_id')
+        .select('id, username, avatar_url')
         .in('id', affiliateIds);
 
       if (cancelled) return;
@@ -103,7 +102,7 @@ function AffiliatesSectionProfileInline({
         {affiliates.map((u) => (
           <Link
             key={u.id}
-            to={`/user/${u.serial_id}`}
+            to={`/forum/user/${u.username}`}
             className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
           >
             <UserAvatar avatarUrl={u.avatar_url} username={u.username} size="sm" />
@@ -141,7 +140,6 @@ interface ProfileData {
   status_text: string | null;
   status_updated_at: string | null;
   last_seen_at: string | null;
-  serial_id: number;
 }
 
 interface ThreadData {
@@ -164,7 +162,7 @@ interface ProfileStats {
 }
 
 export default function ForumUserProfile() {
-  const { userId } = useParams<{ userId: string }>();
+  const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
   const { user, forumUser, isAdmin } = useOutletContext<{
     user: any;
@@ -183,14 +181,14 @@ export default function ForumUserProfile() {
   const [statusLiked, setStatusLiked] = useState(false);
   const [statusLikeCount, setStatusLikeCount] = useState(0);
 
-  const isOwnProfile = forumUser?.serial_id?.toString() === userId;
+  const isOwnProfile = forumUser?.username === username;
   const canSeeThreads = isOwnProfile || isAdmin || !profile?.hide_threads;
 
   useEffect(() => {
-    if (userId) {
+    if (username) {
       fetchProfile();
     }
-  }, [userId]);
+  }, [username]);
 
   // Log profile view
   useEffect(() => {
@@ -220,11 +218,11 @@ export default function ForumUserProfile() {
   const fetchProfile = async () => {
     setLoading(true);
     
-    // Fetch user profile by serial_id
+    // Fetch user profile
     const { data: userData, error } = await supabase
       .from('forum_users')
       .select('*')
-      .eq('serial_id', parseInt(userId || '0', 10))
+      .eq('username', username)
       .single();
 
     if (error || !userData) {
@@ -398,7 +396,7 @@ export default function ForumUserProfile() {
       <div className="text-center py-20">
         <User className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">User Not Found</h1>
-        <p className="text-[hsl(var(--bc-text-muted))]">The user with ID "{userId}" doesn't exist.</p>
+        <p className="text-[hsl(var(--bc-text-muted))]">The user "{username}" doesn't exist.</p>
         <Link
           to="/forum"
           className="inline-block mt-4 text-[hsl(var(--bc-primary))] hover:underline"
