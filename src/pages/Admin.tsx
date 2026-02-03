@@ -764,6 +764,8 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [filter, setFilter] = useState<"open" | "in_progress" | "closed" | "all">("open");
+  const [adminForumUserId, setAdminForumUserId] = useState<string | null>(null);
+  const [loadingAdminId, setLoadingAdminId] = useState(true);
 
   const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
   const textClass = darkMode ? "text-white" : "text-gray-800";
@@ -771,6 +773,26 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
   const inputClass = darkMode
     ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
     : "bg-white border-gray-200 text-gray-900 placeholder-gray-500";
+
+  const ensureAdminForumUserId = async (): Promise<string> => {
+    if (adminForumUserId) return adminForumUserId;
+
+    const { data: auth, error: authErr } = await supabase.auth.getUser();
+    if (authErr) throw authErr;
+    const authUserId = auth.user?.id;
+    if (!authUserId) throw new Error("Not signed in");
+
+    const { data: forumRow, error: forumErr } = await supabase
+      .from("forum_users")
+      .select("id")
+      .eq("user_id", authUserId)
+      .single();
+    if (forumErr) throw forumErr;
+    if (!forumRow?.id) throw new Error("Forum user not found");
+
+    setAdminForumUserId(forumRow.id);
+    return forumRow.id;
+  };
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -810,6 +832,23 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
   };
 
   useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setLoadingAdminId(true);
+        await ensureAdminForumUserId();
+      } catch (e: any) {
+        if (!alive) return;
+        toast({
+          title: "Error",
+          description: e?.message || "Failed to load admin user",
+          variant: "destructive",
+        });
+      } finally {
+        if (alive) setLoadingAdminId(false);
+      }
+    })();
+
     fetchTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
@@ -823,13 +862,11 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
   const claimTicket = async () => {
     if (!selectedId) return;
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) throw new Error("Not signed in");
+      const forumUserId = await ensureAdminForumUserId();
 
       const { error } = await supabase
         .from("forum_support_tickets")
-        .update({ status: "in_progress", claimed_by: userId, claimed_at: new Date().toISOString() })
+        .update({ status: "in_progress", claimed_by: forumUserId, claimed_at: new Date().toISOString() })
         .eq("id", selectedId);
       if (error) throw error;
       await fetchTickets();
@@ -841,13 +878,11 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
   const closeTicket = async () => {
     if (!selectedId) return;
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) throw new Error("Not signed in");
+      const forumUserId = await ensureAdminForumUserId();
 
       const { error } = await supabase
         .from("forum_support_tickets")
-        .update({ status: "closed", closed_by: userId, closed_at: new Date().toISOString() })
+        .update({ status: "closed", closed_by: forumUserId, closed_at: new Date().toISOString() })
         .eq("id", selectedId);
       if (error) throw error;
       await fetchTickets();
@@ -862,13 +897,11 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
     if (!trimmed) return;
     setSending(true);
     try {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) throw new Error("Not signed in");
+      const forumUserId = await ensureAdminForumUserId();
 
       const { error } = await supabase
         .from("forum_support_ticket_replies")
-        .insert({ ticket_id: selectedId, author_id: userId, message: trimmed, is_staff_reply: true });
+        .insert({ ticket_id: selectedId, author_id: forumUserId, message: trimmed, is_staff_reply: true });
       if (error) throw error;
       setReply("");
       await fetchReplies(selectedId);
@@ -912,7 +945,7 @@ function SupportTicketsTab({ darkMode }: { darkMode: boolean }) {
         </div>
       </div>
 
-      {loading ? (
+      {loading || loadingAdminId ? (
         <div className="flex justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
         </div>
