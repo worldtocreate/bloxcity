@@ -63,8 +63,12 @@ const groupedTabs = tabs.reduce((acc, tab) => {
 const categoryOrder = ["Overview", "Users", "Verification", "Content", "Moderation", "System"];
 
 const AdminTabs = ({ activeTab, onTabChange, darkMode, children }: AdminTabsProps) => {
+  // Sidebar is open by default (not collapsed)
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  
+  // Categories to hide from default view (optional legacy items)
+  const hiddenCategories = ["Legacy"];
 
   return (
     <div className="flex min-h-screen">
@@ -106,7 +110,7 @@ const AdminTabs = ({ activeTab, onTabChange, darkMode, children }: AdminTabsProp
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-2">
-            {categoryOrder.filter(cat => groupedTabs[cat]).map((category) => (
+            {categoryOrder.filter(cat => groupedTabs[cat] && !hiddenCategories.includes(cat)).map((category) => (
               <div key={category} className="mb-4">
                 {!collapsed && (
                   <h2 className={`text-xs font-semibold uppercase px-3 py-2 ${
@@ -124,15 +128,15 @@ const AdminTabs = ({ activeTab, onTabChange, darkMode, children }: AdminTabsProp
                         setMobileOpen(false);
                       }}
                       title={collapsed ? label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition text-left ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition text-left ${
                         activeTab === id
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-blue-600 text-white shadow-sm'
                           : darkMode
                             ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
                             : 'text-gray-700 hover:bg-gray-100'
                       } ${collapsed ? 'justify-center' : ''}`}
                     >
-                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${activeTab === id ? '' : darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                       {!collapsed && <span className="text-sm font-medium truncate">{label}</span>}
                     </button>
                   ))}
