@@ -1,27 +1,41 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wrench, Lock, Twitter } from 'lucide-react';
+import { Wrench, Lock, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 
 interface MaintenanceProps {
   message?: string;
-  password?: string;
 }
 
-export default function Maintenance({ message, password = 'admin123' }: MaintenanceProps) {
+export default function Maintenance({ message }: MaintenanceProps) {
   const navigate = useNavigate();
   const [inputPassword, setInputPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputPassword === password) {
+    setLoading(true);
+    setError('');
+    
+    // Use secure server-side password verification
+    const { data, error: rpcError } = await supabase.rpc('verify_maintenance_password', {
+      p_password: inputPassword
+    });
+    
+    if (rpcError) {
+      console.error('Verification error:', rpcError);
+      setError('Verification failed. Please try again.');
+    } else if (data === true) {
       sessionStorage.setItem('maintenance_bypass', 'true');
       navigate('/');
       window.location.reload();
     } else {
       setError('Incorrect password');
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -68,13 +82,16 @@ export default function Maintenance({ message, password = 'admin123' }: Maintena
             }}
             placeholder="Enter password to bypass"
             className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder:text-[hsl(var(--bc-text-muted))] focus:outline-none focus:border-[hsl(var(--bc-primary))]"
+            disabled={loading}
           />
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white py-3 rounded-lg font-medium transition"
+            disabled={loading}
+            className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white py-3 rounded-lg font-medium transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Access Site
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {loading ? 'Verifying...' : 'Access Site'}
           </button>
         </form>
 

@@ -68,6 +68,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       banned_words: {
         Row: {
           created_at: string
@@ -2704,6 +2728,7 @@ export type Database = {
           is_affiliate: boolean
         }[]
       }
+      get_maintenance_status: { Args: never; Returns: Json }
       get_reservation_count: { Args: never; Returns: number }
       has_gold_checkmark: { Args: { _forum_user_id: string }; Returns: boolean }
       has_pending_verification_request: {
@@ -2719,6 +2744,10 @@ export type Database = {
       }
       is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
       redeem_membership: { Args: { tier_name: string }; Returns: undefined }
+      save_maintenance_settings: {
+        Args: { p_enabled: boolean; p_message: string; p_password: string }
+        Returns: boolean
+      }
       update_forum_user_safe: {
         Args: {
           p_allow_dms?: boolean
@@ -2729,6 +2758,10 @@ export type Database = {
           p_status_text?: string
           p_user_id: string
         }
+        Returns: boolean
+      }
+      verify_maintenance_password: {
+        Args: { p_password: string }
         Returns: boolean
       }
     }

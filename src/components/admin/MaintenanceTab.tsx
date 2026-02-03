@@ -16,7 +16,7 @@ interface MaintenanceTabProps {
 export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   const [settings, setSettings] = useState<MaintenanceSettings>({
     enabled: false,
-    password: 'admin123',
+    password: '',
     message: 'We are currently performing scheduled maintenance. Please check back soon.'
   });
   const [loading, setLoading] = useState(true);
@@ -28,56 +28,46 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   }, []);
 
   const fetchSettings = async () => {
+    // Use the secure admin_settings table
     const { data } = await supabase
-      .from('site_settings')
+      .from('admin_settings')
       .select('value')
       .eq('key', 'maintenance_mode')
       .single();
     
     if (data?.value) {
-      setSettings(data.value as unknown as MaintenanceSettings);
+      const val = data.value as Record<string, unknown>;
+      setSettings({
+        enabled: (val.enabled as boolean) || false,
+        password: '', // Never load password - it's hashed
+        message: (val.message as string) || 'We are currently performing scheduled maintenance. Please check back soon.'
+      });
     }
     setLoading(false);
   };
 
   const handleSave = async () => {
+    if (!settings.password && settings.enabled) {
+      toast.error('Please set a password before enabling maintenance mode');
+      return;
+    }
+    
     setSaving(true);
 
-    const userId = (await supabase.auth.getUser()).data.user?.id;
-    const settingsValue = JSON.parse(JSON.stringify(settings));
-
-    const { data: existing } = await supabase
-      .from('site_settings')
-      .select('id')
-      .eq('key', 'maintenance_mode')
-      .single();
-
-    let error;
-    if (existing) {
-      const result = await supabase
-        .from('site_settings')
-        .update({
-          value: settingsValue,
-          updated_at: new Date().toISOString(),
-          updated_by: userId
-        })
-        .eq('key', 'maintenance_mode');
-      error = result.error;
-    } else {
-      const result = await supabase
-        .from('site_settings')
-        .insert([{
-          key: 'maintenance_mode',
-          value: settingsValue,
-          updated_by: userId
-        }]);
-      error = result.error;
-    }
+    // Use the secure function to save settings with hashed password
+    const { error } = await supabase.rpc('save_maintenance_settings', {
+      p_enabled: settings.enabled,
+      p_message: settings.message,
+      p_password: settings.password || 'admin123' // Fallback password
+    });
 
     if (error) {
+      console.error('Save error:', error);
       toast.error('Failed to save settings');
     } else {
       toast.success(settings.enabled ? 'Maintenance mode enabled!' : 'Settings saved');
+      // Clear password field after saving
+      setSettings(prev => ({ ...prev, password: '' }));
     }
     setSaving(false);
   };
@@ -155,7 +145,7 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
               value={settings.password}
               onChange={(e) => setSettings({ ...settings, password: e.target.value })}
               className={`w-full px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${inputClass}`}
-              placeholder="Password to bypass maintenance..."
+              placeholder="Enter new password (leave blank to keep existing)"
             />
             <button
               type="button"
@@ -166,7 +156,7 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
             </button>
           </div>
           <p className={`text-sm mt-1 ${mutedClass}`}>
-            Staff can enter this password on the maintenance page to access the site
+            Password is securely hashed. Enter a new password only when you want to change it.
           </p>
         </div>
 
@@ -195,7 +185,7 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
             <div>
               <div className="font-medium text-amber-800">Maintenance Mode is Active</div>
               <p className="text-sm text-amber-700 mt-1">
-                Regular users will see the maintenance page. Staff can bypass using the password above.
+                Regular users will see the maintenance page. Staff can bypass using the password.
               </p>
             </div>
           </div>

@@ -23,7 +23,6 @@ interface TwoFASettings {
 
 interface MaintenanceSettings {
   enabled: boolean;
-  password: string;
   message: string;
 }
 
@@ -129,14 +128,11 @@ export default function ForumLayout() {
   };
 
   const fetchMaintenanceSettings = async () => {
-    const { data } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', 'maintenance_mode')
-      .single();
+    // Use secure RPC function that doesn't expose password
+    const { data, error } = await supabase.rpc('get_maintenance_status');
     
-    if (data?.value) {
-      setMaintenanceSettings(data.value as unknown as MaintenanceSettings);
+    if (!error && data) {
+      setMaintenanceSettings(data as unknown as MaintenanceSettings);
     }
   };
 
@@ -167,7 +163,7 @@ export default function ForumLayout() {
 
   // Check for maintenance mode (show to non-admin users who haven't bypassed)
   if (maintenanceSettings?.enabled && !maintenanceBypass && !isAdmin) {
-    return <Maintenance message={maintenanceSettings.message} password={maintenanceSettings.password} />;
+    return <Maintenance message={maintenanceSettings.message} />;
   }
 
   // Check if user is suspended (only after loading completes) - show blank page
