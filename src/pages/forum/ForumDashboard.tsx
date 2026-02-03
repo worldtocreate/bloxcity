@@ -572,40 +572,7 @@ export default function ForumDashboard() {
             )}
           </div>
 
-          {/* Redeem Membership */}
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Gift className="w-5 h-5 text-purple-500" />
-              <h2 className="font-semibold text-[hsl(var(--bc-text))]">Membership Shop</h2>
-            </div>
-            
-            <div className="space-y-2">
-              {(['bronze', 'silver', 'platinum'] as const).map(tier => (
-                <button
-                  key={tier}
-                  onClick={() => {
-                    setSelectedTier(tier);
-                    setShowRedeemDialog(true);
-                  }}
-                  disabled={coins < MEMBERSHIP_COSTS[tier]}
-                  className={`w-full p-3 rounded-lg border transition flex items-center justify-between ${
-                    coins >= MEMBERSHIP_COSTS[tier]
-                      ? 'border-[hsl(var(--bc-border))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      : 'border-[hsl(var(--bc-border))] opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <MembershipBadge tier={tier} size="sm" />
-                    <span className="text-sm font-medium text-[hsl(var(--bc-text))] capitalize">{tier}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-[hsl(var(--bc-text-muted))]">
-                    <Coins className="w-4 h-4 text-yellow-500" />
-                    {MEMBERSHIP_COSTS[tier]}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Membership Shop moved to /upgrades page */}
 
           {/* Friend Requests */}
           {friendRequests.length > 0 && (
