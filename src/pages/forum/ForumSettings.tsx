@@ -1865,55 +1865,7 @@ export default function ForumSettings() {
         )}
       </div>
 
-      {!forumUser.is_verified && (
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-            <BadgeCheck className="w-5 h-5 text-blue-500" />
-            Verification
-          </h2>
-          
-          {verificationRequest?.status === 'pending' ? (
-            <div className="flex items-center gap-2 text-yellow-500">
-              <Clock className="w-5 h-5" />
-              <span>Your verification request is pending review</span>
-            </div>
-          ) : verificationRequest?.status === 'denied' ? (
-            <div>
-              <div className="flex items-center gap-2 text-red-400 mb-3">
-                <X className="w-5 h-5" />
-                <span>Request denied: {verificationRequest.denial_reason || 'Does not meet criteria'}</span>
-              </div>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
-                You can submit a new request after addressing the feedback.
-              </p>
-            </div>
-          ) : (
-            <>
-              <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3">
-                Get a blue checkmark on your profile. Explain why you should be verified.
-              </p>
-              <textarea
-                value={verificationReason}
-                onChange={(e) => setVerificationReason(e.target.value)}
-                placeholder="Why should you be verified? (e.g., notable community member, content creator, etc.)"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none"
-                rows={3}
-                maxLength={500}
-              />
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-xs text-[hsl(var(--bc-text-muted))]">{verificationReason.length}/500</span>
-                <button
-                  onClick={handleSubmitVerification}
-                  disabled={!verificationReason.trim() || submittingVerification}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
-                >
-                  {submittingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Request Verification'}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {/* Verification section removed - handled via admin only */}
 
       {/* Two-Factor Authentication */}
       <TwoFactorSetup forumUserId={forumUser.id} emailVerified={emailVerified} />

@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
-import Admin from "./pages/AdminNew";
+import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
 

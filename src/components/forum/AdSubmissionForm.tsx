@@ -7,10 +7,8 @@ interface AdSubmissionFormProps {
   forumUserId: string;
 }
 
-const BLOCKED_DOMAINS = [
-  'porn', 'xxx', 'adult', 'sex', 'nude', 'naked', 'erotic',
-  'gambling', 'casino', 'betting', 'drugs', 'weed', 'marijuana'
-];
+// Only allow bloxcity.net links for ads
+const ALLOWED_DOMAIN = 'bloxcity.net';
 
 export default function AdSubmissionForm({ forumUserId }: AdSubmissionFormProps) {
   const [canSubmit, setCanSubmit] = useState(false);
@@ -48,21 +46,19 @@ export default function AdSubmissionForm({ forumUserId }: AdSubmissionFormProps)
     if (data) setMyAds(data);
   };
 
-  const validateUrl = (url: string): boolean => {
+  const validateUrl = (url: string): { valid: boolean; error?: string } => {
     try {
       const parsed = new URL(url);
       const domain = parsed.hostname.toLowerCase();
       
-      // Check for blocked domains
-      for (const blocked of BLOCKED_DOMAINS) {
-        if (domain.includes(blocked)) {
-          return false;
-        }
+      // Only allow bloxcity.net domains
+      if (!domain.endsWith(ALLOWED_DOMAIN) && domain !== ALLOWED_DOMAIN) {
+        return { valid: false, error: 'Only bloxcity.net links are allowed for advertisements.' };
       }
       
-      return true;
+      return { valid: true };
     } catch {
-      return false;
+      return { valid: false, error: 'Please enter a valid URL.' };
     }
   };
 
@@ -86,10 +82,11 @@ export default function AdSubmissionForm({ forumUserId }: AdSubmissionFormProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateUrl(formData.destination_url)) {
+    const urlValidation = validateUrl(formData.destination_url);
+    if (!urlValidation.valid) {
       toast({
         title: "Invalid URL",
-        description: "The destination URL is not allowed. Please use a different link.",
+        description: urlValidation.error || "Only bloxcity.net links are allowed.",
         variant: "destructive"
       });
       return;

@@ -1220,20 +1220,19 @@ const Admin = () => {
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <AdminHeader 
-        user={user} 
-        onLogout={handleLogout} 
-        darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
-      />
-      
       <AdminTabs 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         darkMode={darkMode}
-      />
-
-      <main className="max-w-7xl mx-auto p-6">
+      >
+        <div className="p-4 lg:p-6">
+          <AdminHeader 
+            user={user} 
+            onLogout={handleLogout} 
+            darkMode={darkMode}
+            onToggleDarkMode={() => setDarkMode(!darkMode)}
+          />
+          <div className="mt-6">
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && <DashboardTab darkMode={darkMode} />}
         
@@ -1986,7 +1985,9 @@ const Admin = () => {
 
         {/* Settings Tab */}
         {activeTab === "settings" && <SettingsTab darkMode={darkMode} />}
-      </main>
+          </div>
+        </div>
+      </AdminTabs>
 
       {/* Denial Modal */}
       {showDenialModal && (
