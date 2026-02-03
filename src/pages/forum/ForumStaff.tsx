@@ -111,7 +111,7 @@ export default function ForumStaff() {
                   <div className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl">
                     <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-blue-500/30">
                       <img 
-                        src="https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/2bd1f84a-34e7-4ded-a57b-8c6350427649/1769863888597.jpg" 
+                        src="https://www.bloxcity.net/assets/IMG_2412_Original-1-CLfNpjOE.png" 
                         alt="BLOX City"
                         className="w-full h-full object-cover"
                       />
