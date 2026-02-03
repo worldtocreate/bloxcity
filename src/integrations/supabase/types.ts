@@ -2683,6 +2683,10 @@ export type Database = {
         Args: { request_id: string }
         Returns: undefined
       }
+      add_coins_to_group_vault: {
+        Args: { p_amount: number; p_group_id: string }
+        Returns: boolean
+      }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
@@ -2715,6 +2719,18 @@ export type Database = {
       }
       is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
       redeem_membership: { Args: { tier_name: string }; Returns: undefined }
+      update_forum_user_safe: {
+        Args: {
+          p_allow_dms?: boolean
+          p_avatar_effect?: string
+          p_bio?: string
+          p_hide_threads?: boolean
+          p_signature?: string
+          p_status_text?: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

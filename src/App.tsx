@@ -33,6 +33,8 @@ import ForumSettings from "./pages/forum/ForumSettings";
 import ForumUserProfile from "./pages/forum/ForumUserProfile";
 import ForumMessages from "./pages/forum/ForumMessages";
 import ForumFAQ from "./pages/forum/ForumFAQ";
+import TermsOfService from "./pages/forum/TermsOfService";
+import PrivacyPolicy from "./pages/forum/PrivacyPolicy";
 import ForumStaff from "./pages/forum/ForumStaff";
 import ForumUsers from "./pages/forum/ForumUsers";
 import ForumDashboard from "./pages/forum/ForumDashboard";
@@ -631,6 +633,8 @@ const App = () => (
               <Route path="forgot-password" element={<ForumForgotPassword />} />
               <Route path="reset-password" element={<ForumResetPassword />} />
               <Route path="faq" element={<ForumFAQ />} />
+              <Route path="terms-of-service" element={<TermsOfService />} />
+              <Route path="privacy-policy" element={<PrivacyPolicy />} />
               <Route path="friends" element={<Friends />} />
               <Route path="achievements" element={<Achievements />} />
               <Route path="create" element={<Create />} />
