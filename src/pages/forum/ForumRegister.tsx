@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 import { z } from 'zod';
@@ -18,6 +18,9 @@ export default function ForumRegister() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobDay, setDobDay] = useState('');
+  const [dobYear, setDobYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
@@ -59,6 +62,18 @@ export default function ForumRegister() {
     .max(20, 'Username must be 3-20 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
 
+  const validateAge = (birthDate: Date): boolean => {
+    const today = new Date();
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      return age - 1 >= 13;
+    }
+    return age >= 13;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -80,6 +95,27 @@ export default function ForumRegister() {
 
       if (password !== confirmPassword) {
         setError('Passwords do not match');
+        return;
+      }
+
+      // Validate DOB
+      const dayNum = parseInt(dobDay);
+      const monthNum = parseInt(dobMonth);
+      const yearNum = parseInt(dobYear);
+      
+      if (!dayNum || !monthNum || !yearNum) {
+        setError('Please enter your date of birth');
+        return;
+      }
+      
+      const birthDate = new Date(yearNum, monthNum - 1, dayNum);
+      if (isNaN(birthDate.getTime())) {
+        setError('Please enter a valid date of birth');
+        return;
+      }
+      
+      if (!validateAge(birthDate)) {
+        setError('You must be at least 13 years old to register');
         return;
       }
     }
@@ -131,10 +167,14 @@ export default function ForumRegister() {
           return;
         }
 
-        // Create forum profile for newly created auth user
+        // Create forum profile for newly created auth user with DOB
+        const dobString = `${parseInt(dobYear)}-${String(parseInt(dobMonth)).padStart(2, '0')}-${String(parseInt(dobDay)).padStart(2, '0')}`;
+        
         const { error: profileError } = await supabase.from('forum_users').insert({
           user_id: authData.user.id,
-          username: normalizedUsername
+          username: normalizedUsername,
+          date_of_birth: dobString,
+          dob_updated_at: new Date().toISOString()
         });
 
         if (profileError) {
@@ -255,6 +295,54 @@ export default function ForumRegister() {
                     required
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                  <span className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Date of Birth
+                  </span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={dobMonth}
+                      onChange={(e) => setDobMonth(e.target.value)}
+                      placeholder="MM"
+                      className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-3 text-[hsl(var(--bc-text))] text-center placeholder-[hsl(var(--bc-text-muted))]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={dobDay}
+                      onChange={(e) => setDobDay(e.target.value)}
+                      placeholder="DD"
+                      className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-3 text-[hsl(var(--bc-text))] text-center placeholder-[hsl(var(--bc-text-muted))]"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      min="1900"
+                      max={new Date().getFullYear()}
+                      value={dobYear}
+                      onChange={(e) => setDobYear(e.target.value)}
+                      placeholder="YYYY"
+                      className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-3 text-[hsl(var(--bc-text))] text-center placeholder-[hsl(var(--bc-text-muted))]"
+                      required
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">You must be at least 13 years old</p>
               </div>
             </>
           )}

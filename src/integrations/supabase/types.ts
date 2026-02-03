@@ -1978,6 +1978,48 @@ export type Database = {
           },
         ]
       }
+      forum_support_ticket_replies: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          is_staff_reply: boolean
+          message: string
+          ticket_id: string
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          is_staff_reply?: boolean
+          message: string
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          is_staff_reply?: boolean
+          message?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_support_ticket_replies_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_support_ticket_replies_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "forum_support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_support_tickets: {
         Row: {
           assigned_to: string | null
@@ -2311,6 +2353,7 @@ export type Database = {
           created_at: string | null
           date_of_birth: string | null
           dm_encryption_pin_hash: string | null
+          dob_updated_at: string | null
           has_pending_warning: boolean | null
           hide_online_status: boolean | null
           hide_threads: boolean | null
@@ -2362,6 +2405,7 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
+          dob_updated_at?: string | null
           has_pending_warning?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
@@ -2413,6 +2457,7 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
+          dob_updated_at?: string | null
           has_pending_warning?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null

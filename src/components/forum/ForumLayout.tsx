@@ -9,6 +9,7 @@ import { Loader2, Megaphone, X, Shield, Lock, Mail, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Maintenance from '@/pages/Maintenance';
+import DOBPrompt from './DOBPrompt';
 
 interface ForumAnnouncement {
   enabled: boolean;
@@ -37,6 +38,7 @@ export default function ForumLayout() {
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
   const [maintenanceSettings, setMaintenanceSettings] = useState<MaintenanceSettings | null>(null);
+  const [showDOBPrompt, setShowDOBPrompt] = useState(false);
   const [maintenanceBypass, setMaintenanceBypass] = useState(false);
 
   // Track online status
@@ -81,6 +83,15 @@ export default function ForumLayout() {
       setCheckingTwoFA(false);
     }
   }, [loading, isAdmin, forumUser]);
+
+  // Check if user needs to enter DOB
+  useEffect(() => {
+    if (!loading && forumUser && !(forumUser as any).date_of_birth) {
+      // Delay slightly to not overwhelm the user
+      const timer = setTimeout(() => setShowDOBPrompt(true), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, forumUser]);
 
   // Check if user just verified their email (coming back from verification link)
   useEffect(() => {
@@ -335,7 +346,17 @@ export default function ForumLayout() {
                 <Loader2 className="w-8 h-8 text-[hsl(var(--bc-primary))] animate-spin" />
               </div>
             ) : (
-              <Outlet context={{ user, forumUser, isAdmin, loading, emailVerified }} />
+              <>
+                {/* DOB Prompt for existing users */}
+                {forumUser && showDOBPrompt && (
+                  <DOBPrompt
+                    isOpen={showDOBPrompt}
+                    onClose={() => setShowDOBPrompt(false)}
+                    forumUserId={forumUser.id}
+                  />
+                )}
+                <Outlet context={{ user, forumUser, isAdmin, loading, emailVerified }} />
+              </>
             )}
           </main>
           
