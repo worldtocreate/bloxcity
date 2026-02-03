@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Wrench, Lock, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 
 interface MaintenanceProps {
   message?: string;
