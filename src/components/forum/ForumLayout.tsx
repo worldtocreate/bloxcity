@@ -65,45 +65,45 @@ function DOBPrompt({ isOpen, onClose, forumUserId }: { isOpen: boolean; onClose:
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white dark:bg-[hsl(220,15%,13%)] border-gray-200 dark:border-gray-700">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
             <Calendar className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
             Confirm Your Date of Birth
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-gray-600 dark:text-gray-400">
             We need to verify your age to ensure you can access all features.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label>Month</Label>
+              <Label className="text-gray-700 dark:text-gray-300">Month</Label>
               <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-foreground">
+                className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                 <option value="">Month</option>
                 {DOB_MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
               </select>
             </div>
             <div>
-              <Label>Day</Label>
+              <Label className="text-gray-700 dark:text-gray-300">Day</Label>
               <select value={dobDay} onChange={(e) => setDobDay(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-foreground">
+                className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                 <option value="">Day</option>
                 {days.map((d) => <option key={d} value={String(d)}>{d}</option>)}
               </select>
             </div>
             <div>
-              <Label>Year</Label>
+              <Label className="text-gray-700 dark:text-gray-300">Year</Label>
               <select value={dobYear} onChange={(e) => setDobYear(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-foreground">
+                className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                 <option value="">Year</option>
                 {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
               </select>
             </div>
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
-          <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+          <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 text-sm text-gray-600 dark:text-gray-400">
             Your date of birth is private and used for age verification only.
           </div>
         </div>
