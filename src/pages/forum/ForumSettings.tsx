@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send, Sparkles, Users, Award } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Ban, X, Clock, Lock, Eye, EyeOff, BadgeCheck, Pin, MessageSquare, ImageIcon, Moon, Sun, Trash2, LogOut, Monitor, Smartphone, Link2, Mail, Send, Sparkles, Users, Award, Calendar } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
@@ -537,6 +537,12 @@ export default function ForumSettings() {
   // Gold checkmark
   const [hasGoldCheckmark, setHasGoldCheckmark] = useState(false);
   
+  // Date of Birth
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobDay, setDobDay] = useState('');
+  const [dobYear, setDobYear] = useState('');
+  const [savingDob, setSavingDob] = useState(false);
+  
   // Settings PIN confirmation
   const [settingsPin, setSettingsPin] = useState('');
   const [settingsPinConfirm, setSettingsPinConfirm] = useState('');
@@ -557,6 +563,16 @@ export default function ForumSettings() {
       setSocialX((forumUser as any).social_x || '');
       setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
       setStatusText((forumUser as any).status_text || '');
+      
+      // Initialize DOB fields if user has DOB
+      const userDob = (forumUser as any).date_of_birth;
+      if (userDob) {
+        const [year, month, day] = userDob.split('-');
+        setDobYear(year);
+        setDobMonth(String(parseInt(month)));
+        setDobDay(String(parseInt(day)));
+      }
+      
       setInitialized(true);
     }
   }, [forumUser, initialized]);
@@ -1551,6 +1567,93 @@ export default function ForumSettings() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Date of Birth Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <Calendar className="w-5 h-5" />
+          Date of Birth
+        </h2>
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
+          Your date of birth is private and only visible to you. We use it for age verification.
+        </p>
+        
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div>
+            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">Month</label>
+            <select
+              value={dobMonth}
+              onChange={(e) => setDobMonth(e.target.value)}
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))]"
+            >
+              <option value="">Select month</option>
+              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((month, idx) => (
+                <option key={month} value={String(idx + 1)}>{month}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">Day</label>
+            <select
+              value={dobDay}
+              onChange={(e) => setDobDay(e.target.value)}
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))]"
+            >
+              <option value="">Day</option>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                <option key={day} value={String(day)}>{day}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-[hsl(var(--bc-text-muted))] block mb-1">Year</label>
+            <select
+              value={dobYear}
+              onChange={(e) => setDobYear(e.target.value)}
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))]"
+            >
+              <option value="">Year</option>
+              {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                <option key={year} value={String(year)}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => confirmWithPin(async () => {
+            if (!dobMonth || !dobDay || !dobYear) {
+              toast.error('Please select your full date of birth');
+              return;
+            }
+            const birthDate = new Date(parseInt(dobYear), parseInt(dobMonth) - 1, parseInt(dobDay));
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+            if (age < 13) {
+              toast.error('You must be at least 13 years old');
+              return;
+            }
+            setSavingDob(true);
+            const dateString = `${dobYear}-${dobMonth.padStart(2, '0')}-${dobDay.padStart(2, '0')}`;
+            const { error } = await supabase
+              .from('forum_users')
+              .update({ date_of_birth: dateString, dob_updated_at: new Date().toISOString() })
+              .eq('id', forumUser.id);
+            if (error) {
+              toast.error('Failed to save date of birth');
+            } else {
+              toast.success('Date of birth updated!');
+            }
+            setSavingDob(false);
+          })}
+          disabled={savingDob}
+          className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
+        >
+          {savingDob ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Date of Birth'}
+        </button>
       </div>
 
       {/* Social Links */}

@@ -5,11 +5,118 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import ForumHeader from './ForumHeader';
 import AppSidebar from './AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { Loader2, Megaphone, X, Shield, Lock, Mail, Send } from 'lucide-react';
+import { Loader2, Megaphone, X, Shield, Lock, Mail, Send, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import Maintenance from '@/pages/Maintenance';
-import DOBPrompt from './DOBPrompt';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+
+// Inline DOBPrompt component
+const DOB_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+function DOBPrompt({ isOpen, onClose, forumUserId }: { isOpen: boolean; onClose: () => void; forumUserId: string }) {
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobDay, setDobDay] = useState('');
+  const [dobYear, setDobYear] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!dobMonth || !dobDay || !dobYear) {
+      setError('Please select your full date of birth');
+      return;
+    }
+    const birthDate = new Date(parseInt(dobYear), parseInt(dobMonth) - 1, parseInt(dobDay));
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+    if (age < 13) { setError('You must be at least 13 years old'); return; }
+
+    setSaving(true);
+    const dateString = `${dobYear}-${dobMonth.padStart(2, '0')}-${dobDay.padStart(2, '0')}`;
+    const { error: updateError } = await supabase
+      .from('forum_users')
+      .update({ date_of_birth: dateString, dob_updated_at: new Date().toISOString() })
+      .eq('id', forumUserId);
+
+    if (updateError) { setError('Failed to save. Please try again.'); setSaving(false); return; }
+    toast.success('Date of birth saved!');
+    setSaving(false);
+    onClose();
+    window.location.reload();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+            Confirm Your Date of Birth
+          </DialogTitle>
+          <DialogDescription>
+            We need to verify your age to ensure you can access all features.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Month</Label>
+              <select value={dobMonth} onChange={(e) => setDobMonth(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-foreground">
+                <option value="">Month</option>
+                {DOB_MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Day</Label>
+              <select value={dobDay} onChange={(e) => setDobDay(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-foreground">
+                <option value="">Day</option>
+                {days.map((d) => <option key={d} value={String(d)}>{d}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label>Year</Label>
+              <select value={dobYear} onChange={(e) => setDobYear(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border rounded-lg bg-background text-foreground">
+                <option value="">Year</option>
+                {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+            Your date of birth is private and used for age verification only.
+          </div>
+        </div>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={onClose} disabled={saving}>Later</Button>
+          <Button onClick={handleSubmit} disabled={saving}>
+            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : 'Save'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 interface ForumAnnouncement {
   enabled: boolean;
