@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Mail, Lock, Loader2, AlertCircle, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import { z } from 'zod';
 
 declare global {
