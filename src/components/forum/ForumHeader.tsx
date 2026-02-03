@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, LogOut, Settings, Shield, User, Coins, Menu, DollarSign } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import { VerificationBadge } from './VerifiedBadge';
 import UnreadBadge from './UnreadBadge';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
