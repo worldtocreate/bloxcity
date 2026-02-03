@@ -32,7 +32,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import LeaderboardSidebar from './LeaderboardSidebar';
 
 interface AppSidebarProps {
