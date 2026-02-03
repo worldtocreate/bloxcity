@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1-CLfNpjOE.png';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
 
 interface DisabledAccountInfo {
