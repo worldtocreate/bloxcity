@@ -19,6 +19,16 @@
   --bc-text-muted: 220 10% 45%;
   --bc-border: 220 15% 88%;
   --bc-glow: 217 70% 60%;
+  
+  /* Sidebar variables - light mode (white theme) */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 220 15% 20%;
+  --sidebar-primary: 217 70% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 15% 96%;
+  --sidebar-accent-foreground: 220 15% 20%;
+  --sidebar-border: 220 15% 88%;
+  --sidebar-ring: 217 70% 55%;
 }
 
 /* Dark mode overrides */
@@ -28,6 +38,16 @@
   --bc-text: 220 15% 90%;
   --bc-text-muted: 220 10% 60%;
   --bc-border: 220 15% 25%;
+  
+  /* Sidebar variables - dark mode */
+  --sidebar-background: 220 15% 13%;
+  --sidebar-foreground: 220 15% 90%;
+  --sidebar-primary: 217 70% 55%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 15% 18%;
+  --sidebar-accent-foreground: 220 15% 90%;
+  --sidebar-border: 220 15% 25%;
+  --sidebar-ring: 217 70% 55%;
 }
 
 * {
