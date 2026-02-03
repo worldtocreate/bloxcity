@@ -348,7 +348,8 @@ export default function ForumLayout() {
               <div className="flex items-center justify-center gap-4 text-sm">
                 <Link to="/users" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Members</Link>
                 <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Staff</Link>
-                <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">FAQ</Link>
+                <Link to="/terms-of-service" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Terms of Service</Link>
+                <Link to="/privacy-policy" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition">Privacy Policy</Link>
               </div>
               <p className="text-[hsl(var(--bc-text-muted))] text-sm">
                 © 2026 BLOX City, Inc. All rights reserved.
