@@ -34,6 +34,7 @@ export function useForumAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [forumUser, setForumUser] = useState<ForumUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
@@ -48,6 +49,13 @@ export function useForumAuth() {
         _role: 'admin'
       });
       if (isMounted) setIsAdmin(hasAdminRole === true);
+
+      // Check moderator role
+      const { data: hasModRole } = await supabase.rpc('has_role', {
+        _user_id: authUser.id,
+        _role: 'moderator'
+      });
+      if (isMounted) setIsModerator(hasModRole === true);
 
       // Fetch forum user
       const { data: forumData } = await supabase
@@ -101,6 +109,7 @@ export function useForumAuth() {
         fetchUserData(session.user);
       } else {
         setIsAdmin(false);
+        setIsModerator(false);
         setForumUser(null);
       }
     });
@@ -129,5 +138,5 @@ export function useForumAuth() {
     }
   };
 
-  return { user, forumUser, isAdmin, loading, emailVerified, refreshForumUser, refreshEmailVerification };
+  return { user, forumUser, isAdmin, isModerator, loading, emailVerified, refreshForumUser, refreshEmailVerification };
 }

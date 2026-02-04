@@ -1120,6 +1120,7 @@ export type Database = {
           favorite_count: number | null
           id: string
           is_private: boolean | null
+          is_under_review: boolean | null
           max_players: number | null
           play_count: number | null
           thumbnail_status: string | null
@@ -1135,6 +1136,7 @@ export type Database = {
           favorite_count?: number | null
           id?: string
           is_private?: boolean | null
+          is_under_review?: boolean | null
           max_players?: number | null
           play_count?: number | null
           thumbnail_status?: string | null
@@ -1150,6 +1152,7 @@ export type Database = {
           favorite_count?: number | null
           id?: string
           is_private?: boolean | null
+          is_under_review?: boolean | null
           max_players?: number | null
           play_count?: number | null
           thumbnail_status?: string | null
@@ -1811,6 +1814,60 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_notifications: {
+        Row: {
+          actor_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          recipient_id: string
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          actor_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          recipient_id: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          actor_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          recipient_id?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_pinned_threads: {
         Row: {
           forum_user_id: string
@@ -2434,6 +2491,7 @@ export type Database = {
           is_suspended: boolean | null
           is_verified: boolean | null
           last_coin_claim: string | null
+          last_friend_request_at: string | null
           last_post_at: string | null
           last_seen_at: string | null
           last_username_change_at: string | null
@@ -2490,6 +2548,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_coin_claim?: string | null
+          last_friend_request_at?: string | null
           last_post_at?: string | null
           last_seen_at?: string | null
           last_username_change_at?: string | null
@@ -2546,6 +2605,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_coin_claim?: string | null
+          last_friend_request_at?: string | null
           last_post_at?: string | null
           last_seen_at?: string | null
           last_username_change_at?: string | null

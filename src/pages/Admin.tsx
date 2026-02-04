@@ -1073,6 +1073,7 @@ import {
 const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pinAuthenticated, setPinAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
@@ -1155,6 +1156,13 @@ const Admin = () => {
         setIsAdmin(hasAdminRole === true);
       }
 
+      // Check moderator role
+      const { data: hasModRole } = await supabase.rpc('has_role', {
+        _user_id: session.user.id,
+        _role: 'moderator'
+      });
+      setIsModerator(hasModRole === true);
+
       setLoading(false);
     };
 
@@ -1172,7 +1180,7 @@ const Admin = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAdmin || isModerator) {
       if (activeTab === "reservations") {
         fetchReservations();
       } else if (activeTab === "newsletter") {
@@ -1185,7 +1193,7 @@ const Admin = () => {
         fetchActivityLogs();
       }
     }
-  }, [isAdmin, filter, activeTab, logFilter]);
+  }, [isAdmin, isModerator, filter, activeTab, logFilter]);
 
   const fetchReservations = async () => {
     const response = await supabase.functions.invoke('admin-get-reservations', {
@@ -1489,7 +1497,7 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isModerator) {
     return (
       <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center p-4`}>
         <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-lg p-8 max-w-md text-center`}>
@@ -1498,7 +1506,7 @@ const Admin = () => {
           </div>
           <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'} mb-2`}>Access Denied</h1>
           <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-6`}>
-            You don't have admin privileges. Contact an administrator to get access.
+            You don't have admin or moderator privileges. Contact an administrator to get access.
           </p>
           <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'} mb-4`}>Logged in as: {user?.email}</p>
           <button
