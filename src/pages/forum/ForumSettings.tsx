@@ -465,7 +465,9 @@ export default function ForumSettings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [signature, setSignature] = useState('');
+  const [bio, setBio] = useState('');
   const [saving, setSaving] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
@@ -558,6 +560,7 @@ export default function ForumSettings() {
   useEffect(() => {
     if (forumUser && !initialized) {
       setSignature(forumUser.signature || '');
+      setBio((forumUser as any).bio || '');
       setAllowDms(forumUser.allow_dms);
       setHideThreads(forumUser.hide_threads);
       setWallIsPrivate((forumUser as any).wall_is_private || false);
@@ -729,6 +732,23 @@ export default function ForumSettings() {
       toast.success('Signature saved!');
     }
     setSaving(false);
+  };
+
+  const handleSaveBio = async () => {
+    if (!forumUser) return;
+    setSavingBio(true);
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ bio: bio.trim() || null })
+      .eq('id', forumUser.id);
+
+    if (error) {
+      toast.error('Failed to save bio');
+    } else {
+      toast.success('Bio saved!');
+    }
+    setSavingBio(false);
   };
 
   const handleSaveStatus = async () => {
@@ -1973,222 +1993,12 @@ export default function ForumSettings() {
 
       {/* Verification section removed - handled via admin only */}
 
-      {/* Two-Factor Authentication */}
-      <TwoFactorSetup forumUserId={forumUser.id} emailVerified={emailVerified} />
-
-      {/* Encryption PIN */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-          <Lock className="w-5 h-5" />
-          Message Encryption PIN
-        </h2>
-        
-        {forumUser.dm_encryption_pin_hash ? (
-          <div className="flex items-center gap-2 text-green-500">
-            <Shield className="w-5 h-5" />
-            <span>Encryption PIN is set. Your messages are end-to-end encrypted.</span>
-          </div>
-        ) : (
-          <>
-            <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
-              Set a 4-digit PIN to encrypt your direct messages. This PIN is required to view your messages.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div>
-                <label className="text-xs text-[hsl(var(--bc-text-muted))] block mb-1">PIN</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-24 text-center text-lg tracking-widest bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-2 text-[hsl(var(--bc-text))]"
-                  placeholder="••••"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[hsl(var(--bc-text-muted))] block mb-1">Confirm PIN</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  value={confirmPin}
-                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-24 text-center text-lg tracking-widest bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-2 text-[hsl(var(--bc-text))]"
-                  placeholder="••••"
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={handleSetPin}
-                  disabled={pin.length !== 4 || confirmPin.length !== 4 || settingPin}
-                  className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition"
-                >
-                  {settingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set PIN'}
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Settings Protection PIN */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-          <Shield className="w-5 h-5" />
-          Settings Protection PIN
-        </h2>
-        
-        {hasSettingsPin ? (
-          <div className="flex items-center gap-2 text-green-500">
-            <Shield className="w-5 h-5" />
-            <span>Settings PIN is active. You'll need to confirm it before saving changes.</span>
-          </div>
-        ) : (
-          <>
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4">
-              <p className="text-amber-700 dark:text-amber-300 text-sm">
-                <strong>Recommended:</strong> Set a 4-digit PIN to protect your account settings from unauthorized changes.
-              </p>
-            </div>
-            <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
-              Once set, you'll need to enter this PIN before saving any settings changes.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div>
-                <label className="text-xs text-[hsl(var(--bc-text-muted))] block mb-1">PIN</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  value={settingsPin}
-                  onChange={(e) => setSettingsPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-24 text-center text-lg tracking-widest bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-2 text-[hsl(var(--bc-text))]"
-                  placeholder="••••"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-[hsl(var(--bc-text-muted))] block mb-1">Confirm PIN</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  value={settingsPinConfirm}
-                  onChange={(e) => setSettingsPinConfirm(e.target.value.replace(/\D/g, ''))}
-                  className="w-24 text-center text-lg tracking-widest bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-2 text-[hsl(var(--bc-text))]"
-                  placeholder="••••"
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={handleSetSettingsPin}
-                  disabled={settingsPin.length !== 4 || settingsPinConfirm.length !== 4 || savingSettingsPin}
-                  className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition"
-                >
-                  {savingSettingsPin ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set PIN'}
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Privacy Settings */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-          {wallIsPrivate ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          Privacy Settings
-        </h2>
-        
-        <div className="space-y-4">
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
-              <div className="text-[hsl(var(--bc-text))] font-medium">Allow Direct Messages</div>
-              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Let other users send you messages</div>
-            </div>
-            <button
-              onClick={() => setAllowDms(!allowDms)}
-              className={`w-12 h-6 rounded-full transition ${allowDms ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
-            >
-              <div className={`w-5 h-5 rounded-full bg-white transform transition ${allowDms ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </label>
-
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
-              <div className="text-[hsl(var(--bc-text))] font-medium">Private Wall</div>
-              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Only you and admins can see your profile wall</div>
-            </div>
-            <button
-              onClick={() => setWallIsPrivate(!wallIsPrivate)}
-              className={`w-12 h-6 rounded-full transition ${wallIsPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
-            >
-              <div className={`w-5 h-5 rounded-full bg-white transform transition ${wallIsPrivate ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </label>
-        </div>
-
-        <button
-          onClick={handleSavePrivacy}
-          disabled={savingPrivacy}
-          className="mt-4 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
-        >
-          {savingPrivacy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Privacy Settings'}
-        </button>
-      </div>
+      {/* Privacy & Security settings live on /settings/privacy and /settings/security */}
 
       {/* Affiliates Section - Gold Checkmark Users Only */}
       {hasGoldCheckmark && (
         <AffiliatesSection forumUser={forumUser} />
       )}
-
-      {/* Pinned Threads */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-          <Pin className="w-5 h-5" />
-          Pinned Threads ({pinnedThreads.length}/3)
-        </h2>
-        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-4">
-          Pin up to 3 threads to showcase on your profile.
-        </p>
-
-        {loadingThreads ? (
-          <div className="text-center py-4">
-            <Loader2 className="w-6 h-6 text-[hsl(var(--bc-text-muted))] animate-spin mx-auto" />
-          </div>
-        ) : userThreads.length === 0 ? (
-          <p className="text-[hsl(var(--bc-text-muted))] text-center py-4">You haven't created any threads yet.</p>
-        ) : (
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {userThreads.map((thread) => {
-              const isPinned = pinnedThreads.some(p => p.thread_id === thread.id);
-              return (
-                <div 
-                  key={thread.id}
-                  className="flex items-center justify-between bg-[hsl(var(--bc-bg-light))] rounded-lg p-3"
-                >
-                  <span className="text-[hsl(var(--bc-text))] truncate flex-1 mr-3">{thread.title}</span>
-                  <button
-                    onClick={() => handlePinThread(thread.id)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm transition ${
-                      isPinned
-                        ? 'bg-[hsl(var(--bc-primary))] text-white'
-                        : 'bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-text-muted))]'
-                    }`}
-                  >
-                    <Pin className="w-3 h-3" />
-                    {isPinned ? 'Pinned' : 'Pin'}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       {/* Status Update Section */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
@@ -2216,6 +2026,36 @@ export default function ForumSettings() {
           >
             {savingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {savingStatus ? 'Saving...' : 'Update Status'}
+          </button>
+        </div>
+      </div>
+
+      {/* Bio / Description */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <User className="w-5 h-5" />
+          Bio
+        </h2>
+        <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3">
+          A short description shown on your profile and in the players list.
+        </p>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          placeholder="Tell people about yourself..."
+          className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+          rows={3}
+          maxLength={200}
+        />
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-xs text-[hsl(var(--bc-text-muted))]">{bio.length}/200</span>
+          <button
+            onClick={handleSaveBio}
+            disabled={savingBio}
+            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition text-sm"
+          >
+            {savingBio ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {savingBio ? 'Saving...' : 'Save Bio'}
           </button>
         </div>
       </div>

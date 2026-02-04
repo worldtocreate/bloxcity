@@ -248,26 +248,29 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
 
         {/* Right side: User actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Coins Display - clickable to /convert */}
-          <Link 
-            to="/convert"
-            className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
-          >
-            <Coins className="w-4 h-4 text-yellow-500" />
-            <span className="font-medium text-sm">{forumUser?.coins?.toLocaleString() || 0}</span>
-          </Link>
-          
-          {/* Cash Display - clickable to /convert */}
-          <Link 
-            to="/convert"
-            className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
-          >
-            <DollarSign className="w-4 h-4 text-green-500" />
-            <span className="font-medium text-sm">{cash}</span>
-          </Link>
-
           {user ? (
             <>
+              {/* Currency (only when logged in) */}
+              {forumUser && (
+                <>
+                  <Link 
+                    to="/convert"
+                    className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
+                  >
+                    <Coins className="w-4 h-4 text-yellow-500" />
+                    <span className="font-medium text-sm">{forumUser.coins?.toLocaleString() || 0}</span>
+                  </Link>
+                  
+                  <Link 
+                    to="/convert"
+                    className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] px-2 sm:px-3 py-1.5 rounded-lg transition"
+                  >
+                    <DollarSign className="w-4 h-4 text-green-500" />
+                    <span className="font-medium text-sm">{cash}</span>
+                  </Link>
+                </>
+              )}
+
               {forumUser && (
                 <>
                   <NotificationBellInline forumUserId={forumUser.id} />
