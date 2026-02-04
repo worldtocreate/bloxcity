@@ -301,6 +301,7 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
+import Roadmap from "./pages/forum/Roadmap";
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail are inlined below
 
@@ -1410,6 +1411,7 @@ const App = () => (
               <Route path="privacy-policy" element={<PrivacyPolicy />} />
               <Route path="friends" element={<Friends />} />
               <Route path="achievements" element={<Achievements />} />
+              <Route path="roadmap" element={<Roadmap />} />
               <Route path="create" element={<Create />} />
               <Route path="request" element={<Request />} />
               <Route path="convert" element={<Convert />} />
