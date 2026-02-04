@@ -291,7 +291,7 @@ import Updates from "./pages/Updates";
 import Games from "./pages/forum/Games";
 // GameDetail inlined below
 import Market from "./pages/forum/Market";
-import MarketItem from "./pages/forum/MarketItem";
+// MarketItem inlined below
 import Character from "./pages/forum/Character";
 import Trading from "./pages/forum/Trading";
 // Players page removed - using ForumUsers at /players instead
@@ -301,9 +301,9 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
-import Roadmap from "./pages/forum/Roadmap";
+// Roadmap inlined below
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
-// Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail are inlined below
+// Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
 
 // Need useParams for GameDetail
 function useGameParams() {
@@ -1359,6 +1359,233 @@ function ForumResetPassword() {
             )}
           </Button>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// Inline MarketItem component to avoid module persistence issues
+function MarketItem() {
+  const params = window.location.pathname.match(/\/market\/item\/([^\/]+)/);
+  const itemId = params ? params[1] : undefined;
+  const [comment, setComment] = useState("");
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  const item = {
+    id: itemId || "1",
+    name: "Sparkle Time Fedora",
+    description: "A classic fedora with a sparkling twist. Limited edition item.",
+    price: 15000,
+    isLimited: true,
+    limitedStock: 50,
+    remainingStock: 12,
+    creator: "BLOX",
+    creatorId: "1",
+    favorites: 8920,
+    sales: 48,
+  };
+
+  const sellers = [
+    { id: "1", username: "RareCollector", price: 18500, serial: 3 },
+    { id: "2", username: "ItemTrader99", price: 19000, serial: 7 },
+    { id: "3", username: "LimitedKing", price: 22000, serial: 1 },
+  ];
+
+  const comments = [
+    { id: "1", username: "User123", content: "This item is amazing!", created: "2024-01-20" },
+    { id: "2", username: "Collector", content: "Best hat in the catalog.", created: "2024-01-18" },
+  ];
+
+  const formatNumber = (num: number) => num >= 1000 ? `${(num / 1000).toFixed(1)}K` : String(num);
+  const formatPrice = (price: number) => price.toLocaleString();
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
+      <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <Link to="/market" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition-colors">
+            ← Back to Catalog
+          </Link>
+        </div>
+      </div>
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="w-full md:w-64 aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Gamepad2 className="w-24 h-24 text-[hsl(var(--bc-primary))]/40" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      {item.isLimited && <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500 text-white text-xs mb-2">Limited</span>}
+                      <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{item.name}</h1>
+                      <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <Link to={`/user/${item.creatorId}`} className="text-[hsl(var(--bc-primary))] hover:underline">{item.creator}</Link></p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="icon" onClick={() => setIsFavorited(!isFavorited)} className={isFavorited ? "text-red-500 border-red-500" : ""}>♥</Button>
+                    </div>
+                  </div>
+                  <p className="text-[hsl(var(--bc-text-muted))] mt-4">{item.description}</p>
+                  <div className="flex flex-wrap gap-6 mt-6 text-sm">
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Price</span><p className="font-bold text-xl text-[hsl(var(--bc-primary))]">${formatPrice(item.price)}</p></div>
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Favorites</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.favorites)}</p></div>
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Sales</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales)}</p></div>
+                    {item.isLimited && <div><span className="text-[hsl(var(--bc-text-muted))]">Stock</span><p className="font-semibold text-[hsl(var(--bc-text))]">{item.remainingStock} / {item.limitedStock}</p></div>}
+                  </div>
+                  <Button className="mt-6 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90">Buy Now</Button>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Comments</h2>
+              <div className="flex gap-3 mb-6">
+                <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write a comment..." className="bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]" />
+                <Button onClick={() => setComment("")}>Send</Button>
+              </div>
+              <div className="space-y-4">
+                {comments.map((c) => (
+                  <div key={c.id} className="flex gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center text-[hsl(var(--bc-text))]">{c.username[0]}</div>
+                    <div>
+                      <div className="flex items-center gap-2"><span className="font-medium text-[hsl(var(--bc-text))]">{c.username}</span><span className="text-xs text-[hsl(var(--bc-text-muted))]">{c.created}</span></div>
+                      <p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {item.isLimited && (
+            <div>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 sticky top-4">
+                <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Private Sellers</h2>
+                <div className="space-y-3">
+                  {sellers.map((seller) => (
+                    <div key={seller.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--bc-bg))] border border-[hsl(var(--bc-border))]">
+                      <div>
+                        <Link to={`/user/${seller.id}`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">{seller.username}</Link>
+                        <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{seller.serial}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-[hsl(var(--bc-primary))]">${formatPrice(seller.price)}</p>
+                        <Button size="sm" variant="outline" className="mt-1 text-xs h-7">Buy</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline Roadmap component to avoid module persistence issues
+function Roadmap() {
+  const roadmapData = [
+    { phase: "Phase 1", title: "Foundation", items: [
+      { title: "User Authentication", description: "Secure login and registration", status: "completed" as const },
+      { title: "Profile System", description: "Profiles, settings, customization", status: "completed" as const },
+      { title: "Forum & Threads", description: "Community discussion boards", status: "completed" as const },
+      { title: "Direct Messaging", description: "Private messaging", status: "completed" as const },
+      { title: "Friends System", description: "Add and manage friends", status: "completed" as const },
+    ]},
+    { phase: "Phase 2", title: "Economy & Trading", items: [
+      { title: "Virtual Currency", description: "Coin system", status: "completed" as const },
+      { title: "Catalog", description: "Browse and buy items", status: "in-progress" as const },
+      { title: "Trading", description: "Trade items with users", status: "in-progress" as const },
+      { title: "Limited Items", description: "Rare items & resale", status: "planned" as const },
+      { title: "Creator Marketplace", description: "Sell your creations", status: "planned" as const },
+    ]},
+    { phase: "Phase 3", title: "Games & Creation", items: [
+      { title: "Game Library", description: "Browse and play games", status: "completed" as const },
+      { title: "Character Customization", description: "Better avatar editor", status: "in-progress" as const },
+      { title: "Creation Tools", description: "Build your own games", status: "planned" as const },
+      { title: "Asset Library", description: "Shared assets", status: "planned" as const },
+      { title: "Game Analytics", description: "Track performance", status: "planned" as const },
+    ]},
+    { phase: "Phase 4", title: "Platform Growth", items: [
+      { title: "Groups & Clans", description: "Communities", status: "completed" as const },
+      { title: "Events", description: "Competitions", status: "planned" as const },
+      { title: "Mobile App", description: "Native mobile", status: "planned" as const },
+      { title: "Creator Program", description: "Monetization", status: "planned" as const },
+      { title: "API Access", description: "Developer API", status: "planned" as const },
+    ]},
+  ];
+
+  const totalItems = roadmapData.reduce((acc, phase) => acc + phase.items.length, 0);
+  const completedItems = roadmapData.reduce((acc, phase) => acc + phase.items.filter(i => i.status === "completed").length, 0);
+  const inProgressItems = roadmapData.reduce((acc, phase) => acc + phase.items.filter(i => i.status === "in-progress").length, 0);
+  const progress = totalItems ? Math.round((completedItems / totalItems) * 100) : 0;
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
+      <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
+        <div className="max-w-5xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-3">Development Roadmap</h1>
+              <p className="text-[hsl(var(--bc-text-muted))] mt-2">What's coming next and what we're working on.</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="relative w-20 h-20">
+                <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="6" fill="none" className="text-[hsl(var(--bc-border))]" />
+                  <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="6" fill="none" strokeDasharray={`${progress * 2.26} 226`} strokeLinecap="round" className="text-[hsl(var(--bc-primary))]" />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center"><span className="text-lg font-bold text-[hsl(var(--bc-text))]">{progress}%</span></div>
+              </div>
+              <div className="text-sm">
+                <p className="text-[hsl(var(--bc-text))]"><span className="font-semibold">{completedItems}</span> completed</p>
+                <p className="text-[hsl(var(--bc-text-muted))]"><span className="font-semibold">{inProgressItems}</span> in progress</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="space-y-8">
+          {roadmapData.map((phase, i) => {
+            const phaseCompleted = phase.items.filter(item => item.status === "completed").length;
+            return (
+              <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+                <div className="bg-[hsl(var(--bc-bg))]/50 p-4 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs text-[hsl(var(--bc-text-muted))] uppercase tracking-wide">{phase.phase}</span>
+                    <h2 className="text-xl font-bold text-[hsl(var(--bc-text))]">{phase.title}</h2>
+                  </div>
+                  <span className="text-sm text-[hsl(var(--bc-text-muted))]">{phaseCompleted}/{phase.items.length} complete</span>
+                </div>
+                <div className="divide-y divide-[hsl(var(--bc-border))]">
+                  {phase.items.map((item, j) => (
+                    <div key={j} className="flex items-center justify-between p-4 hover:bg-[hsl(var(--bc-bg))]/50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-2 h-2 rounded-full ${item.status === "completed" ? "bg-green-500" : item.status === "in-progress" ? "bg-blue-500" : "bg-gray-500"}`} />
+                        <div>
+                          <h3 className="font-medium text-[hsl(var(--bc-text))]">{item.title}</h3>
+                          <p className="text-sm text-[hsl(var(--bc-text-muted))]">{item.description}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${item.status === "completed" ? "bg-green-500/10 text-green-500" : item.status === "in-progress" ? "bg-blue-500/10 text-blue-500" : "bg-gray-500/10 text-gray-400"}`}>
+                        {item.status === "completed" ? "Completed" : item.status === "in-progress" ? "In Progress" : "Planned"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-12 text-center">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+            <h3 className="font-semibold text-[hsl(var(--bc-text))]">Have a suggestion?</h3>
+            <p className="text-[hsl(var(--bc-text-muted))] text-sm mt-1">Share your ideas in the community forums!</p>
+          </div>
+        </div>
       </div>
     </div>
   );
