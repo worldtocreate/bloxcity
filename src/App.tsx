@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
-import GodfreyPanel from "./pages/GodfreyPanel";
+// GodfreyPanel will be added later
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
 
@@ -1163,7 +1163,7 @@ const App = () => (
               <Route path="upgrades" element={<Upgrades />} />
               <Route path="support" element={<Support />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
-              <Route path="g0dfrey" element={<GodfreyPanel />} />
+              {/* g0dfrey route will be added later */}
             </Route>
 
             {/* Admin Route - outside ForumLayout */}

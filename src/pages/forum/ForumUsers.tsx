@@ -193,22 +193,20 @@ export default function ForumUsers() {
                       })()
                     )}
                     {user.is_admin && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Admin</span>
+                      <span className="px-2 py-0.5 text-xs font-medium bg-[hsla(var(--bc-accent),0.15)] text-[hsl(var(--bc-accent))] rounded-full">Admin</span>
                     )}
                     {user.is_moderator && !user.is_admin && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">Mod</span>
+                      <span className="px-2 py-0.5 text-xs font-medium bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))] rounded-full">Mod</span>
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-sm text-[hsl(var(--bc-text-muted))]">
                     {user.membership_tier && <MembershipBadge tier={user.membership_tier as any} size="sm" />}
-                    <span className="text-xs">
-                      Last seen {getRelativeTime(user.last_seen_at || null)}
-                    </span>
                   </div>
                   <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-1">{user.bio || 'No description yet.'}</p>
                 </div>
-                <div className="text-sm text-[hsl(var(--bc-text-muted))] hidden sm:block">
-                  {getRelativeTime(user.last_seen_at || null)}
+                <div className="text-sm text-[hsl(var(--bc-text-muted))] hidden sm:block text-right">
+                  <span className="text-xs">Last seen</span>
+                  <div className="text-xs">{getRelativeTime(user.last_seen_at || null)}</div>
                 </div>
               </Link>
             ))}
