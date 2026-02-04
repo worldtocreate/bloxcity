@@ -1429,7 +1429,7 @@ function MarketItem() {
                   </div>
                   <p className="text-[hsl(var(--bc-text-muted))] mt-4">{item.description}</p>
                   <div className="flex flex-wrap gap-6 mt-6 text-sm">
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Price</span><p className="font-bold text-xl text-[hsl(var(--bc-primary))]">${formatPrice(item.price)}</p></div>
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Price</span><p className="font-bold text-xl text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-5 h-5 text-yellow-500" />{formatPrice(item.price)}</p></div>
                     <div><span className="text-[hsl(var(--bc-text-muted))]">Favorites</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.favorites)}</p></div>
                     <div><span className="text-[hsl(var(--bc-text-muted))]">Sales</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales)}</p></div>
                     {item.isLimited && <div><span className="text-[hsl(var(--bc-text-muted))]">Stock</span><p className="font-semibold text-[hsl(var(--bc-text))]">{item.remainingStock} / {item.limitedStock}</p></div>}
@@ -1469,7 +1469,7 @@ function MarketItem() {
                         <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{seller.serial}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-[hsl(var(--bc-primary))]">${formatPrice(seller.price)}</p>
+                        <p className="font-bold text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-4 h-4 text-yellow-500" />{formatPrice(seller.price)}</p>
                         <Button size="sm" variant="outline" className="mt-1 text-xs h-7">Buy</Button>
                       </div>
                     </div>
