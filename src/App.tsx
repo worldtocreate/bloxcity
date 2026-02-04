@@ -392,10 +392,96 @@ function useGameParams() {
 // Inline Landing Page for logged-out users
 import bloxcityLogoLanding from "@/assets/IMG_2412_Original-1.png";
 
+interface LandingThread {
+  id: string;
+  title: string;
+  view_count: number;
+  reply_count: number;
+  created_at: string;
+  author: { username: string; avatar_url: string | null };
+}
+
+interface LandingGame {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  play_count: number;
+  creator: { username: string };
+}
+
+interface LandingStats {
+  users: number;
+  games: number;
+  threads: number;
+}
+
 function LandingPage() {
   const { forumUser, loading } = useForumAuth();
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+
+  const [threads, setThreads] = useState<LandingThread[]>([]);
+  const [games, setGames] = useState<LandingGame[]>([]);
+  const [stats, setStats] = useState<LandingStats>({ users: 0, games: 0, threads: 0 });
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Fetch real data from backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [threadsRes, gamesRes, usersCountRes, gamesCountRes, threadsCountRes] = await Promise.all([
+          supabase
+            .from('forum_threads')
+            .select('id, title, view_count, reply_count, created_at, author:author_id(username, avatar_url)')
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(4),
+          supabase
+            .from('forum_games')
+            .select('id, title, thumbnail_url, play_count, creator:creator_id(username)')
+            .eq('is_private', false)
+            .order('play_count', { ascending: false })
+            .limit(6),
+          supabase.from('forum_users').select('id', { count: 'exact', head: true }),
+          supabase.from('forum_games').select('id', { count: 'exact', head: true }).eq('is_private', false),
+          supabase.from('forum_threads').select('id', { count: 'exact', head: true }).eq('is_deleted', false),
+        ]);
+
+        if (threadsRes.data) {
+          setThreads(threadsRes.data.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            view_count: t.view_count,
+            reply_count: t.reply_count,
+            created_at: t.created_at,
+            author: t.author || { username: 'Unknown', avatar_url: null },
+          })));
+        }
+
+        if (gamesRes.data) {
+          setGames(gamesRes.data.map((g: any) => ({
+            id: g.id,
+            title: g.title,
+            thumbnail_url: g.thumbnail_url,
+            play_count: g.play_count || 0,
+            creator: g.creator || { username: 'Unknown' },
+          })));
+        }
+
+        setStats({
+          users: usersCountRes.count || 0,
+          games: gamesCountRes.count || 0,
+          threads: threadsCountRes.count || 0,
+        });
+      } catch (err) {
+        console.error('Landing data fetch error:', err);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // If logged in, redirect to dashboard
   useEffect(() => {
@@ -414,6 +500,19 @@ function LandingPage() {
 
   // Only show landing if NOT logged in
   if (forumUser) return null;
+
+  const getRelativeTime = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex flex-col">
@@ -460,51 +559,160 @@ function LandingPage() {
         </div>
       </header>
 
-      {/* Features Section */}
+      {/* Stats Section */}
+      <section className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))] py-8">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="grid grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="text-3xl font-bold text-[hsl(var(--bc-primary))]">{stats.users.toLocaleString()}</div>
+              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Players</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-[hsl(var(--bc-success))]">{stats.games.toLocaleString()}</div>
+              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Games</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-[hsl(var(--bc-warning))]">{stats.threads.toLocaleString()}</div>
+              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Forum Posts</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
       <main className="flex-1 bg-[hsl(var(--bc-bg))]">
         <div className="max-w-6xl mx-auto px-4 py-12">
-          {/* Customize Character Feature */}
-          <div className="grid md:grid-cols-2 gap-8 items-center mb-16">
-            <div className="text-right md:order-first order-last">
-              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Customize your Character</h2>
-              <p className="text-[hsl(var(--bc-text-muted))]">
+          {/* Featured Games Section */}
+          <section className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2">
+                <Gamepad2 className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+                Featured Games
+              </h2>
+              <Link to="/games" className="text-[hsl(var(--bc-primary))] hover:underline font-medium text-sm">
+                View All →
+              </Link>
+            </div>
+            {dataLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden animate-pulse">
+                    <div className="aspect-square bg-[hsl(var(--bc-bg-light))]" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-4 bg-[hsl(var(--bc-bg-light))] rounded w-3/4" />
+                      <div className="h-3 bg-[hsl(var(--bc-bg-light))] rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : games.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {games.map((game) => (
+                  <Link key={game.id} to="/login" className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden hover:border-[hsl(var(--bc-primary))] transition">
+                    <div className="aspect-square bg-[hsl(var(--bc-bg-light))] flex items-center justify-center">
+                      {game.thumbnail_url ? (
+                        <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <Gamepad2 className="w-12 h-12 text-[hsl(var(--bc-text-muted))]" />
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="font-semibold text-[hsl(var(--bc-text))] text-sm truncate group-hover:text-[hsl(var(--bc-primary))] transition">{game.title}</div>
+                      <div className="text-xs text-[hsl(var(--bc-text-muted))]">by {game.creator.username}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No games available yet.</div>
+            )}
+          </section>
+
+          {/* Customize Character + Forum Posts Grid */}
+          <div className="grid lg:grid-cols-2 gap-12 mb-16">
+            {/* Customize Character */}
+            <div>
+              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-[hsl(var(--bc-warning))]" />
+                Customize your Character
+              </h2>
+              <p className="text-[hsl(var(--bc-text-muted))] mb-4">
                 Pick and choose from a collection of items created by the community to create your own unique character with.
               </p>
+              <div className="grid grid-cols-4 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-2 aspect-square flex items-center justify-center">
+                    <div className="w-12 h-12 bg-[hsl(var(--bc-bg-light))] rounded" />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-2 aspect-square flex items-center justify-center">
-                  <div className="w-12 h-12 bg-[hsl(var(--bc-bg-light))] rounded" />
+
+            {/* Recent Forum Posts */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+                  💬 Recent Forum Posts
+                </h2>
+                <Link to="/forum" className="text-[hsl(var(--bc-primary))] hover:underline font-medium text-sm">
+                  View All →
+                </Link>
+              </div>
+              {dataLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4 animate-pulse">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[hsl(var(--bc-bg-light))] rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-[hsl(var(--bc-bg-light))] rounded w-3/4" />
+                          <div className="h-3 bg-[hsl(var(--bc-bg-light))] rounded w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : threads.length > 0 ? (
+                <div className="space-y-3">
+                  {threads.map((thread) => (
+                    <div key={thread.id} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4 flex items-center justify-between hover:border-[hsl(var(--bc-primary))] transition">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {thread.author.avatar_url ? (
+                          <img src={thread.author.avatar_url} alt={thread.author.username} className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 bg-[hsl(var(--bc-primary))] rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                            {thread.author.username[0]?.toUpperCase() || '?'}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-semibold text-[hsl(var(--bc-text))] text-sm truncate">{thread.title}</div>
+                          <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                            by {thread.author.username} • {getRelativeTime(thread.created_at)} • {thread.reply_count} replies
+                          </div>
+                        </div>
+                      </div>
+                      <Link to="/login" className="px-3 py-1.5 bg-[hsl(var(--bc-primary))] text-white text-xs rounded-lg font-medium flex-shrink-0 ml-3">
+                        View Post
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No forum posts yet.</div>
+              )}
             </div>
           </div>
 
-          {/* Socialize Feature */}
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-3">
-              {['Welcome to BLOX City!', 'Check out the new update', 'Rate my avatar', 'Looking for friends'].map((title, i) => (
-                <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-[hsl(var(--bc-warning))] rounded-full flex items-center justify-center text-white text-sm">💬</div>
-                    <div>
-                      <div className="font-semibold text-[hsl(var(--bc-text))] text-sm">{title}</div>
-                      <div className="text-xs text-[hsl(var(--bc-text-muted))]">user{i + 1}</div>
-                    </div>
-                  </div>
-                  <Link to="/forum" className="px-3 py-1.5 bg-[hsl(var(--bc-primary))] text-white text-xs rounded-lg font-medium">
-                    View Post
-                  </Link>
-                </div>
-              ))}
-            </div>
-            <div className="text-left">
-              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Socialize With Others</h2>
-              <p className="text-[hsl(var(--bc-text-muted))]">
-                Head over to the Forum to socialize with all kinds of users on BLOX City, from the funny to the professional, and find new friends!
-              </p>
-            </div>
-          </div>
+          {/* Call to Action */}
+          <section className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-primary-dark))] rounded-2xl p-8 text-center text-white">
+            <h2 className="text-2xl font-bold mb-4">Ready to Join the Community?</h2>
+            <p className="text-white/80 mb-6 max-w-xl mx-auto">
+              Create your account today and start playing games, trading items, and making friends on BLOX City!
+            </p>
+            <Link to="/register" className="inline-block px-8 py-3 bg-white text-[hsl(var(--bc-primary))] rounded-full font-semibold shadow-lg hover:bg-white/90 transition text-lg">
+              🚀 Create Free Account
+            </Link>
+          </section>
         </div>
       </main>
 
