@@ -501,6 +501,7 @@ export default function ForumSettings() {
   const [settingPin, setSettingPin] = useState(false);
   const [allowDms, setAllowDms] = useState(true);
   const [hideThreads, setHideThreads] = useState(false);
+  const [wallIsPrivate, setWallIsPrivate] = useState(false);
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [verificationRequest, setVerificationRequest] = useState<VerificationRequest | null>(null);
   const [verificationReason, setVerificationReason] = useState('');
@@ -559,6 +560,7 @@ export default function ForumSettings() {
       setSignature(forumUser.signature || '');
       setAllowDms(forumUser.allow_dms);
       setHideThreads(forumUser.hide_threads);
+      setWallIsPrivate((forumUser as any).wall_is_private || false);
       setSocialDiscord((forumUser as any).social_discord || '');
       setSocialX((forumUser as any).social_x || '');
       setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
@@ -1127,7 +1129,8 @@ export default function ForumSettings() {
       .from('forum_users')
       .update({ 
         allow_dms: allowDms,
-        hide_threads: hideThreads
+        hide_threads: hideThreads,
+        wall_is_private: wallIsPrivate
       })
       .eq('id', forumUser.id);
 
@@ -2125,6 +2128,19 @@ export default function ForumSettings() {
               className={`w-12 h-6 rounded-full transition ${hideThreads ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
             >
               <div className={`w-5 h-5 rounded-full bg-white transform transition ${hideThreads ? 'translate-x-6' : 'translate-x-0.5'}`} />
+            </button>
+          </label>
+
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <div className="text-[hsl(var(--bc-text))] font-medium">Private Wall</div>
+              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Only you and admins can see your profile wall</div>
+            </div>
+            <button
+              onClick={() => setWallIsPrivate(!wallIsPrivate)}
+              className={`w-12 h-6 rounded-full transition ${wallIsPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white transform transition ${wallIsPrivate ? 'translate-x-6' : 'translate-x-0.5'}`} />
             </button>
           </label>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star, Heart, Users } from 'lucide-react';
+import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star, Heart, Users, Lock, Trash2 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
@@ -14,9 +14,310 @@ import ReportButton from '@/components/forum/ReportButton';
 import ProfileViews from '@/components/forum/ProfileViews';
 import UserAchievements from '@/components/forum/UserAchievements';
 import UserGroups from '@/components/forum/UserGroups';
-import FollowButton from '@/components/forum/FollowButton';
-import FollowersList from '@/components/forum/FollowersList';
-import ProfileWall from '@/components/forum/ProfileWall';
+// Inlined FollowButtonInline component (named to avoid conflict with FriendButton)
+function FollowButtonInline({ currentUserId, targetUserId }: { currentUserId: string; targetUserId: string }) {
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [toggling, setToggling] = useState(false);
+
+  useEffect(() => {
+    const checkFollowing = async () => {
+      const { data } = await supabase
+        .from('forum_follows')
+        .select('id')
+        .eq('follower_id', currentUserId)
+        .eq('following_id', targetUserId)
+        .single();
+      setIsFollowing(!!data);
+      setLoading(false);
+    };
+    checkFollowing();
+  }, [currentUserId, targetUserId]);
+
+  const handleToggle = async () => {
+    setToggling(true);
+    if (isFollowing) {
+      await supabase.from('forum_follows').delete()
+        .eq('follower_id', currentUserId)
+        .eq('following_id', targetUserId);
+      setIsFollowing(false);
+      toast.success('Unfollowed');
+    } else {
+      await supabase.from('forum_follows').insert({ follower_id: currentUserId, following_id: targetUserId });
+      setIsFollowing(true);
+      toast.success('Following!');
+    }
+    setToggling(false);
+  };
+
+  if (loading) return null;
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={toggling}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-medium ${
+        isFollowing
+          ? 'bg-[hsl(var(--bc-bg-light))] hover:bg-red-100 text-[hsl(var(--bc-text))] hover:text-red-600'
+          : 'bg-[hsl(var(--bc-accent))] hover:bg-[hsl(var(--bc-accent))]/80 text-[hsl(var(--bc-text))]'
+      }`}
+    >
+      <Users className="w-4 h-4" />
+      {toggling ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
+    </button>
+  );
+}
+
+// Inlined FollowersList component
+function FollowersList({ forumUserId, showTitle = true }: { forumUserId: string; showTitle?: boolean }) {
+  const [followers, setFollowers] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [following, setFollowing] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [tab, setTab] = useState<'followers' | 'following'>('followers');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch followers
+      const { data: followerRows } = await supabase
+        .from('forum_follows')
+        .select('follower_id')
+        .eq('following_id', forumUserId);
+      
+      if (followerRows && followerRows.length > 0) {
+        const ids = followerRows.map(r => r.follower_id);
+        const { data: users } = await supabase
+          .from('forum_users')
+          .select('id, username, avatar_url')
+          .in('id', ids);
+        setFollowers(users || []);
+      }
+
+      // Fetch following
+      const { data: followingRows } = await supabase
+        .from('forum_follows')
+        .select('following_id')
+        .eq('follower_id', forumUserId);
+      
+      if (followingRows && followingRows.length > 0) {
+        const ids = followingRows.map(r => r.following_id);
+        const { data: users } = await supabase
+          .from('forum_users')
+          .select('id, username, avatar_url')
+          .in('id', ids);
+        setFollowing(users || []);
+      }
+
+      setLoading(false);
+    };
+    fetchData();
+  }, [forumUserId]);
+
+  const currentList = tab === 'followers' ? followers : following;
+
+  return (
+    <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+      {showTitle && (
+        <div className="flex gap-4 mb-4 border-b border-[hsl(var(--bc-border))] pb-2">
+          <button
+            onClick={() => setTab('followers')}
+            className={`text-sm font-medium pb-2 border-b-2 transition ${
+              tab === 'followers' ? 'border-[hsl(var(--bc-primary))] text-[hsl(var(--bc-primary))]' : 'border-transparent text-[hsl(var(--bc-text-muted))]'
+            }`}
+          >
+            Followers ({followers.length})
+          </button>
+          <button
+            onClick={() => setTab('following')}
+            className={`text-sm font-medium pb-2 border-b-2 transition ${
+              tab === 'following' ? 'border-[hsl(var(--bc-primary))] text-[hsl(var(--bc-primary))]' : 'border-transparent text-[hsl(var(--bc-text-muted))]'
+            }`}
+          >
+            Following ({following.length})
+          </button>
+        </div>
+      )}
+      {loading ? (
+        <div className="text-center py-4 text-[hsl(var(--bc-text-muted))]">Loading...</div>
+      ) : currentList.length === 0 ? (
+        <div className="text-center py-4 text-[hsl(var(--bc-text-muted))]">
+          {tab === 'followers' ? 'No followers yet' : 'Not following anyone'}
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          {currentList.map(u => (
+            <Link
+              key={u.id}
+              to={`/user/${u.username}`}
+              className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
+            >
+              <UserAvatar avatarUrl={u.avatar_url} username={u.username} size="sm" />
+              <span className="text-xs text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-text))] truncate max-w-full">
+                {u.username}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Inlined ProfileWall component
+function ProfileWall({ 
+  forumUserId, 
+  currentUserId, 
+  isOwnProfile, 
+  isAdmin, 
+  wallIsPrivate 
+}: { 
+  forumUserId: string; 
+  currentUserId?: string; 
+  isOwnProfile: boolean; 
+  isAdmin: boolean; 
+  wallIsPrivate?: boolean;
+}) {
+  const [posts, setPosts] = useState<Array<{
+    id: string;
+    content: string;
+    created_at: string;
+    author: { id: string; username: string; avatar_url: string | null };
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [newPost, setNewPost] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [forumUserId]);
+
+  const fetchPosts = async () => {
+    const { data } = await supabase
+      .from('forum_wall_posts')
+      .select('id, content, created_at, author_id')
+      .eq('profile_id', forumUserId)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (data && data.length > 0) {
+      const authorIds = [...new Set(data.map(p => p.author_id))];
+      const { data: authors } = await supabase
+        .from('forum_users')
+        .select('id, username, avatar_url')
+        .in('id', authorIds);
+
+      const postsWithAuthors = data.map(p => ({
+        ...p,
+        author: authors?.find(a => a.id === p.author_id) || { id: p.author_id, username: 'Unknown', avatar_url: null }
+      }));
+      setPosts(postsWithAuthors);
+    }
+    setLoading(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!newPost.trim() || !currentUserId) return;
+    setSubmitting(true);
+    
+    const { error } = await supabase
+      .from('forum_wall_posts')
+      .insert({ profile_id: forumUserId, author_id: currentUserId, content: newPost.trim() });
+
+    if (error) {
+      toast.error('Failed to post');
+    } else {
+      setNewPost('');
+      fetchPosts();
+      toast.success('Posted!');
+    }
+    setSubmitting(false);
+  };
+
+  const handleDelete = async (postId: string) => {
+    const { error } = await supabase
+      .from('forum_wall_posts')
+      .update({ is_deleted: true, deleted_at: new Date().toISOString(), deleted_by: currentUserId })
+      .eq('id', postId);
+
+    if (!error) {
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      toast.success('Post deleted');
+    }
+  };
+
+  // Hide wall if private and not owner/admin
+  if (wallIsPrivate && !isOwnProfile && !isAdmin) {
+    return (
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 text-center">
+        <Lock className="w-8 h-8 text-[hsl(var(--bc-text-muted))] mx-auto mb-2" />
+        <p className="text-[hsl(var(--bc-text-muted))]">This wall is private</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+      <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+        <MessageSquare className="w-5 h-5" />
+        Wall
+        {wallIsPrivate && <Lock className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />}
+      </h2>
+
+      {currentUserId && (
+        <div className="mb-4">
+          <textarea
+            value={newPost}
+            onChange={(e) => setNewPost(e.target.value)}
+            placeholder="Write on this wall..."
+            className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] resize-none"
+            rows={2}
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || !newPost.trim()}
+            className="mt-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white rounded-lg text-sm"
+          >
+            {submitting ? 'Posting...' : 'Post'}
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-4 text-[hsl(var(--bc-text-muted))]">Loading...</div>
+      ) : posts.length === 0 ? (
+        <div className="text-center py-4 text-[hsl(var(--bc-text-muted))]">No wall posts yet</div>
+      ) : (
+        <div className="space-y-3">
+          {posts.map(post => (
+            <div key={post.id} className="flex gap-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg">
+              <Link to={`/user/${post.author.username}`}>
+                <UserAvatar avatarUrl={post.author.avatar_url} username={post.author.username} size="sm" />
+              </Link>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <Link to={`/user/${post.author.username}`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">
+                    {post.author.username}
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                    {(isAdmin || post.author.id === currentUserId) && (
+                      <button onClick={() => handleDelete(post.id)} className="text-red-500 hover:text-red-600">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-sm text-[hsl(var(--bc-text))] mt-1">{post.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 import { useVerificationStatus } from '@/components/forum/VerifiedBadge';
 
 type AffiliateUser = {
@@ -143,6 +444,9 @@ interface ProfileData {
   status_text: string | null;
   status_updated_at: string | null;
   last_seen_at: string | null;
+  wall_is_private: boolean;
+  follower_count: number;
+  following_count: number;
 }
 
 interface ThreadData {
@@ -532,6 +836,10 @@ export default function ForumUserProfile() {
           {/* Actions */}
           {!isOwnProfile && forumUser && (
             <div className="flex flex-wrap gap-2 mt-4">
+              <FollowButtonInline
+                currentUserId={forumUser.id}
+                targetUserId={profile.id}
+              />
               <FriendButton
                 currentUserId={forumUser.id}
                 targetUserId={profile.id}
@@ -701,6 +1009,18 @@ export default function ForumUserProfile() {
       {isOwnProfile && profile && (
         <ProfileViews forumUserId={profile.id} isOwnProfile={isOwnProfile} />
       )}
+
+      {/* Followers/Following */}
+      <FollowersList forumUserId={profile.id} showTitle={true} />
+
+      {/* Profile Wall */}
+      <ProfileWall 
+        forumUserId={profile.id} 
+        currentUserId={forumUser?.id} 
+        isOwnProfile={isOwnProfile} 
+        isAdmin={isAdmin}
+        wallIsPrivate={profile.wall_is_private}
+      />
 
       {/* Friends List */}
       <FriendsList forumUserId={profile.id} limit={6} showTitle={true} />
