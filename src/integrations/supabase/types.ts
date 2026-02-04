@@ -2519,6 +2519,7 @@ export type Database = {
           created_at: string | null
           date_of_birth: string | null
           dm_encryption_pin_hash: string | null
+          dm_pin: string | null
           dob_updated_at: string | null
           follower_count: number | null
           following_count: number | null
@@ -2546,6 +2547,7 @@ export type Database = {
           self_disabled_reason: string | null
           self_disabled_until: string | null
           serial_id: number
+          settings_pin: string | null
           settings_pin_hash: string | null
           signature: string | null
           social_discord: string | null
@@ -2576,6 +2578,7 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
+          dm_pin?: string | null
           dob_updated_at?: string | null
           follower_count?: number | null
           following_count?: number | null
@@ -2603,6 +2606,7 @@ export type Database = {
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
           serial_id?: number
+          settings_pin?: string | null
           settings_pin_hash?: string | null
           signature?: string | null
           social_discord?: string | null
@@ -2633,6 +2637,7 @@ export type Database = {
           created_at?: string | null
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
+          dm_pin?: string | null
           dob_updated_at?: string | null
           follower_count?: number | null
           following_count?: number | null
@@ -2660,6 +2665,7 @@ export type Database = {
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
           serial_id?: number
+          settings_pin?: string | null
           settings_pin_hash?: string | null
           signature?: string | null
           social_discord?: string | null
