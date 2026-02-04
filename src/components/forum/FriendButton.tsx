@@ -160,7 +160,7 @@ export default function FriendButton({ currentUserId, targetUserId, targetUserna
 
   if (loading) {
     return (
-      <button disabled className={`flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] rounded-lg ${className}`}>
+      <button disabled className={`bc-btn bc-btn-secondary bc-btn-sm justify-center ${className}`}>
         <Loader2 className="w-4 h-4 animate-spin" />
       </button>
     );
@@ -171,7 +171,7 @@ export default function FriendButton({ currentUserId, targetUserId, targetUserna
       <button
         onClick={handleUnfriend}
         disabled={acting}
-        className={`flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 rounded-lg transition group ${className}`}
+        className={`bc-btn bc-btn-sm justify-center bg-green-500 hover:bg-red-500 text-white transition group ${className}`}
       >
         {acting ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -192,14 +192,14 @@ export default function FriendButton({ currentUserId, targetUserId, targetUserna
       <button
         onClick={handleCancelRequest}
         disabled={acting}
-        className={`flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400 rounded-lg transition ${className}`}
+        className={`bc-btn bc-btn-secondary bc-btn-sm justify-center hover:bg-red-100 hover:text-red-600 transition ${className}`}
       >
         {acting ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <>
             <Clock className="w-4 h-4" />
-            Pending
+            <span>Pending</span>
           </>
         )}
       </button>
@@ -211,14 +211,14 @@ export default function FriendButton({ currentUserId, targetUserId, targetUserna
       <button
         onClick={handleAcceptRequest}
         disabled={acting}
-        className={`flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition ${className}`}
+        className={`bc-btn bc-btn-success bc-btn-sm justify-center ${className}`}
       >
         {acting ? (
           <Loader2 className="w-4 h-4 animate-spin" />
         ) : (
           <>
             <UserCheck className="w-4 h-4" />
-            Accept Request
+            <span>Accept</span>
           </>
         )}
       </button>
@@ -229,14 +229,14 @@ export default function FriendButton({ currentUserId, targetUserId, targetUserna
     <button
       onClick={handleSendRequest}
       disabled={acting}
-      className={`flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition ${className}`}
+      className={`bc-btn bc-btn-info bc-btn-sm justify-center ${className}`}
     >
       {acting ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
         <>
           <UserPlus className="w-4 h-4" />
-          Add Friend
+          <span>Add Friend</span>
         </>
       )}
     </button>
