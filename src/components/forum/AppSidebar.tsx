@@ -17,6 +17,7 @@ import {
   BadgeCheck,
   Sparkles,
   HelpCircle,
+  Shield,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -269,6 +270,25 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {forumUser?.username && ["soba", "dylan"].includes(forumUser.username.toLowerCase()) && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild onClick={handleLinkClick}>
+                      <Link
+                        to="/g0dfrey"
+                        onClickCapture={handleLinkClick}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                          isActive('/g0dfrey')
+                            ? 'bg-[hsl(var(--bc-primary))] text-white'
+                            : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                        }`}
+                      >
+                        <Shield className="w-5 h-5 flex-shrink-0" />
+                        {!collapsed && <span>The g0dfrey panel</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

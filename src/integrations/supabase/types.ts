@@ -2785,6 +2785,71 @@ export type Database = {
           },
         ]
       }
+      godfrey_currency_grants: {
+        Row: {
+          created_at: string
+          granted_by_forum_user_id: string
+          id: string
+          target_forum_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by_forum_user_id: string
+          id?: string
+          target_forum_user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by_forum_user_id?: string
+          id?: string
+          target_forum_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "godfrey_currency_grants_granted_by_forum_user_id_fkey"
+            columns: ["granted_by_forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "godfrey_currency_grants_target_forum_user_id_fkey"
+            columns: ["target_forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      godfrey_panel_pins: {
+        Row: {
+          created_at: string
+          forum_user_id: string
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          forum_user_id: string
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          forum_user_id?: string
+          pin_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "godfrey_panel_pins_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: true
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           email: string
