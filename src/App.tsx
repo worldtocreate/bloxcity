@@ -389,6 +389,188 @@ function useGameParams() {
   return { gameId: params ? params[1] : undefined };
 }
 
+// Inline Landing Page for logged-out users
+import bloxcityLogoLanding from "@/assets/IMG_2412_Original-1.png";
+
+function LandingPage() {
+  const { forumUser, loading } = useForumAuth();
+  const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
+
+  // If logged in, redirect to dashboard
+  useEffect(() => {
+    if (!loading && forumUser) {
+      navigate('/');
+    }
+  }, [loading, forumUser, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
+  // Only show landing if NOT logged in
+  if (forumUser) return null;
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex flex-col">
+      {/* Navigation */}
+      <nav className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))] sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2">
+              <img src={bloxcityLogoLanding} alt="BLOX City" className="w-10 h-10 rounded-lg" />
+              <span className="font-bold text-xl text-[hsl(var(--bc-text))] hidden sm:inline">BLOX City</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-4">
+              <Link to="/games" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] font-medium transition">Games</Link>
+              <Link to="/market" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] font-medium transition">Market</Link>
+              <Link to="/forum" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] font-medium transition">Forum</Link>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/register" className="px-4 py-2 bg-[hsl(var(--bc-success))] hover:bg-[hsl(var(--bc-success-light))] text-white rounded-lg font-semibold transition">
+              Get Started
+            </Link>
+            <Link to="/login" className="px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg font-semibold transition">
+              Log In
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="bg-gradient-to-b from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-primary-dark))] py-16 md:py-24">
+        <div className="max-w-4xl mx-auto px-4 text-center text-white">
+          <img src={bloxcityLogoLanding} alt="BLOX City" className="w-32 h-32 md:w-48 md:h-48 mx-auto mb-6 rounded-2xl shadow-2xl" />
+          <h1 className="text-2xl md:text-3xl font-semibold mb-4">
+            Join in on the action today. Buy & sell items, participate in groups, make friends, and more.
+          </h1>
+          <div className="flex flex-wrap justify-center gap-4 mt-8">
+            <Link to="/login" className="px-8 py-3 bg-[hsl(var(--bc-warning))] hover:bg-[hsl(var(--bc-warning-dark))] text-white rounded-full font-semibold shadow-lg transition text-lg">
+              🔑 Login
+            </Link>
+            <Link to="/register" className="px-8 py-3 bg-[hsl(var(--bc-success))] hover:bg-[hsl(var(--bc-success-light))] text-white rounded-full font-semibold shadow-lg transition text-lg">
+              🚀 Register
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Features Section */}
+      <main className="flex-1 bg-[hsl(var(--bc-bg))]">
+        <div className="max-w-6xl mx-auto px-4 py-12">
+          {/* Customize Character Feature */}
+          <div className="grid md:grid-cols-2 gap-8 items-center mb-16">
+            <div className="text-right md:order-first order-last">
+              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Customize your Character</h2>
+              <p className="text-[hsl(var(--bc-text-muted))]">
+                Pick and choose from a collection of items created by the community to create your own unique character with.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-2 aspect-square flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[hsl(var(--bc-bg-light))] rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Socialize Feature */}
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-3">
+              {['Welcome to BLOX City!', 'Check out the new update', 'Rate my avatar', 'Looking for friends'].map((title, i) => (
+                <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-[hsl(var(--bc-warning))] rounded-full flex items-center justify-center text-white text-sm">💬</div>
+                    <div>
+                      <div className="font-semibold text-[hsl(var(--bc-text))] text-sm">{title}</div>
+                      <div className="text-xs text-[hsl(var(--bc-text-muted))]">user{i + 1}</div>
+                    </div>
+                  </div>
+                  <Link to="/forum" className="px-3 py-1.5 bg-[hsl(var(--bc-primary))] text-white text-xs rounded-lg font-medium">
+                    View Post
+                  </Link>
+                </div>
+              ))}
+            </div>
+            <div className="text-left">
+              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Socialize With Others</h2>
+              <p className="text-[hsl(var(--bc-text-muted))]">
+                Head over to the Forum to socialize with all kinds of users on BLOX City, from the funny to the professional, and find new friends!
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-[hsl(var(--bc-bg-card))] border-t border-[hsl(var(--bc-border))] py-6">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2 mb-2">
+              Copyright © {currentYear}
+              <img src={bloxcityLogoLanding} alt="" className="w-6 h-6 rounded" />
+              BLOX City. All rights reserved.
+            </div>
+            <div className="flex flex-wrap gap-4 text-xs">
+              <Link to="/terms-of-service" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">TERMS OF SERVICE</Link>
+              <Link to="/privacy-policy" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">PRIVACY POLICY</Link>
+              <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">FAQ</Link>
+              <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">TEAM</Link>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <a href="https://x.com/bloxcitynet" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] text-2xl transition">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="https://discord.gg/bloxcity" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] text-2xl transition">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// Wrapper that shows Landing for guests, Dashboard for logged-in users
+function HomeOrLanding() {
+  const { forumUser, loading } = useForumAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !forumUser) {
+      // Redirect to landing page if not logged in
+      navigate('/landing', { replace: true });
+    }
+  }, [loading, forumUser, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
+  // If logged in, show dashboard within ForumLayout
+  if (forumUser) {
+    return <ForumDashboard />;
+  }
+
+  // Loading/redirecting state
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+    </div>
+  );
+}
+
 // Inline TermsOfService component
 function TermsOfService() {
   return (
@@ -1836,9 +2018,12 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Landing page for logged-out users (standalone, no ForumLayout) */}
+            <Route path="/landing" element={<LandingPage />} />
+            
             {/* Main Routes with ForumLayout */}
             <Route path="/" element={<ForumLayout />}>
-              <Route index element={<ForumDashboard />} />
+              <Route index element={<HomeOrLanding />} />
               <Route path="forum" element={<ForumHome />} />
               <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
               <Route path="category/:slug" element={<ForumCategory />} />
