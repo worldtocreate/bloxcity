@@ -273,6 +273,7 @@ function GodfreyPanel() {
 import ForumLayout from "./components/forum/ForumLayout";
 // SettingsLayout is inlined below due to module resolution issues
 import ForumHome from "./pages/forum/ForumHome";
+import ForumLeaderboard from "./pages/forum/ForumLeaderboard";
 import ForumCategory from "./pages/forum/ForumCategory";
 import ForumThread from "./pages/forum/ForumThread";
 import ForumNewThread from "./pages/forum/ForumNewThread";
@@ -1619,6 +1620,7 @@ const App = () => (
             <Route path="/" element={<ForumLayout />}>
               <Route index element={<ForumDashboard />} />
               <Route path="forum" element={<ForumHome />} />
+              <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
               <Route path="category/:slug" element={<ForumCategory />} />
               <Route path="category/:slug/new" element={<ForumNewThread />} />
               <Route path="thread/:threadId" element={<ForumThread />} />

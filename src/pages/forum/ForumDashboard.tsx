@@ -12,7 +12,6 @@ import MembershipBadge from '@/components/forum/MembershipBadge';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
-import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 
 // Inlined CompensationDialog to fix module resolution issues
 function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: string; userCreatedAt: string }) {
@@ -527,7 +526,20 @@ export default function ForumDashboard() {
         
         {/* Right Sidebar */}
         <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
-          <LeaderboardSidebar />
+          <Link
+            to="/forum/leaderboard"
+            className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Leaderboard</h3>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">View top players</p>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
     );
@@ -897,7 +909,20 @@ export default function ForumDashboard() {
       
       {/* Right Sidebar */}
       <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
-        <LeaderboardSidebar />
+        <Link
+          to="/forum/leaderboard"
+          className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Leaderboard</h3>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))]">View top players</p>
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
     </div>

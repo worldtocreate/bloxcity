@@ -34,7 +34,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
-import LeaderboardSidebar from './LeaderboardSidebar';
 
 interface AppSidebarProps {
   forumUser?: {
@@ -296,16 +295,6 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
           </SidebarGroup>
         )}
 
-        {/* Leaderboard - show when expanded and logged in */}
-        {!collapsed && isLoggedIn && (
-          <SidebarGroup className="mt-4">
-            <SidebarGroupContent>
-              <div className="px-2">
-                <LeaderboardSidebar />
-              </div>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       {/* Only show collapse button on desktop */}
