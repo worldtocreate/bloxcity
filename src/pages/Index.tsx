@@ -19,10 +19,10 @@ const Footer = () => {
             BLOX City. All rights reserved.
           </div>
           <div className="footer-links">
-            <a href="/terms" className="footer-link">TERMS OF SERVICE</a>
-            <a href="/privacy" className="footer-link">PRIVACY POLICY</a>
+            <a href="/terms-of-service" className="footer-link">TERMS OF SERVICE</a>
+            <a href="/privacy-policy" className="footer-link">PRIVACY POLICY</a>
             <a href="/faq" className="footer-link">FAQ</a>
-            <a href="/forum/staff" className="footer-link">TEAM</a>
+            <a href="/notes" className="footer-link">NOTES</a>
           </div>
         </div>
         <div className="footer-right">
@@ -185,13 +185,12 @@ const Index = () => {
             </div>
             <h3>A Community Revival Project</h3>
             <p>
-              BLOX City is being brought back by a dedicated team of 4 developers who 
+              BLOX City is being brought back by a dedicated team of developers who 
               share a passion for reviving this once-loved platform. We are building this project with
               the vision to recreate the magic that made BLOX City special.
             </p>
             <div className="disclaimer">
-              <strong>Disclaimer:</strong> This project is <em>not</em> associated with Isaac Hymer, Kyle Vickers & his team, or the 
-              original BLOX City ownership. This is an independent revival effort by fans, for fans.
+              <strong>Disclaimer:</strong> This project is an independent revival effort by fans, for fans.
             </div>
           </div>
 

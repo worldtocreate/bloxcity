@@ -59,7 +59,7 @@ const FAQ = () => {
                   Is this the original BLOX City?
                 </AccordionTrigger>
                 <AccordionContent style={{ color: 'hsl(var(--bc-text-muted))' }}>
-                  This is an independent revival project by fans, for fans. We are not associated with Isaac Hymer, Kyle Vickers, or the original BLOX City ownership. Our goal is to recreate the classic experience that made the original platform special.
+                  This is an independent revival project by fans, for fans. Our goal is to recreate the classic experience that made the original platform special.
                 </AccordionContent>
               </AccordionItem>
 
