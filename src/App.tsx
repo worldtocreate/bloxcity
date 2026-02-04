@@ -5,10 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 
 // Forum imports (now main pages)
 import ForumLayout from "./components/forum/ForumLayout";
+// SettingsLayout is inlined below due to module resolution issues
 import ForumHome from "./pages/forum/ForumHome";
 import ForumCategory from "./pages/forum/ForumCategory";
 import ForumThread from "./pages/forum/ForumThread";
@@ -310,36 +311,51 @@ function GameView() {
   );
 }
 
-// Inline SettingsHub component (routes users to the new settings pages)
-function SettingsHub() {
+// Inline SettingsLayout component (settings pages with sidebar)
+function SettingsLayout() {
+  const location = window.location.pathname;
+  
+  const settingsNavItems = [
+    { title: 'Account', url: '/settings', icon: User, exact: true },
+    { title: 'Privacy', url: '/settings/privacy', icon: LockIcon },
+    { title: 'Security', url: '/settings/security', icon: Shield },
+  ];
+
+  const isActive = (path: string, exact?: boolean) => {
+    if (exact) return location === path;
+    return location === path;
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Settings</h1>
-        <p className="text-[hsl(var(--bc-text-muted))] mt-1">Manage your privacy and security preferences.</p>
-      </div>
+    <div className="max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Settings Sidebar */}
+        <div className="w-full md:w-64 flex-shrink-0">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 sticky top-20">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Settings</h2>
+            <nav className="space-y-1">
+              {settingsNavItems.map((item) => (
+                <Link
+                  key={item.url}
+                  to={item.url}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    isActive(item.url, item.exact)
+                      ? 'bg-[hsl(var(--bc-primary))] text-white'
+                      : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Link
-          to="/settings/privacy"
-          className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 hover:border-[hsl(var(--bc-primary))] transition"
-        >
-          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Privacy</h2>
-          <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Direct messages, wall privacy, and visibility controls.</p>
-        </Link>
-
-        <Link
-          to="/settings/security"
-          className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 hover:border-[hsl(var(--bc-primary))] transition"
-        >
-          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Security</h2>
-          <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">2FA, encryption PIN, and sensitive settings PIN.</p>
-        </Link>
-      </div>
-
-      <div className="text-sm text-[hsl(var(--bc-text-muted))]">
-        Looking for the legacy settings page?{' '}
-        <Link to="/settings/account" className="text-[hsl(var(--bc-primary))] hover:underline">Open account settings</Link>.
+        {/* Settings Content - rendered via Outlet */}
+        <div className="flex-1 min-w-0">
+          <Outlet />
+        </div>
       </div>
     </div>
   );
@@ -1042,10 +1058,13 @@ const App = () => (
               <Route path="category/:slug" element={<ForumCategory />} />
               <Route path="category/:slug/new" element={<ForumNewThread />} />
               <Route path="thread/:threadId" element={<ForumThread />} />
-              <Route path="settings" element={<SettingsHub />} />
-              <Route path="settings/account" element={<ForumSettings />} />
-              <Route path="settings/privacy" element={<SettingsPrivacy />} />
-              <Route path="settings/security" element={<SettingsSecurity />} />
+              
+              {/* Settings routes with nested layout */}
+              <Route path="settings" element={<SettingsLayout />}>
+                <Route index element={<ForumSettings />} />
+                <Route path="privacy" element={<SettingsPrivacy />} />
+                <Route path="security" element={<SettingsSecurity />} />
+              </Route>
               <Route path="user/:username" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="players" element={<ForumUsers />} />
