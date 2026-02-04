@@ -1388,7 +1388,7 @@ const App = () => (
                 <Route path="privacy" element={<SettingsPrivacy />} />
                 <Route path="security" element={<SettingsSecurity />} />
               </Route>
-              <Route path="user/:username" element={<ForumUserProfile />} />
+              <Route path="user/:id" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="players" element={<ForumUsers />} />
               <Route path="groups" element={<Groups />} />

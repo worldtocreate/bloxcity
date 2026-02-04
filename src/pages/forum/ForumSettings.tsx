@@ -1592,6 +1592,26 @@ export default function ForumSettings() {
         </div>
       </div>
 
+      {/* User ID Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+          <User className="w-5 h-5" />
+          User ID
+        </h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[hsl(var(--bc-text))] font-medium">Your unique user ID</div>
+            <div className="text-sm text-[hsl(var(--bc-text-muted))]">This is your permanent identifier on BLOX City</div>
+          </div>
+          <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-2">
+            <span className="text-2xl font-bold text-[hsl(var(--bc-primary))]">#{(forumUser as any).serial_id || '—'}</span>
+          </div>
+        </div>
+        <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-3">
+          Your profile URL: <span className="text-[hsl(var(--bc-primary))]">bloxcity.lovable.app/user/{(forumUser as any).serial_id}</span>
+        </p>
+      </div>
+
       {/* Date of Birth Section */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
