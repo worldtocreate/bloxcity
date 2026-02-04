@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Pin, Lock, MessageSquare, ChevronLeft, Clock, User, Shield } from 'lucide-react';
+import { Plus, Pin, Lock, MessageSquare, ChevronRight, User, Shield } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
-import VerifiedBadge from '@/components/forum/VerifiedBadge';
+import UserAvatar from '@/components/forum/UserAvatar';
+import { getRelativeTime } from '@/lib/timeUtils';
 
 interface Thread {
   id: string;
   title: string;
   is_pinned: boolean;
   is_locked: boolean;
+  is_deleted?: boolean;
   view_count: number;
   reply_count: number;
   created_at: string;
@@ -19,9 +21,11 @@ interface Thread {
     username: string;
     avatar_url: string | null;
     is_verified: boolean;
+    is_staff?: boolean;
   };
   last_poster?: {
     username: string;
+    is_staff?: boolean;
   };
 }
 
@@ -76,15 +80,40 @@ export default function ForumCategory() {
         threadData.map(async (thread) => {
           const { data: author } = await supabase
             .from('forum_users')
-            .select('id, username, avatar_url, is_verified')
+            .select('id, username, avatar_url, is_verified, user_id')
             .eq('id', thread.author_id)
             .single();
           
+          // Check if author is staff
+          let isStaff = false;
+          if (author?.user_id) {
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', author.user_id)
+              .in('role', ['admin', 'moderator']);
+            isStaff = (roles?.length || 0) > 0;
+          }
+
           const { data: lastPoster } = thread.last_post_by 
-            ? await supabase.from('forum_users').select('username').eq('id', thread.last_post_by).single()
+            ? await supabase.from('forum_users').select('username, user_id').eq('id', thread.last_post_by).single()
             : { data: null };
 
-          return { ...thread, author, last_poster: lastPoster };
+          let lastPosterIsStaff = false;
+          if (lastPoster?.user_id) {
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', lastPoster.user_id)
+              .in('role', ['admin', 'moderator']);
+            lastPosterIsStaff = (roles?.length || 0) > 0;
+          }
+
+          return { 
+            ...thread, 
+            author: { ...author, is_staff: isStaff }, 
+            last_poster: lastPoster ? { ...lastPoster, is_staff: lastPosterIsStaff } : null 
+          };
         })
       );
       setThreads(threadsWithAuthors as unknown as Thread[]);
@@ -107,29 +136,23 @@ export default function ForumCategory() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Link 
-            to="/" 
-            className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-2"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back to Forums
-          </Link>
-          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2">
-            {category?.name}
-            {category?.is_admin_only && (
-              <Shield className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
-            )}
-          </h1>
-          <p className="text-[hsl(var(--bc-text-muted))]">{category?.description}</p>
-        </div>
+      <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))]">Forum</h1>
+      
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm">
+        <Link to="/" className="text-[hsl(var(--bc-primary))] hover:underline">Forum</Link>
+        <ChevronRight className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+        <span className="text-[hsl(var(--bc-text))]">{category?.name}</span>
+      </nav>
+
+      {/* New Thread Button */}
+      <div className="flex justify-end">
         {canCreateThread ? (
           <Link
             to={`/category/${slug}/new`}
-            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
+            className="flex items-center gap-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 text-white px-4 py-2 rounded-lg transition font-medium"
           >
             <Plus className="w-4 h-4" />
             New Thread
@@ -145,74 +168,103 @@ export default function ForumCategory() {
         ) : null}
       </div>
 
-      {/* Threads */}
-      <div className="space-y-2">
-        {threads.length === 0 ? (
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-12 text-center">
-            <MessageSquare className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
-            <p className="text-[hsl(var(--bc-text-muted))]">No threads yet. Be the first to create one!</p>
-          </div>
-        ) : (
-          threads.map((thread) => (
-            <Link
-              key={thread.id}
-              to={`/thread/${thread.id}`}
-              className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
-            >
-              <div className="flex items-center gap-4">
-                {/* Author Avatar */}
-                <div className="hidden sm:block">
-                  {thread.author?.avatar_url ? (
-                    <img 
-                      src={thread.author.avatar_url}
-                      alt={thread.author.username}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                      <User className="w-5 h-5 text-white" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Thread Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {thread.is_pinned && <Pin className="w-4 h-4 text-[hsl(var(--bc-accent))]" />}
-                    {thread.is_locked && <Lock className="w-4 h-4 text-[hsl(var(--bc-secondary))]" />}
-                    <h3 className="text-[hsl(var(--bc-text))] font-medium group-hover:text-[hsl(var(--bc-primary))] transition truncate">
-                      {thread.title}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-[hsl(var(--bc-text-muted))]">
-                    <span className="flex items-center gap-1">
-                      {thread.author?.username}
-                      {thread.author?.is_verified && <VerifiedBadge size="sm" />}
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {new Date(thread.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="text-right hidden sm:block">
-                  <div className="text-sm text-[hsl(var(--bc-text-muted))]">
-                    {thread.reply_count} replies • {thread.view_count} views
-                  </div>
-                  {thread.last_poster && (
-                    <div className="text-xs text-[hsl(var(--bc-text-muted))]">
-                      Last: {thread.last_poster.username}
-                    </div>
-                  )}
-                </div>
-              </div>
+      {/* Threads Table */}
+      {threads.length === 0 ? (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-12 text-center">
+          <MessageSquare className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
+          <p className="text-[hsl(var(--bc-text-muted))]">
+            There are no threads in this topic. Maybe{' '}
+            <Link to={`/category/${slug}/new`} className="text-[hsl(var(--bc-primary))] hover:underline">
+              create one?
             </Link>
-          ))
-        )}
-      </div>
+          </p>
+        </div>
+      ) : (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
+          {/* Table Header */}
+          <div className="bg-[hsl(var(--bc-primary))] text-white px-4 py-3 hidden md:grid md:grid-cols-12 gap-4 text-sm font-medium">
+            <div className="col-span-8">Post</div>
+            <div className="col-span-2 text-center">Replies</div>
+            <div className="col-span-2 text-center">Last Reply</div>
+          </div>
+
+          {/* Threads */}
+          <div className="divide-y divide-[hsl(var(--bc-border))]">
+            {threads.map((thread) => (
+              <Link
+                key={thread.id}
+                to={`/thread/${thread.id}`}
+                className={`block px-4 py-4 hover:bg-[hsl(var(--bc-bg-light))] transition ${thread.is_deleted ? 'opacity-50' : ''}`}
+              >
+                <div className="grid md:grid-cols-12 gap-4 items-center">
+                  {/* Post Info */}
+                  <div className="md:col-span-8 flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <UserAvatar 
+                        avatarUrl={thread.author?.avatar_url} 
+                        username={thread.author?.username || ''} 
+                        size="md" 
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {thread.is_pinned && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[hsl(var(--bc-accent))] text-white rounded">
+                            <Pin className="w-3 h-3" /> Pinned
+                          </span>
+                        )}
+                        {thread.is_locked && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-black text-white rounded">
+                            <Lock className="w-3 h-3" /> Locked
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition truncate text-lg">
+                        {thread.title}
+                      </h3>
+                      <div className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">
+                        <span className="hidden sm:inline">Posted by </span>
+                        <span className={thread.author?.is_staff ? 'text-[hsl(var(--bc-accent))]' : ''}>
+                          {thread.author?.username}
+                        </span>
+                        <span> - {getRelativeTime(thread.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Replies */}
+                  <div className="md:col-span-2 text-center hidden md:block">
+                    <span className="text-[hsl(var(--bc-text))]">{thread.reply_count.toLocaleString()}</span>
+                  </div>
+
+                  {/* Last Reply */}
+                  <div className="md:col-span-2 text-center hidden md:block">
+                    {thread.last_poster ? (
+                      <div>
+                        <span className={thread.last_poster.is_staff ? 'text-[hsl(var(--bc-accent))]' : 'text-[hsl(var(--bc-text))]'}>
+                          {thread.last_poster.username}
+                        </span>
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          {getRelativeTime(thread.last_post_at)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className={thread.author?.is_staff ? 'text-[hsl(var(--bc-accent))]' : 'text-[hsl(var(--bc-text))]'}>
+                          {thread.author?.username}
+                        </span>
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          {getRelativeTime(thread.created_at)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

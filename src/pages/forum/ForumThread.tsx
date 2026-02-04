@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2, Mail } from 'lucide-react';
+import { ChevronRight, User, Shield, Quote, Send, Lock, Clock, Edit2, Pin, Unlock, Trash2, Mail, Flag } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
+import UserAvatar from '@/components/forum/UserAvatar';
+import MembershipBadge from '@/components/forum/MembershipBadge';
+import { getRelativeTime } from '@/lib/timeUtils';
 
 interface Post {
   id: string;
@@ -16,7 +19,8 @@ interface Post {
   quoted_post?: {
     id: string;
     content: string;
-    author?: { username: string };
+    created_at: string;
+    author?: { username: string; avatar_url: string | null };
   };
   author: {
     id: string;
@@ -26,7 +30,10 @@ interface Post {
     signature: string | null;
     post_count: number;
     is_verified: boolean;
+    membership_tier?: string | null;
+    xp?: number;
   };
+  is_staff?: boolean;
 }
 
 interface Thread {
@@ -34,8 +41,10 @@ interface Thread {
   title: string;
   is_locked: boolean;
   is_pinned: boolean;
+  is_deleted?: boolean;
   view_count: number;
   category: {
+    id: string;
     name: string;
     slug: string;
   };
@@ -79,7 +88,7 @@ export default function ForumThread() {
     if (threadData) {
       const { data: categoryData } = await supabase
         .from('forum_categories')
-        .select('name, slug')
+        .select('id, name, slug')
         .eq('id', threadData.category_id)
         .single();
 
@@ -87,7 +96,7 @@ export default function ForumThread() {
         ...threadData, 
         is_pinned: threadData.is_pinned ?? false,
         is_locked: threadData.is_locked ?? false,
-        category: categoryData || { name: 'Unknown', slug: '' }
+        category: categoryData || { id: '', name: 'Unknown', slug: '' }
       } as Thread);
       await fetchPosts();
     }
@@ -106,28 +115,39 @@ export default function ForumThread() {
         postsData.map(async (post) => {
           const { data: author } = await supabase
             .from('forum_users')
-            .select('id, user_id, username, avatar_url, signature, post_count, is_verified')
+            .select('id, user_id, username, avatar_url, signature, post_count, is_verified, membership_tier, xp')
             .eq('id', post.author_id)
             .single();
+          
+          // Check if author is staff
+          let isStaff = false;
+          if (author?.user_id) {
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', author.user_id)
+              .in('role', ['admin', 'moderator']);
+            isStaff = (roles?.length || 0) > 0;
+          }
           
           let quotedPost = undefined;
           if (post.quoted_post_id) {
             const { data: qp } = await supabase
               .from('forum_posts')
-              .select('id, content, author_id')
+              .select('id, content, created_at, author_id')
               .eq('id', post.quoted_post_id)
               .single();
             if (qp) {
               const { data: qpAuthor } = await supabase
                 .from('forum_users')
-                .select('username')
+                .select('username, avatar_url')
                 .eq('id', qp.author_id)
                 .single();
               quotedPost = { ...qp, author: qpAuthor };
             }
           }
 
-          return { ...post, author, quoted_post: quotedPost };
+          return { ...post, author, quoted_post: quotedPost, is_staff: isStaff };
         })
       );
       setPosts(postsWithAuthors as unknown as Post[]);
@@ -300,6 +320,8 @@ export default function ForumThread() {
     }
   };
 
+  const getLevel = (xp: number = 0) => Math.floor(xp / 100) + 1;
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
@@ -316,264 +338,320 @@ export default function ForumThread() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <Link
-          to={`/category/${thread.category.slug}`}
-          className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-2"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          {thread.category.name}
-        </Link>
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2 flex-wrap">
-            {thread.is_pinned && <Pin className="w-5 h-5 text-[hsl(var(--bc-accent))]" />}
-            {thread.title}
-            {thread.is_locked && <Lock className="w-5 h-5 text-[hsl(var(--bc-secondary))]" />}
-          </h1>
-          
-          {/* Admin Controls */}
-          {isAdmin && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={handleTogglePin}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  thread.is_pinned 
-                    ? 'bg-[hsla(var(--bc-accent),0.2)] text-[hsl(var(--bc-accent))]' 
-                    : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
-                }`}
-                title={thread.is_pinned ? 'Unpin thread' : 'Pin thread'}
-              >
-                <Pin className="w-4 h-4" />
-                {thread.is_pinned ? 'Pinned' : 'Pin'}
-              </button>
-              <button
-                onClick={handleToggleLock}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                  thread.is_locked 
-                    ? 'bg-red-100 text-red-600' 
-                    : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
-                }`}
-                title={thread.is_locked ? 'Unlock thread' : 'Lock thread'}
-              >
-                {thread.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                {thread.is_locked ? 'Unlock' : 'Lock'}
-              </button>
-              <button
-                onClick={() => setShowDeleteModal('thread')}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-700 text-white transition"
-                title="Delete thread"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
+    <div className="space-y-4">
+      {/* Header Row */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div />
+        <div className="flex items-center gap-2">
+          {(!thread.is_locked || isAdmin) && forumUser && (
+            <a
+              href="#reply-form"
+              className="px-4 py-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 text-white rounded-lg font-medium transition"
+            >
+              Reply
+            </a>
+          )}
+          {thread.is_locked && !isAdmin && (
+            <button disabled className="px-4 py-2 bg-[hsl(var(--bc-text-muted))] text-white rounded-lg cursor-not-allowed">
+              Reply
+            </button>
           )}
         </div>
       </div>
 
-      {/* Posts */}
-      <div className="space-y-4">
-        {posts.map((post) => {
-          const isBlocked = blockedUsers.includes(post.author.id);
-          
-          return (
-            <div
-              key={post.id}
-              id={`post-${post.id}`}
-              className={`bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden ${
-                isBlocked ? 'opacity-50' : ''
-              }`}
-            >
-              {isBlocked && (
-                <div className="bg-[hsl(var(--bc-bg-light))] px-4 py-2 text-sm text-[hsl(var(--bc-text-muted))] border-b border-[hsl(var(--bc-border))]">
-                  This user is blocked. Content hidden.
-                </div>
-              )}
-              
-              {!isBlocked && (
-                <div className="flex flex-col sm:flex-row">
-                  {/* Author Sidebar */}
-                  <div className="sm:w-48 p-4 bg-[hsl(var(--bc-bg-light))] border-b sm:border-b-0 sm:border-r border-[hsl(var(--bc-border))]">
-                    <div className="flex sm:flex-col items-center sm:items-start gap-3">
-                      <Link 
-                        to={`/id/${post.author.username}/profile`}
-                        className="block hover:opacity-80 transition"
-                      >
-                        {post.author.avatar_url ? (
-                          <img
-                            src={post.author.avatar_url}
-                            alt={post.author.username}
-                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                            <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-                          </div>
-                        )}
-                      </Link>
-                      <div>
-                        <Link 
-                          to={`/id/${post.author.username}/profile`}
-                          className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] flex items-center gap-1 transition"
-                        >
-                          {post.author.username}
-                          <VerificationBadge size="sm" forumUserId={post.author.id} isVerified={post.author.is_verified} />
-                          <AdminBadge userId={post.author?.user_id || ''} />
-                        </Link>
-                        <div className="text-xs text-[hsl(var(--bc-text-muted))]">
-                          {post.author.post_count} posts
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+      {/* Deleted Alert */}
+      {thread.is_deleted && (
+        <div className="bg-[hsl(var(--bc-accent))] text-white text-center py-2 px-4 rounded-lg">
+          This thread is deleted.
+        </div>
+      )}
 
-                  {/* Post Content */}
-                  <div className="flex-1 p-4">
-                    <div className="flex items-center justify-between mb-3 text-xs text-[hsl(var(--bc-text-muted))]">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3" />
-                        {new Date(post.created_at).toLocaleString()}
-                        {post.is_edited && (
-                          <span className="flex items-center gap-1">
-                            <Edit2 className="w-3 h-3" />
-                            edited
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm flex-wrap">
+        <Link to="/" className="text-[hsl(var(--bc-primary))] hover:underline">Forum</Link>
+        <ChevronRight className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+        <Link to={`/category/${thread.category.slug}`} className="text-[hsl(var(--bc-primary))] hover:underline">{thread.category.name}</Link>
+        <ChevronRight className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+        <span className="text-[hsl(var(--bc-text))] truncate">{thread.title}</span>
+      </nav>
+
+      {/* Admin Controls */}
+      {isAdmin && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleTogglePin}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition ${
+              thread.is_pinned 
+                ? 'bg-[hsl(var(--bc-accent))] text-white' 
+                : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
+            }`}
+          >
+            <Pin className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleToggleLock}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition ${
+              thread.is_locked 
+                ? 'bg-[hsl(var(--bc-accent))] text-white' 
+                : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'
+            }`}
+          >
+            <Lock className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowDeleteModal('thread')}
+            className="flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Posts */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
+        <div className="divide-y divide-[hsl(var(--bc-border))]">
+          {posts.map((post, index) => {
+            const isBlocked = blockedUsers.includes(post.author.id);
+            const isFirstPost = index === 0;
+            
+            return (
+              <div
+                key={post.id}
+                id={`post-${post.id}`}
+                className={isBlocked ? 'opacity-50' : ''}
+              >
+                {isBlocked ? (
+                  <div className="p-4 text-sm text-[hsl(var(--bc-text-muted))]">
+                    This user is blocked. Content hidden.
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    {/* Action buttons */}
+                    <div className="flex justify-end gap-3 mb-2">
+                      {forumUser && !thread.is_locked && (
                         <button
                           onClick={() => handleQuote(post)}
-                          className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+                          className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition"
+                          title="Quote"
                         >
                           <Quote className="w-4 h-4" />
-                          Quote
                         </button>
-                        {isAdmin && (
-                          <button
-                            onClick={() => setShowDeleteModal(post.id)}
-                            className="flex items-center gap-1 text-red-400 hover:text-red-500 transition"
+                      )}
+                      {forumUser && post.author.id !== forumUser.id && !post.is_staff && (
+                        <button className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition" title="Report">
+                          <Flag className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-4">
+                      {/* Author Sidebar */}
+                      <div className="md:w-40 flex-shrink-0 text-center">
+                        {/* Online indicator + username */}
+                        <div className="flex items-center justify-center gap-1 mb-2">
+                          <div className={`w-2 h-2 rounded-full ${post.is_staff ? 'bg-[hsl(var(--bc-accent))]' : 'bg-[hsl(var(--bc-text-muted))]'}`} />
+                          <Link 
+                            to={`/id/${post.author.username}/profile`}
+                            className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition truncate"
                           >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </button>
+                            {post.author.username}
+                          </Link>
+                          <VerificationBadge size="sm" forumUserId={post.author.id} isVerified={post.author.is_verified} />
+                        </div>
+
+                        {/* Avatar */}
+                        <Link to={`/id/${post.author.username}/profile`} className="block mb-2">
+                          <UserAvatar 
+                            avatarUrl={post.author.avatar_url} 
+                            username={post.author.username} 
+                            size="xl"
+                            className="mx-auto"
+                          />
+                        </Link>
+
+                        {/* Staff/Membership Badge */}
+                        {post.is_staff && (
+                          <div className="inline-block bg-[hsl(var(--bc-accent))] text-white text-xs font-bold px-3 py-1 rounded mb-2">
+                            Admin
+                          </div>
+                        )}
+                        {!post.is_staff && post.author.membership_tier && (
+                          <div className="mb-2">
+                            <MembershipBadge tier={post.author.membership_tier as any} size="sm" />
+                          </div>
+                        )}
+
+                        {/* Stats */}
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))] space-y-1 mt-2">
+                          <div className="flex justify-between">
+                            <span className="font-semibold">Level:</span>
+                            <span>{getLevel(post.author.xp)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="font-semibold">Posts:</span>
+                            <span>{post.author.post_count.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Post Content */}
+                      <div className="flex-1 min-w-0">
+                        {/* Timestamp */}
+                        <div className="text-sm text-[hsl(var(--bc-text-muted))] mb-3 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Posted {getRelativeTime(post.created_at)}
+                          {post.is_edited && (
+                            <span className="italic"> (edited)</span>
+                          )}
+                        </div>
+
+                        {/* Quoted Post */}
+                        {post.quoted_post && (
+                          <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 mb-3">
+                            <div className="flex items-start gap-2">
+                              {post.quoted_post.author?.avatar_url && (
+                                <img src={post.quoted_post.author.avatar_url} alt="" className="w-8 h-8 rounded" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                                  {getRelativeTime(post.quoted_post.created_at)}, <Link to={`/id/${post.quoted_post.author?.username}/profile`} className="text-[hsl(var(--bc-primary))]">{post.quoted_post.author?.username}</Link> wrote:
+                                </div>
+                                <div className="text-[hsl(var(--bc-text))] italic text-sm mt-1 line-clamp-3">
+                                  {post.quoted_post.content}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Content */}
+                        <div className="text-[hsl(var(--bc-text))] whitespace-pre-wrap">
+                          {post.content}
+                        </div>
+
+                        {/* Signature */}
+                        {post.author.signature && (
+                          <>
+                            <hr className="my-4 border-[hsl(var(--bc-border))]" />
+                            <div className="text-sm text-[hsl(var(--bc-text-muted))] italic">
+                              {post.author.signature}
+                            </div>
+                          </>
+                        )}
+
+                        {/* Admin Actions */}
+                        {isAdmin && (
+                          <>
+                            <hr className="my-3 border-[hsl(var(--bc-border))]" />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setShowDeleteModal(post.id)}
+                                className="p-1.5 bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-accent))] rounded transition"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button className="p-1.5 bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] rounded transition">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
-
-                    {/* Quoted Post */}
-                    {post.quoted_post && (
-                      <div className="bg-[hsl(var(--bc-bg-light))] border-l-4 border-[hsl(var(--bc-primary))] p-3 mb-3 rounded">
-                        <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
-                          Originally posted by {(post.quoted_post as any).author?.username}:
-                        </div>
-                        <div className="text-[hsl(var(--bc-text))] text-sm line-clamp-3">
-                          {post.quoted_post.content}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="text-[hsl(var(--bc-text))] whitespace-pre-wrap">{post.content}</div>
-
-                    {/* Signature */}
-                    {post.author.signature && (
-                      <div className="mt-4 pt-4 border-t border-[hsl(var(--bc-border))]">
-                        <div className="text-sm text-[hsl(var(--bc-text-muted))] italic">{post.author.signature}</div>
-                      </div>
-                    )}
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Reply Form */}
-      {forumUser && !thread.is_locked && emailVerified ? (
-        <form onSubmit={handleSubmitReply} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-          <h3 className="text-lg font-medium text-[hsl(var(--bc-text))] mb-3">Reply to this thread</h3>
-          
-          {quotedPost && (
-            <div className="bg-[hsl(var(--bc-bg-light))] border-l-4 border-[hsl(var(--bc-primary))] p-3 mb-3 rounded flex items-start justify-between">
-              <div>
-                <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
-                  Quoting {quotedPost.author.username}:
+      <div id="reply-form">
+        {forumUser && !thread.is_locked && emailVerified ? (
+          <form onSubmit={handleSubmitReply} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4">
+            <h3 className="text-lg font-medium text-[hsl(var(--bc-text))] mb-3">Reply to this thread</h3>
+            
+            {quotedPost && (
+              <div className="bg-[hsl(var(--bc-bg-light))] border-l-4 border-[hsl(var(--bc-primary))] p-3 mb-3 rounded flex items-start justify-between">
+                <div>
+                  <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
+                    Quoting {quotedPost.author.username}:
+                  </div>
+                  <div className="text-[hsl(var(--bc-text))] text-sm line-clamp-2">
+                    {quotedPost.content}
+                  </div>
                 </div>
-                <div className="text-[hsl(var(--bc-text))] text-sm line-clamp-2">
-                  {quotedPost.content}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setQuotedPost(null)}
+                  className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] text-xl"
+                >
+                  ×
+                </button>
               </div>
+            )}
+
+            <textarea
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="Write your reply..."
+              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+              rows={4}
+              required
+            />
+            <div className="flex justify-end mt-3">
               <button
-                type="button"
-                onClick={() => setQuotedPost(null)}
-                className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]"
+                type="submit"
+                disabled={submitting || !replyContent.trim()}
+                className="flex items-center gap-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition font-medium"
               >
-                ×
+                <Send className="w-4 h-4" />
+                {submitting ? 'Posting...' : 'Post Reply'}
               </button>
             </div>
-          )}
-
-          <textarea
-            value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
-            placeholder="Write your reply..."
-            className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-            rows={4}
-            required
-          />
-          <div className="flex justify-end mt-3">
-            <button
-              type="submit"
-              disabled={submitting || !replyContent.trim()}
-              className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition font-medium"
-            >
-              <Send className="w-4 h-4" />
-              {submitting ? 'Posting...' : 'Post Reply'}
-            </button>
+          </form>
+        ) : forumUser && !thread.is_locked && emailVerified === false ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+            <Mail className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+            <p className="text-amber-700 font-medium">Verify your email to reply</p>
+            <p className="text-amber-600 text-sm mt-1">Check the banner above to send a verification email.</p>
           </div>
-        </form>
-      ) : forumUser && !thread.is_locked && emailVerified === false ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-          <Mail className="w-6 h-6 text-amber-500 mx-auto mb-2" />
-          <p className="text-amber-700 font-medium">Verify your email to reply</p>
-          <p className="text-amber-600 text-sm mt-1">Check the banner above to send a verification email.</p>
-        </div>
-      ) : thread.is_locked ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
-          <Lock className="w-6 h-6 text-red-500 mx-auto mb-2" />
-          <p className="text-red-600">This thread is locked and cannot receive new replies.</p>
-        </div>
-      ) : user ? (
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
-          <p className="text-[hsl(var(--bc-text-muted))]">
-            You’re signed in, but you need a forum profile to reply.
-          </p>
-          <div className="mt-3">
-            <Link
-              to="/register"
-              className="inline-flex items-center justify-center bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
-            >
-              Create forum profile
-            </Link>
+        ) : thread.is_locked ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <Lock className="w-6 h-6 text-red-500 mx-auto mb-2" />
+            <p className="text-red-600">This thread is locked and cannot receive new replies.</p>
           </div>
-        </div>
-      ) : (
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
-          <p className="text-[hsl(var(--bc-text-muted))]">
-            <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link>
-            {' '}or{' '}
-            <Link to="/register" className="text-[hsl(var(--bc-primary))] hover:underline">register</Link>
-            {' '}to reply.
-          </p>
-        </div>
-      )}
+        ) : user ? (
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4 text-center">
+            <p className="text-[hsl(var(--bc-text-muted))]">
+              You're signed in, but you need a forum profile to reply.
+            </p>
+            <div className="mt-3">
+              <Link
+                to="/register"
+                className="inline-flex items-center justify-center bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
+              >
+                Create forum profile
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-4 text-center">
+            <p className="text-[hsl(var(--bc-text-muted))]">
+              <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link>
+              {' '}or{' '}
+              <Link to="/register" className="text-[hsl(var(--bc-primary))] hover:underline">register</Link>
+              {' '}to reply.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 max-w-md w-full">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-bold text-[hsl(var(--bc-text))] mb-4">
               Delete {showDeleteModal === 'thread' ? 'Thread' : 'Post'}?
             </h3>
@@ -610,16 +688,4 @@ export default function ForumThread() {
       )}
     </div>
   );
-}
-
-function AdminBadge({ userId }: { userId: string }) {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    supabase.rpc('has_role', { _user_id: userId, _role: 'admin' })
-      .then(({ data }) => setIsAdmin(data === true));
-  }, [userId]);
-
-  if (!isAdmin) return null;
-  return <span title="Administrator"><Shield className="w-4 h-4 text-[hsl(var(--bc-accent))]" /></span>;
 }

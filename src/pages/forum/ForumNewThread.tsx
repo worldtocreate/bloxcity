@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, Send, Mail } from 'lucide-react';
+import { ChevronRight, Send, Mail } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
+import UserAvatar from '@/components/forum/UserAvatar';
 
 interface Category {
   id: string;
@@ -12,8 +13,18 @@ interface Category {
   is_admin_only: boolean;
 }
 
+interface QuoteData {
+  id: string;
+  content: string;
+  created_at: string;
+  author: {
+    username: string;
+    avatar_url: string | null;
+  };
+}
+
 export default function ForumNewThread() {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, quoteId } = useParams<{ slug: string; quoteId?: string }>();
   const navigate = useNavigate();
   const { forumUser, isAdmin, emailVerified } = useOutletContext<{ 
     forumUser: ForumUser | null;
@@ -25,10 +36,12 @@ export default function ForumNewThread() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [quote, setQuote] = useState<QuoteData | null>(null);
 
   useEffect(() => {
     fetchCategory();
-  }, [slug]);
+    if (quoteId) fetchQuote();
+  }, [slug, quoteId]);
 
   const fetchCategory = async () => {
     const { data } = await supabase
@@ -45,6 +58,30 @@ export default function ForumNewThread() {
       }
     } else {
       navigate('/');
+    }
+  };
+
+  const fetchQuote = async () => {
+    if (!quoteId) return;
+    const { data } = await supabase
+      .from('forum_posts')
+      .select('id, content, created_at, author_id')
+      .eq('id', quoteId)
+      .single();
+    
+    if (data) {
+      const { data: author } = await supabase
+        .from('forum_users')
+        .select('username, avatar_url')
+        .eq('id', data.author_id)
+        .single();
+      
+      setQuote({
+        id: data.id,
+        content: data.content,
+        created_at: data.created_at,
+        author: author || { username: 'Unknown', avatar_url: null }
+      });
     }
   };
 
@@ -88,7 +125,8 @@ export default function ForumNewThread() {
     const { error: postError } = await supabase.from('forum_posts').insert({
       thread_id: thread.id,
       author_id: forumUser.id,
-      content: content.trim()
+      content: content.trim(),
+      quoted_post_id: quote?.id || null
     });
 
     if (postError) {
@@ -132,65 +170,78 @@ export default function ForumNewThread() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Link
-        to={`/category/${slug}`}
-        className="flex items-center gap-1 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-4"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Back to {category?.name || 'Category'}
-      </Link>
+    <div className="max-w-3xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm mb-4">
+        <Link to="/" className="text-[hsl(var(--bc-primary))] hover:underline">Forum</Link>
+        <ChevronRight className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+        <span className="text-[hsl(var(--bc-text))]">New Thread</span>
+      </nav>
 
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-6">Create New Thread</h1>
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
+        {/* Header */}
+        <div className="bg-[hsl(var(--bc-primary))] text-white px-4 py-3 font-medium">
+          Create New Thread in {category?.name}
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
-              Thread Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter a descriptive title..."
-              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-              required
-              maxLength={200}
-            />
-          </div>
+        <div className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Quote Preview */}
+            {quote && (
+              <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <UserAvatar avatarUrl={quote.author.avatar_url} username={quote.author.username} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-[hsl(var(--bc-text-muted))]">
+                      {new Date(quote.created_at).toLocaleString()}, <span className="text-[hsl(var(--bc-primary))]">{quote.author.username}</span> wrote:
+                    </div>
+                    <div className="text-[hsl(var(--bc-text))] italic mt-1 line-clamp-3">
+                      {quote.content}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
-              Content
-            </label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your post content..."
-              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-              rows={8}
-              required
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                required
+                maxLength={200}
+              />
+            </div>
 
-          <div className="flex justify-end gap-3">
-            <Link
-              to={`/category/${slug}`}
-              className="px-4 py-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition"
-            >
-              Cancel
-            </Link>
+            <div>
+              <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
+                Body
+              </label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Write your post here..."
+                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                rows={5}
+                required
+              />
+            </div>
+
             <button
               type="submit"
               disabled={submitting || !title.trim() || !content.trim()}
-              className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white px-6 py-2 rounded-lg transition font-medium"
+              className="w-full flex items-center justify-center gap-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 disabled:bg-[hsl(var(--bc-text-muted))] text-white px-6 py-3 rounded-lg transition font-medium"
             >
               <Send className="w-4 h-4" />
               {submitting ? 'Creating...' : 'Create Thread'}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
