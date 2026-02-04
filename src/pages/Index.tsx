@@ -3,8 +3,8 @@ import { useState } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import landingBg from "@/assets/landing-background.png";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-
 const Index = () => {
   // Newsletter state
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -217,13 +217,11 @@ const Index = () => {
               </a>
             </div>
           </div>
-
-          {/* Footer */}
-          <footer className="maintenance-footer">
-            <p>© 2026 BLOX City, Inc. All rights reserved.</p>
-          </footer>
         </div>
       </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

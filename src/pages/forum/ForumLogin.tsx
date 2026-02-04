@@ -5,7 +5,7 @@ import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react'
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
-
+import WelcomeDialog from '@/components/forum/WelcomeDialog';
 interface DisabledAccountInfo {
   is_self_disabled: boolean;
   self_disabled_reason: string | null;
@@ -449,6 +449,9 @@ export default function ForumLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+      {/* Welcome Dialog popup */}
+      <WelcomeDialog isLoggedIn={false} />
+      
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">

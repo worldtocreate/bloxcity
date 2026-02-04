@@ -1508,3 +1508,240 @@ textarea.bc-input {
   height: 20px;
   vertical-align: middle;
 }
+
+/* ========================================
+   FOOTER COMPONENT
+======================================== */
+.footer {
+  background: hsl(var(--bc-bg-card));
+  border-top: 1px solid hsl(var(--bc-section-border));
+  padding: 1.5rem 0;
+  margin-top: auto;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer-copyright {
+  font-weight: 600;
+  font-size: 1rem;
+  color: hsl(var(--bc-text));
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-logo-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  margin-top: -2px;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-link {
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: hsl(var(--bc-text-muted));
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: hsl(var(--bc-info));
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.footer-socials {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.footer-social-link {
+  color: hsl(var(--bc-text-muted));
+  font-size: 1.5rem;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.footer-social-link:hover {
+  color: hsl(var(--bc-info));
+  transform: scale(1.1);
+}
+
+@media (max-width: 640px) {
+  .footer-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .footer-links {
+    justify-content: center;
+  }
+  
+  .footer-socials {
+    justify-content: center;
+  }
+}
+
+/* ========================================
+   GAMES PAGE SIDEBAR
+======================================== */
+.games-layout {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.games-sidebar {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.games-sidebar-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.games-category-item {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: hsl(var(--bc-text));
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.games-category-item:hover {
+  background: hsl(var(--bc-bg-light));
+}
+
+.games-category-item.active {
+  background: hsl(var(--bc-info));
+  color: white;
+}
+
+.games-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.games-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.games-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.games-filters .bc-input {
+  flex: 1;
+  min-width: 150px;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.game-card {
+  display: block;
+  text-decoration: none;
+}
+
+.game-card:hover .game-thumbnail {
+  transform: scale(1.03);
+}
+
+.game-thumbnail {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 8px;
+  background: hsl(var(--bc-bg-light));
+  margin-bottom: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.game-card-title {
+  font-weight: 600;
+  color: hsl(var(--bc-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-card-creator {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--bc-text-muted));
+}
+
+.game-card-creator a {
+  color: hsl(var(--bc-text-muted));
+}
+
+.game-card-creator a:hover {
+  color: hsl(var(--bc-info));
+}
+
+@media (max-width: 768px) {
+  .games-layout {
+    flex-direction: column;
+  }
+  
+  .games-sidebar {
+    width: 100%;
+    display: flex;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .games-category-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .games-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

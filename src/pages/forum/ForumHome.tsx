@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Shield, Search, Trophy, ChevronRight } from 'lucide-react';
-import WelcomeDialog from '@/components/forum/WelcomeDialog';
+import { MessageSquare, Shield, Search, ChevronRight } from 'lucide-react';
 import UserAvatar from '@/components/forum/UserAvatar';
-
 interface Category {
   id: string;
   name: string;
@@ -95,9 +93,6 @@ export default function ForumHome() {
 
   return (
     <div className="flex gap-6">
-      {/* Welcome Dialog for non-logged-in users */}
-      <WelcomeDialog isLoggedIn={isLoggedIn} />
-
       {/* Sidebar - Leaderboard */}
       <div className="hidden lg:block w-64 flex-shrink-0 space-y-4">
         <Link
