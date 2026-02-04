@@ -18,6 +18,7 @@ import {
   Sparkles,
   HelpCircle,
   Shield,
+  Map,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const mainNavItems = [
   { title: 'Groups', url: '/groups', icon: UsersRound },
   { title: 'Games', url: '/games', icon: Gamepad2 },
   { title: 'Achievements', url: '/achievements', icon: Award },
+  { title: 'Roadmap', url: '/roadmap', icon: Map },
 ];
 
 const comingSoonItems = [
