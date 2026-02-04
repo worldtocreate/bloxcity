@@ -470,7 +470,7 @@ interface ProfileStats {
 }
 
 export default function ForumUserProfile() {
-  const { username } = useParams<{ username: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, forumUser, isAdmin } = useOutletContext<{
     user: any;
@@ -488,13 +488,17 @@ export default function ForumUserProfile() {
   const [statusLiked, setStatusLiked] = useState(false);
   const [statusLikeCount, setStatusLikeCount] = useState(0);
 
-  const isOwnProfile = forumUser?.username === username;
+  // Parse the id - could be serial_id (number) or username (string)
+  const isSerialId = id && /^\d+$/.test(id);
+  const isOwnProfile = isSerialId 
+    ? forumUser?.serial_id === parseInt(id) 
+    : forumUser?.username === id;
 
   useEffect(() => {
-    if (username) {
+    if (id) {
       fetchProfile();
     }
-  }, [username]);
+  }, [id]);
 
   // Log profile view
   useEffect(() => {
@@ -524,12 +528,16 @@ export default function ForumUserProfile() {
   const fetchProfile = async () => {
     setLoading(true);
     
-    // Fetch user profile
-    const { data: userData, error } = await supabase
-      .from('forum_users')
-      .select('*')
-      .eq('username', username)
-      .single();
+    // Fetch user profile by serial_id (if numeric) or username
+    let query = supabase.from('forum_users').select('*');
+    
+    if (isSerialId) {
+      query = query.eq('serial_id', parseInt(id!));
+    } else {
+      query = query.eq('username', id);
+    }
+    
+    const { data: userData, error } = await query.single();
 
     if (error || !userData) {
       setProfile(null);
@@ -691,7 +699,7 @@ export default function ForumUserProfile() {
       <div className="text-center py-20">
         <User className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
         <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">User Not Found</h1>
-        <p className="text-[hsl(var(--bc-text-muted))]">The user "{username}" doesn't exist.</p>
+        <p className="text-[hsl(var(--bc-text-muted))]">The user "{id}" doesn't exist.</p>
         <Link
           to="/forum"
           className="inline-block mt-4 text-[hsl(var(--bc-primary))] hover:underline"

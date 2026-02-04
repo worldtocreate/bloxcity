@@ -6,6 +6,7 @@ export interface ForumUser {
   id: string;
   user_id: string;
   username: string;
+  serial_id: number;
   avatar_url: string | null;
   cover_url: string | null;
   signature: string | null;
