@@ -150,17 +150,17 @@ export default function Achievements() {
                 </div>
 
                 {/* Badge Name */}
-                <h3 className="font-semibold text-[hsl(var(--bc-text))] text-sm mb-1 truncate">
+                <h3 className="font-semibold text-[hsl(var(--bc-text))] text-sm mb-2">
                   {achievement.name}
                 </h3>
 
-                {/* Description */}
-                <p className="text-xs text-[hsl(var(--bc-text-muted))] line-clamp-2 mb-2">
-                  {achievement.description || 'No description'}
+                {/* Full Description */}
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-3">
+                  {achievement.description || 'No description available'}
                 </p>
 
                 {/* Owner Count */}
-                <div className="flex items-center justify-center gap-1 text-xs text-[hsl(var(--bc-text-muted))]">
+                <div className="flex items-center justify-center gap-1 text-xs text-[hsl(var(--bc-text-muted))] pt-2 border-t border-[hsl(var(--bc-border))]">
                   <Users className="w-3 h-3" />
                   <span>
                     {achievement.owner_count.toLocaleString()} {achievement.owner_count === 1 ? 'owner' : 'owners'}
