@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mail, Loader2, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
 
 export default function ForumForgotPassword() {
@@ -30,20 +30,26 @@ export default function ForumForgotPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
-        <div className="w-full max-w-md text-center">
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">Check Your Email</h1>
-            <p className="text-[hsl(var(--bc-text-muted))] mb-6">
-              We've sent a password reset link to <strong className="text-[hsl(var(--bc-text))]">{email}</strong>
-            </p>
-            <Link 
-              to="/login"
-              className="text-[hsl(var(--bc-primary))] hover:underline"
-            >
-              Back to login
-            </Link>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+        <div className="w-full max-w-md">
+          <div className="bc-card">
+            <div className="bc-card-body text-center py-8">
+              <div className="bc-section-icon mx-auto mb-4" style={{ background: 'hsla(var(--bc-success), 0.1)' }}>
+                <CheckCircle className="w-8 h-8" style={{ color: 'hsl(var(--bc-success))' }} />
+              </div>
+              <h1 className="text-2xl font-bold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Check Your Email</h1>
+              <p className="mb-6" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+                We've sent a password reset link to <strong style={{ color: 'hsl(var(--bc-text))' }}>{email}</strong>
+              </p>
+              <Link 
+                to="/login"
+                className="inline-flex items-center gap-2 hover:underline"
+                style={{ color: 'hsl(var(--bc-primary))' }}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to login
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -51,60 +57,63 @@ export default function ForumForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Reset Password</h1>
-            <p className="text-[hsl(var(--bc-text-muted))]">Enter your email to receive a reset link</p>
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Reset Password</h1>
+            <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Enter your email to receive a reset link</p>
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <span className="text-red-600 text-sm">{error}</span>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              'Send Reset Link'
+        <form onSubmit={handleSubmit} className="bc-card">
+          <div className="bc-card-body space-y-4">
+            {error && (
+              <div className="bc-alert bc-alert-danger flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
             )}
-          </button>
 
-          <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
-            Remember your password?{' '}
-            <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">
-              Login here
-            </Link>
-          </p>
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="bc-input"
+                  style={{ paddingLeft: '42px' }}
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="bc-btn bc-btn-info bc-btn-block"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                'Send Reset Link'
+              )}
+            </button>
+
+            <p className="text-center text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+              Remember your password?{' '}
+              <Link to="/login" className="hover:underline" style={{ color: 'hsl(var(--bc-primary))' }}>
+                Login here
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
