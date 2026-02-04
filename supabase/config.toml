@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.accept-affiliate]
 verify_jwt = false
+
+[functions.godfrey-award-currency]
+verify_jwt = false
