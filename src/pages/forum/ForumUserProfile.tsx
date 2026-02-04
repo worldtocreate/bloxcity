@@ -4,13 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   User, Calendar, MessageSquare, MessageCircle, Ban, Loader2, 
   Clock, Users, MoreVertical, Flag, Award, Frown, Rocket, Medal,
-  UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart
+  UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart, UserMinus,
+  Send, Crown
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import FriendButton from '@/components/forum/FriendButton';
+import MembershipBadge from '@/components/forum/MembershipBadge';
 import ReportButton from '@/components/forum/ReportButton';
 import {
   DropdownMenu,
@@ -100,6 +102,17 @@ export default function ForumUserProfile() {
   const [areFriends, setAreFriends] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [verifiedModalOpen, setVerifiedModalOpen] = useState(false);
+  
+  // Follow system state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
+  
+  // Wall posts state
+  const [wallPosts, setWallPosts] = useState<any[]>([]);
+  const [newWallPost, setNewWallPost] = useState('');
+  const [postingWall, setPostingWall] = useState(false);
 
   const isOwnProfile = forumUser?.serial_id === parseInt(serialId || '0') || 
                        forumUser?.username?.toLowerCase() === username?.toLowerCase();
@@ -259,6 +272,49 @@ export default function ForumUserProfile() {
       setGames(gamesData as GameData[]);
     }
 
+    // Fetch followers count
+    const { count: followersCountData } = await supabase
+      .from('forum_follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', userData.id);
+    setFollowersCount(followersCountData || 0);
+
+    // Fetch following count
+    const { count: followingCountData } = await supabase
+      .from('forum_follows')
+      .select('*', { count: 'exact', head: true })
+      .eq('follower_id', userData.id);
+    setFollowingCount(followingCountData || 0);
+
+    // Check if current user is following
+    if (forumUser && forumUser.id !== userData.id) {
+      const { data: followData } = await supabase
+        .from('forum_follows')
+        .select('id')
+        .eq('follower_id', forumUser.id)
+        .eq('following_id', userData.id)
+        .single();
+      setIsFollowing(!!followData);
+    }
+
+    // Fetch wall posts
+    const { data: wallData } = await supabase
+      .from('forum_wall_posts')
+      .select(`
+        id,
+        content,
+        created_at,
+        author:author_id(id, username, avatar_url)
+      `)
+      .eq('profile_id', userData.id)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (wallData) {
+      setWallPosts(wallData);
+    }
+
     setLoading(false);
   };
 
@@ -297,6 +353,76 @@ export default function ForumUserProfile() {
       }
     }
     setBlocking(false);
+  };
+
+  const handleFollow = async () => {
+    if (!forumUser || !profile) return;
+    setFollowLoading(true);
+
+    if (isFollowing) {
+      // Unfollow
+      const { error } = await supabase
+        .from('forum_follows')
+        .delete()
+        .eq('follower_id', forumUser.id)
+        .eq('following_id', profile.id);
+
+      if (!error) {
+        setIsFollowing(false);
+        setFollowersCount(prev => prev - 1);
+        toast.success(`Unfollowed ${profile.username}`);
+      }
+    } else {
+      // Follow
+      const { error } = await supabase
+        .from('forum_follows')
+        .insert({
+          follower_id: forumUser.id,
+          following_id: profile.id
+        });
+
+      if (!error) {
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+        toast.success(`Following ${profile.username}`);
+      }
+    }
+    setFollowLoading(false);
+  };
+
+  const handlePostWall = async () => {
+    if (!forumUser || !profile || !newWallPost.trim()) return;
+    setPostingWall(true);
+
+    const { error } = await supabase
+      .from('forum_wall_posts')
+      .insert({
+        profile_id: profile.id,
+        author_id: forumUser.id,
+        content: newWallPost.trim()
+      });
+
+    if (error) {
+      toast.error('Failed to post');
+    } else {
+      toast.success('Posted to wall!');
+      setNewWallPost('');
+      // Refetch wall posts
+      const { data: wallData } = await supabase
+        .from('forum_wall_posts')
+        .select(`
+          id,
+          content,
+          created_at,
+          author:author_id(id, username, avatar_url)
+        `)
+        .eq('profile_id', profile.id)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (wallData) setWallPosts(wallData);
+    }
+    setPostingWall(false);
   };
 
   const formatDate = (date: string) => {
@@ -394,17 +520,23 @@ export default function ForumUserProfile() {
               <div>
                 <div className="flex items-center gap-1.5 font-semibold text-xl text-[hsl(var(--bc-text))]">
                   {profile.username}
-                  {profile.is_verified && (
-                    <button 
-                      onClick={() => setVerifiedModalOpen(true)}
-                      className="text-green-500 hover:text-green-600"
-                    >
-                      <ShieldCheck className="w-5 h-5" />
-                    </button>
-                  )}
+                  <VerificationBadge 
+                    forumUserId={profile.id}
+                    isVerified={profile.is_verified}
+                    size="md"
+                  />
                 </div>
                 <div className="text-sm text-[hsl(var(--bc-text-muted))]">
                   @{profile.username}
+                </div>
+                {/* Followers/Following */}
+                <div className="flex items-center gap-3 mt-1 text-xs">
+                  <Link to={`/users?followers=${profile.username}`} className="hover:underline text-[hsl(var(--bc-text))]">
+                    <strong>{followersCount}</strong> <span className="text-[hsl(var(--bc-text-muted))]">Followers</span>
+                  </Link>
+                  <Link to={`/users?following=${profile.username}`} className="hover:underline text-[hsl(var(--bc-text))]">
+                    <strong>{followingCount}</strong> <span className="text-[hsl(var(--bc-text-muted))]">Following</span>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -455,19 +587,38 @@ export default function ForumUserProfile() {
             
             {/* Action Buttons */}
             {forumUser && forumUser.id !== profile.id && (
-              <div className="flex gap-2 mt-4">
+              <div className="grid grid-cols-2 gap-2 mt-4">
                 <FriendButton
                   currentUserId={forumUser.id}
                   targetUserId={profile.id}
                   targetUsername={profile.username}
-                  className="flex-1"
                 />
+                <button 
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className={`bc-btn bc-btn-sm justify-center ${isFollowing ? 'bc-btn-secondary' : 'bc-btn-info'}`}
+                >
+                  {followLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isFollowing ? (
+                    <>
+                      <UserMinus className="w-4 h-4" />
+                      <span>Unfollow</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </button>
                 {profile.allow_dms && (
                   <button 
                     onClick={() => navigate(`/messages?to=${profile.username}`)}
-                    className="bc-btn bc-btn-info bc-btn-sm flex-1"
+                    className="bc-btn bc-btn-success bc-btn-sm col-span-2 justify-center"
                   >
-                    Chat
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Message</span>
                   </button>
                 )}
               </div>
@@ -518,9 +669,8 @@ export default function ForumUserProfile() {
           <div className="text-xl font-semibold text-[hsl(var(--bc-text))]">Statistics</div>
           <div className="bc-card p-4 space-y-2">
             {profile.membership_tier && (
-              <div className="text-sm font-semibold text-purple-600 flex items-center gap-2">
-                <Rocket className="w-5 h-5" />
-                BloxCity+ Subscriber
+              <div className="flex items-center gap-2">
+                <MembershipBadge tier={profile.membership_tier} size="md" />
               </div>
             )}
             <div className="text-sm text-[hsl(var(--bc-text))] flex items-center gap-2">
@@ -528,7 +678,7 @@ export default function ForumUserProfile() {
               Rank Lvl. {profile.level}
             </div>
             <div className="text-sm text-[hsl(var(--bc-text))] flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
+              <Calendar className="w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
               Joined on {formatDate(profile.created_at)}
             </div>
             <div className="text-sm text-[hsl(var(--bc-text))] flex items-center gap-2">
@@ -737,6 +887,77 @@ export default function ForumUserProfile() {
                 <div className="text-xs text-[hsl(var(--bc-text-muted))]">
                   {profile.username} has not created any games.
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Profile Wall */}
+          <div className="text-xl font-semibold text-[hsl(var(--bc-text))]">Profile Wall</div>
+          <div className="bc-card p-4 space-y-4">
+            {/* Post form */}
+            {forumUser && (
+              <div className="flex gap-2">
+                <UserAvatar
+                  avatarUrl={forumUser.avatar_url}
+                  username={forumUser.username}
+                  size="sm"
+                />
+                <div className="flex-1 flex gap-2">
+                  <input
+                    type="text"
+                    value={newWallPost}
+                    onChange={(e) => setNewWallPost(e.target.value)}
+                    placeholder={`Write on ${profile.username}'s wall...`}
+                    className="bc-input flex-1"
+                    maxLength={500}
+                    onKeyDown={(e) => e.key === 'Enter' && handlePostWall()}
+                  />
+                  <button
+                    onClick={handlePostWall}
+                    disabled={postingWall || !newWallPost.trim()}
+                    className="bc-btn bc-btn-info bc-btn-sm"
+                  >
+                    {postingWall ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Wall posts list */}
+            {wallPosts.length > 0 ? (
+              <div className="space-y-3">
+                {wallPosts.map((post) => (
+                  <div key={post.id} className="flex gap-2 p-2 bg-[hsl(var(--bc-bg-light))] rounded-lg">
+                    <Link to={`/user/${post.author?.username}`}>
+                      <UserAvatar
+                        avatarUrl={post.author?.avatar_url}
+                        username={post.author?.username}
+                        size="sm"
+                      />
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Link 
+                          to={`/user/${post.author?.username}`}
+                          className="font-semibold text-sm text-[hsl(var(--bc-text))] hover:underline"
+                        >
+                          {post.author?.username}
+                        </Link>
+                        <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          {getTimeAgo(post.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[hsl(var(--bc-text))] break-words">
+                        {post.content}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-[hsl(var(--bc-text-muted))]">
+                <MessageCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No wall posts yet. Be the first to post!</p>
               </div>
             )}
           </div>
