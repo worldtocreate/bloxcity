@@ -802,28 +802,6 @@ export default function ForumUserProfile() {
                   <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">Suspended</span>
                 )}
               </div>
-
-              {/* Member since & Online Status */}
-              <div className="flex items-center gap-3 flex-wrap mt-1">
-                <p className="text-sm text-[hsl(var(--bc-text-muted))]">
-                  Member since {formatDate(profile.created_at)}
-                </p>
-                {profile.last_seen_at && (
-                  <>
-                    <span className="text-[hsl(var(--bc-text-muted))]">•</span>
-                    {new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000) ? (
-                      <span className="text-sm text-green-500 font-medium flex items-center gap-1">
-                        <span className="w-2 h-2 bg-green-500 rounded-full" />
-                        Online
-                      </span>
-                    ) : (
-                      <span className="text-sm text-[hsl(var(--bc-text-muted))]">
-                        Last seen {getTimeSince(profile.last_seen_at)}
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
             </div>
           </div>
 
