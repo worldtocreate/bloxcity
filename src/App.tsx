@@ -50,9 +50,7 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
-import GameView from "./pages/forum/GameView";
-import SettingsPrivacy from "./pages/forum/SettingsPrivacy";
-import SettingsSecurity from "./pages/forum/SettingsSecurity";
+// GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail are inlined below
 
 // Need useParams for GameDetail
@@ -152,6 +150,299 @@ function GameDetail() {
         {forumUser ? (<div className="flex gap-3 mb-6"><Input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Write a comment..." onKeyDown={(e) => e.key === "Enter" && handleSubmitComment()} /><Button onClick={handleSubmitComment} disabled={submittingComment || !newComment.trim()}>{submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}</Button></div>) : <p className="text-[hsl(var(--bc-text-muted))] mb-6"><Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link> to comment</p>}
         <div className="space-y-4">{comments.length === 0 ? <p className="text-center text-[hsl(var(--bc-text-muted))] py-8">No comments yet</p> : comments.map((c) => (<div key={c.id} className="flex gap-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg"><img src={c.author?.avatar_url || "/placeholder.svg"} alt="" className="w-8 h-8 rounded-full" /><div className="flex-1"><div className="flex items-center justify-between"><Link to={`/user/${c.author?.username}`} className="font-medium text-[hsl(var(--bc-text))]">{c.author?.username}</Link>{(forumUser?.id === c.author_id || isAdmin) && <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 text-sm">Delete</button>}</div><p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p></div></div>))}</div>
       </div>
+    </div>
+  );
+}
+
+// Inline GameView component (game detail page with servers and comments)
+function GameView() {
+  const params = window.location.pathname.match(/\/game\/([^\/]+)/);
+  const gameId = params ? params[1] : undefined;
+  const { forumUser, loading: authLoading } = useForumAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  const [game, setGame] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [servers, setServers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", description: "", category: "" });
+  const [newComment, setNewComment] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [activeTab, setActiveTab] = useState<'comments' | 'servers'>('comments');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+
+  useEffect(() => { if (gameId) { fetchGame(); fetchComments(); fetchServers(); } }, [gameId]);
+  useEffect(() => { if (forumUser && gameId) { checkFavorite(); checkAdmin(); } }, [forumUser, gameId]);
+
+  const checkAdmin = async () => { if (!forumUser) return; const { data } = await supabase.rpc("has_role", { _user_id: forumUser.user_id, _role: "admin" }); setIsAdmin(!!data); };
+  const fetchGame = async () => { if (!gameId) return; const { data } = await supabase.from("forum_games").select("*, creator:forum_users!forum_games_creator_id_fkey (id, username, avatar_url)").eq("id", gameId).single(); setGame(data); if (data) setEditForm({ title: data.title, description: data.description || "", category: data.category }); setLoading(false); };
+  const fetchComments = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_comments").select("*, author:forum_users!forum_game_comments_author_id_fkey (id, username, avatar_url)").eq("game_id", gameId).eq("is_deleted", false).order("created_at", { ascending: false }); setComments(data || []); };
+  const fetchServers = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_servers").select("*").eq("game_id", gameId).eq("is_active", true).order("created_at", { ascending: false }); setServers(data || []); };
+  const checkFavorite = async () => { if (!forumUser || !gameId) return; const { data } = await supabase.from("forum_game_favorites").select("id").eq("game_id", gameId).eq("forum_user_id", forumUser.id).single(); setIsFavorited(!!data); };
+  const toggleFavorite = async () => { if (!forumUser || !gameId) { toast({ title: "Please login to favorite", variant: "destructive" }); return; } if (isFavorited) { await supabase.from("forum_game_favorites").delete().eq("game_id", gameId).eq("forum_user_id", forumUser.id); setIsFavorited(false); } else { await supabase.from("forum_game_favorites").insert({ game_id: gameId, forum_user_id: forumUser.id }); setIsFavorited(true); } };
+  const handleSaveEdit = async () => { if (!game) return; const { error } = await supabase.from("forum_games").update({ title: editForm.title, description: editForm.description || null, category: editForm.category }).eq("id", game.id); if (error) toast({ title: "Error", variant: "destructive" }); else { toast({ title: "Game updated" }); setIsEditing(false); fetchGame(); } };
+  const handleSubmitComment = async () => { if (!forumUser || !gameId || !newComment.trim()) return; setSubmittingComment(true); await supabase.from("forum_game_comments").insert({ game_id: gameId, author_id: forumUser.id, content: newComment.trim() }); setNewComment(""); fetchComments(); setSubmittingComment(false); };
+  const handleDeleteComment = async (commentId: string) => { await supabase.from("forum_game_comments").update({ is_deleted: true, deleted_by: forumUser?.id, deleted_at: new Date().toISOString() }).eq("id", commentId); fetchComments(); };
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !game) return;
+    setUploadingThumbnail(true);
+    const ext = file.name.split('.').pop();
+    const path = `game-thumbnails/${game.id}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('forum-uploads').upload(path, file, { upsert: true });
+    if (uploadError) { toast({ title: "Upload failed", variant: "destructive" }); setUploadingThumbnail(false); return; }
+    const { data: urlData } = supabase.storage.from('forum-uploads').getPublicUrl(path);
+    await supabase.from("forum_games").update({ thumbnail_url: urlData.publicUrl, thumbnail_status: 'pending' }).eq("id", game.id);
+    toast({ title: "Thumbnail uploaded", description: "Pending review" });
+    fetchGame();
+    setUploadingThumbnail(false);
+  };
+
+  if (loading || authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (!game) return <div className="max-w-4xl mx-auto p-6 text-center"><AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" /><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">Game Not Found</h1><Link to="/games"><Button>Back to Games</Button></Link></div>;
+
+  const canEdit = forumUser && (forumUser.id === game.creator_id || isAdmin);
+  const isUnderReview = game.is_under_review || game.thumbnail_status === 'pending';
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+        <div className="aspect-video bg-[hsl(var(--bc-bg-light))] flex items-center justify-center relative">
+          {game.thumbnail_url ? <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" /> : <span className="text-[hsl(var(--bc-text-muted))]">No Thumbnail</span>}
+          {canEdit && (
+            <label className="absolute bottom-3 right-3 cursor-pointer">
+              <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} disabled={uploadingThumbnail} />
+              <span className="px-3 py-1.5 bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text))] text-sm rounded-lg border border-[hsl(var(--bc-border))] hover:bg-[hsl(var(--bc-bg-light))] transition">{uploadingThumbnail ? "Uploading..." : "Change Thumbnail"}</span>
+            </label>
+          )}
+        </div>
+        <div className="p-6 space-y-4">
+          {isEditing ? (
+            <div className="space-y-4">
+              <Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="Game Title" />
+              <Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Description" />
+              <div className="flex gap-2"><Button onClick={handleSaveEdit}>Save</Button><Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button></div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{game.title}</h1>
+                  <Link to={`/user/${game.creator?.username}`} className="text-[hsl(var(--bc-primary))] hover:underline text-sm">by {game.creator?.username}</Link>
+                </div>
+                {canEdit && <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>}
+              </div>
+              {game.description && <p className="text-[hsl(var(--bc-text-muted))]">{game.description}</p>}
+              {game.thumbnail_status === 'denied' && game.thumbnail_denial_reason && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-red-400 text-sm">
+                  <strong>Thumbnail Denied:</strong> {game.thumbnail_denial_reason}
+                </div>
+              )}
+            </>
+          )}
+          <div className="flex items-center gap-6 text-sm text-[hsl(var(--bc-text-muted))]">
+            <span>{game.play_count || 0} plays</span>
+            <span>{game.favorite_count || 0} favorites</span>
+            <span className="px-2 py-0.5 bg-[hsl(var(--bc-bg-light))] rounded">{game.category}</span>
+          </div>
+          <div className="flex gap-3 pt-4 border-t border-[hsl(var(--bc-border))]">
+            {isUnderReview ? (
+              <Button className="flex-1" disabled>This game is under review</Button>
+            ) : (
+              <Button className="flex-1">Play Now</Button>
+            )}
+            <Button variant="outline" onClick={toggleFavorite} className={isFavorited ? "text-red-500" : ""}>♥</Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+        <div className="flex border-b border-[hsl(var(--bc-border))]">
+          <button onClick={() => setActiveTab('comments')} className={`flex-1 py-3 text-center font-medium transition ${activeTab === 'comments' ? 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text))]' : 'text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'}`}>Comments ({comments.length})</button>
+          <button onClick={() => setActiveTab('servers')} className={`flex-1 py-3 text-center font-medium transition ${activeTab === 'servers' ? 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text))]' : 'text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]'}`}>Servers ({servers.length})</button>
+        </div>
+        <div className="p-6">
+          {activeTab === 'comments' && (
+            <>
+              {forumUser ? (
+                <div className="flex gap-3 mb-6">
+                  <Input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Write a comment..." onKeyDown={(e) => e.key === "Enter" && handleSubmitComment()} />
+                  <Button onClick={handleSubmitComment} disabled={submittingComment || !newComment.trim()}>{submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}</Button>
+                </div>
+              ) : <p className="text-[hsl(var(--bc-text-muted))] mb-6"><Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link> to comment</p>}
+              <div className="space-y-4">
+                {comments.length === 0 ? <p className="text-center text-[hsl(var(--bc-text-muted))] py-8">No comments yet</p> : comments.map((c) => (
+                  <div key={c.id} className="flex gap-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg">
+                    <img src={c.author?.avatar_url || "/placeholder.svg"} alt="" className="w-8 h-8 rounded-full" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <Link to={`/user/${c.author?.username}`} className="font-medium text-[hsl(var(--bc-text))]">{c.author?.username}</Link>
+                        {(forumUser?.id === c.author_id || isAdmin) && <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 text-sm hover:underline">Delete</button>}
+                      </div>
+                      <p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          {activeTab === 'servers' && (
+            <div className="space-y-3">
+              {servers.length === 0 ? <p className="text-center text-[hsl(var(--bc-text-muted))] py-8">No active servers</p> : servers.map((s) => (
+                <div key={s.id} className="flex items-center justify-between p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg">
+                  <div>
+                    <p className="font-medium text-[hsl(var(--bc-text))]">{s.name}</p>
+                    <p className="text-sm text-[hsl(var(--bc-text-muted))]">{s.player_count}/{s.max_players} players</p>
+                  </div>
+                  <Button size="sm" disabled={isUnderReview}>Join</Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline SettingsPrivacy component
+function SettingsPrivacy() {
+  const { forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
+  const { toast } = useToast();
+  const [allowDms, setAllowDms] = useState(true);
+  const [wallIsPrivate, setWallIsPrivate] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (forumUser) {
+      setAllowDms(forumUser.allow_dms !== false);
+      setWallIsPrivate((forumUser as any).wall_is_private === true);
+    }
+  }, [forumUser]);
+
+  const handleSave = async () => {
+    if (!forumUser) return;
+    setSaving(true);
+    const { error } = await supabase.from("forum_users").update({ allow_dms: allowDms, wall_is_private: wallIsPrivate }).eq("id", forumUser.id);
+    if (error) toast({ title: "Error saving settings", variant: "destructive" });
+    else { toast({ title: "Privacy settings saved" }); refreshForumUser(); }
+    setSaving(false);
+  };
+
+  if (authLoading) return <div className="min-h-[40vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (!forumUser) return <div className="max-w-2xl mx-auto p-6 text-center"><p className="text-[hsl(var(--bc-text-muted))]">Please login to access settings.</p><Link to="/login"><Button className="mt-4">Login</Button></Link></div>;
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <div><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Privacy Settings</h1><p className="text-[hsl(var(--bc-text-muted))]">Control who can interact with you</p></div>
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div><h3 className="font-medium text-[hsl(var(--bc-text))]">Allow Direct Messages</h3><p className="text-sm text-[hsl(var(--bc-text-muted))]">Let other users send you private messages</p></div>
+          <button onClick={() => setAllowDms(!allowDms)} className={`w-12 h-6 rounded-full transition ${allowDms ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}><div className={`w-5 h-5 bg-white rounded-full transition transform ${allowDms ? 'translate-x-6' : 'translate-x-0.5'}`} /></button>
+        </div>
+        <div className="flex items-center justify-between">
+          <div><h3 className="font-medium text-[hsl(var(--bc-text))]">Private Profile Wall</h3><p className="text-sm text-[hsl(var(--bc-text-muted))]">Only friends can see your profile wall</p></div>
+          <button onClick={() => setWallIsPrivate(!wallIsPrivate)} className={`w-12 h-6 rounded-full transition ${wallIsPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}><div className={`w-5 h-5 bg-white rounded-full transition transform ${wallIsPrivate ? 'translate-x-6' : 'translate-x-0.5'}`} /></button>
+        </div>
+        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : "Save Privacy Settings"}</Button>
+      </div>
+      <Link to="/settings" className="inline-block text-[hsl(var(--bc-primary))] hover:underline text-sm">← Back to Settings</Link>
+    </div>
+  );
+}
+
+// Inline SettingsSecurity component
+function SettingsSecurity() {
+  const { forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
+  const { toast } = useToast();
+  const [has2FA, setHas2FA] = useState(false);
+  const [dmPin, setDmPin] = useState("");
+  const [settingsPin, setSettingsPin] = useState("");
+  const [savingPin, setSavingPin] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (forumUser) {
+      check2FA();
+      setDmPin((forumUser as any).dm_pin || "");
+      setSettingsPin((forumUser as any).settings_pin || "");
+    }
+  }, [forumUser]);
+
+  const check2FA = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase.from("forum_2fa_settings").select("is_enabled").eq("forum_user_id", forumUser.id).single();
+    setHas2FA(data?.is_enabled === true);
+    setChecking(false);
+  };
+
+  const handleSavePin = async (type: 'dm' | 'settings') => {
+    if (!forumUser) return;
+    setSavingPin(true);
+    const pin = type === 'dm' ? dmPin : settingsPin;
+    if (pin && (pin.length !== 4 || !/^\d+$/.test(pin))) {
+      toast({ title: "PIN must be 4 digits", variant: "destructive" });
+      setSavingPin(false);
+      return;
+    }
+    const update: any = type === 'dm' ? { dm_pin: pin || null } : { settings_pin: pin || null };
+    const { error } = await supabase.from("forum_users").update(update).eq("id", forumUser.id);
+    if (error) toast({ title: "Error saving PIN", variant: "destructive" });
+    else { toast({ title: `${type === 'dm' ? 'DM' : 'Settings'} PIN ${pin ? 'saved' : 'removed'}` }); refreshForumUser(); }
+    setSavingPin(false);
+  };
+
+  if (authLoading || checking) return <div className="min-h-[40vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (!forumUser) return <div className="max-w-2xl mx-auto p-6 text-center"><p className="text-[hsl(var(--bc-text-muted))]">Please login to access settings.</p><Link to="/login"><Button className="mt-4">Login</Button></Link></div>;
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <div><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Security Settings</h1><p className="text-[hsl(var(--bc-text-muted))]">Protect your account</p></div>
+      
+      {/* 2FA Section */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-[hsl(var(--bc-text))]">Two-Factor Authentication</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))]">Add an extra layer of security</p>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm ${has2FA ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+            {has2FA ? 'Enabled' : 'Disabled'}
+          </div>
+        </div>
+        <Link to="/settings" className="mt-4 inline-block text-[hsl(var(--bc-primary))] hover:underline text-sm">Manage 2FA in main settings →</Link>
+      </div>
+
+      {/* DM PIN */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-4">
+        <div>
+          <h3 className="font-medium text-[hsl(var(--bc-text))]">DM Encryption PIN</h3>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))]">Required to view direct messages</p>
+        </div>
+        <div className="flex gap-3">
+          <Input type="password" value={dmPin} onChange={(e) => setDmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="4-digit PIN" maxLength={4} className="flex-1" />
+          <Button onClick={() => handleSavePin('dm')} disabled={savingPin}>{savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}</Button>
+        </div>
+      </div>
+
+      {/* Settings PIN */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-4">
+        <div>
+          <h3 className="font-medium text-[hsl(var(--bc-text))]">Settings PIN</h3>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))]">Required to make sensitive changes</p>
+        </div>
+        <div className="flex gap-3">
+          <Input type="password" value={settingsPin} onChange={(e) => setSettingsPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="4-digit PIN" maxLength={4} className="flex-1" />
+          <Button onClick={() => handleSavePin('settings')} disabled={savingPin}>{savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}</Button>
+        </div>
+      </div>
+
+      <Link to="/settings" className="inline-block text-[hsl(var(--bc-primary))] hover:underline text-sm">← Back to Settings</Link>
     </div>
   );
 }
