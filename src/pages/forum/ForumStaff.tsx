@@ -10,6 +10,7 @@ import UserLevelBadge from '@/components/forum/UserLevelBadge';
 
 interface StaffMember {
   id: string;
+  serial_id: number;
   username: string;
   avatar_url: string | null;
   is_verified: boolean;
@@ -45,7 +46,7 @@ export default function ForumStaff() {
     const userIds = roles.map(r => r.user_id);
     const { data: forumUsers } = await supabase
       .from('forum_users')
-      .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp')
+      .select('id, serial_id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp')
       .in('user_id', userIds);
 
     if (forumUsers) {
@@ -144,7 +145,7 @@ export default function ForumStaff() {
                   {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
                     <Link
                       key={member.id}
-                      to={`/id/${member.username}/profile`}
+                      to={`/${member.serial_id}/${member.username}/profile`}
                       className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] border border-[hsl(var(--bc-border))] rounded-xl transition group"
                     >
                       <UserAvatar
@@ -187,7 +188,7 @@ export default function ForumStaff() {
                     {staff.filter(s => s.role === 'moderator' && s.username.toLowerCase() !== 'blox city').map(member => (
                       <Link
                         key={member.id}
-                        to={`/id/${member.username}/profile`}
+                        to={`/${member.serial_id}/${member.username}/profile`}
                         className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] border border-[hsl(var(--bc-border))] rounded-xl transition group"
                       >
                         <UserAvatar

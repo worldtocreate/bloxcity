@@ -7,6 +7,7 @@ import { VerificationBadge } from './VerifiedBadge';
 
 interface Friend {
   id: string;
+  serial_id: number;
   username: string;
   avatar_url: string | null;
   is_verified: boolean;
@@ -47,7 +48,7 @@ export default function FriendsList({ forumUserId, limit = 6, showTitle = true }
 
       const { data: friendData } = await supabase
         .from('forum_users')
-        .select('id, username, avatar_url, is_verified, level, avatar_effect, membership_tier')
+        .select('id, serial_id, username, avatar_url, is_verified, level, avatar_effect, membership_tier')
         .in('id', friendIds);
 
       if (friendData) {
@@ -99,7 +100,7 @@ export default function FriendsList({ forumUserId, limit = 6, showTitle = true }
         {friends.map(friend => (
           <Link
             key={friend.id}
-            to={`/id/${friend.username}/profile`}
+            to={`/${friend.serial_id}/${friend.username}/profile`}
             className="flex flex-col items-center p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition"
           >
             <UserAvatar

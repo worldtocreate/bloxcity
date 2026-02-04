@@ -10,6 +10,7 @@ import UserLevelBadge from '@/components/forum/UserLevelBadge';
 
 interface Friend {
   id: string;
+  serial_id: number;
   username: string;
   avatar_url: string | null;
   is_verified: boolean;
@@ -61,7 +62,7 @@ export default function Friends() {
 
       const { data: friendData } = await supabase
         .from('forum_users')
-        .select('id, username, avatar_url, is_verified, level, avatar_effect, membership_tier, last_seen_at')
+        .select('id, serial_id, username, avatar_url, is_verified, level, avatar_effect, membership_tier, last_seen_at')
         .in('id', friendIds);
 
       if (friendData) {
@@ -82,7 +83,7 @@ export default function Friends() {
       const senderIds = pending.map(r => r.sender_id);
       const { data: senders } = await supabase
         .from('forum_users')
-        .select('id, username, avatar_url, is_verified, level, avatar_effect, membership_tier, last_seen_at')
+        .select('id, serial_id, username, avatar_url, is_verified, level, avatar_effect, membership_tier, last_seen_at')
         .in('id', senderIds);
 
       const requestsWithSenders = pending.map(r => ({
@@ -105,7 +106,7 @@ export default function Friends() {
       const receiverIds = sent.map(r => r.receiver_id);
       const { data: receivers } = await supabase
         .from('forum_users')
-        .select('id, username, avatar_url, is_verified, level, avatar_effect, membership_tier, last_seen_at')
+        .select('id, serial_id, username, avatar_url, is_verified, level, avatar_effect, membership_tier, last_seen_at')
         .in('id', receiverIds);
 
       const requestsWithReceivers = sent.map(r => ({
@@ -300,7 +301,7 @@ export default function Friends() {
                 <div className="divide-y divide-[hsl(var(--bc-border))]">
                   {friends.map(friend => (
                     <div key={friend.id} className="p-4 flex items-center justify-between">
-                      <Link to={`/id/${friend.username}/profile`} className="flex items-center gap-3 flex-1">
+                      <Link to={`/${friend.serial_id}/${friend.username}/profile`} className="flex items-center gap-3 flex-1">
                         <div className="relative">
                           <UserAvatar
                             avatarUrl={friend.avatar_url}
@@ -357,7 +358,7 @@ export default function Friends() {
                 <div className="divide-y divide-[hsl(var(--bc-border))]">
                   {pendingRequests.map(request => (
                     <div key={request.id} className="p-4 flex items-center justify-between">
-                      <Link to={`/id/${request.sender?.username}/profile`} className="flex items-center gap-3 flex-1">
+                      <Link to={`/${request.sender?.serial_id}/${request.sender?.username}/profile`} className="flex items-center gap-3 flex-1">
                         <UserAvatar
                           avatarUrl={request.sender?.avatar_url || null}
                           username={request.sender?.username || 'User'}
@@ -418,7 +419,7 @@ export default function Friends() {
                 <div className="divide-y divide-[hsl(var(--bc-border))]">
                   {sentRequests.map(request => (
                     <div key={request.id} className="p-4 flex items-center justify-between">
-                      <Link to={`/id/${request.receiver?.username}/profile`} className="flex items-center gap-3 flex-1">
+                      <Link to={`/${request.receiver?.serial_id}/${request.receiver?.username}/profile`} className="flex items-center gap-3 flex-1">
                         <UserAvatar
                           avatarUrl={request.receiver?.avatar_url || null}
                           username={request.receiver?.username || 'User'}
