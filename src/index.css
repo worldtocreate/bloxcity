@@ -140,6 +140,348 @@
   }
 }
 
+/* ========================================
+   DARK MODE COMPONENT OVERRIDES
+   Based on provided dark theme CSS files
+======================================== */
+.dark body {
+  background: #181818 !important;
+  color: #dadada !important;
+}
+
+/* Dark mode cards */
+.dark .bc-card,
+.dark [class*="bg-card"],
+.dark [class*="bg-[hsl(var(--bc-bg-card))]"],
+.dark [class*="bg-[hsl(var(--bc-section-bg))]"] {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+.dark .bc-card-inner {
+  background: #3b3b3b !important;
+  border-color: #626262 !important;
+}
+
+/* Dark mode inputs */
+.dark .bc-input,
+.dark input[class*="bc-"],
+.dark textarea[class*="bc-"],
+.dark select[class*="bc-"],
+.dark [class*="bg-[hsl(var(--bc-input-bg))]"] {
+  background: #3b3b3b !important;
+  border-color: #626262 !important;
+  color: #ffffff !important;
+}
+
+.dark .bc-input::placeholder {
+  color: #9e9e9e !important;
+}
+
+/* Dark mode navbar */
+.dark .bc-navbar,
+.dark [class*="bg-[hsl(var(--bc-section-bg))]"][class*="border-b"] {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+.dark .bc-nav-link {
+  color: #818181 !important;
+}
+
+.dark .bc-nav-link:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .bc-nav-link.active {
+  color: #0288d1 !important;
+}
+
+/* Dark mode sidebar */
+.dark .bc-sidebar {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+.dark .bc-side-link {
+  color: #818181 !important;
+}
+
+.dark .bc-side-link:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .bc-side-link:active {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .bc-side-link.active {
+  background: rgba(3, 155, 229, 0.2) !important;
+  color: #039be5 !important;
+}
+
+.dark .bc-side-title {
+  color: #818181 !important;
+}
+
+/* Dark mode buttons - keep border visible */
+.dark .bc-btn {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .bc-btn-gray {
+  color: #bdbdbd !important;
+}
+
+.dark .btn-circle,
+.dark .bc-btn-circle {
+  color: #818181 !important;
+}
+
+.dark .btn-circle:hover,
+.dark .bc-btn-circle:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .btn-circle:active,
+.dark .bc-btn-circle:active {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Dark mode tabs */
+.dark .bc-tab-link {
+  color: #dadada !important;
+}
+
+.dark .bc-tab-link:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.dark .bc-tab-link.active,
+.dark .bc-tab-link.active:hover {
+  background: #0277bd !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dark mode dropdown menus */
+.dark .dropdown-menu,
+.dark [class*="dropdown"] [class*="menu"],
+.dark [data-radix-popper-content-wrapper] > div {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+.dark .dropdown-link {
+  color: #dadada !important;
+}
+
+.dark .dropdown-link:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .dropdown-title {
+  color: #818181 !important;
+}
+
+/* Dark mode modals/dialogs */
+.dark [role="dialog"],
+.dark [data-state="open"][role="dialog"] {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+.dark [role="dialog"] [class*="bg-background"],
+.dark [role="dialog"] [class*="bg-card"] {
+  background: #252525 !important;
+}
+
+/* Dark mode tooltips */
+.dark [role="tooltip"],
+.dark .tippy-box {
+  background: #424242 !important;
+}
+
+/* Dark mode progress bar */
+.dark .bc-progress {
+  background: #3b3b3b !important;
+  border-color: #626262 !important;
+}
+
+/* Dark mode footer */
+.dark .bc-footer,
+.dark .footer {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+.dark .footer-link {
+  color: #818181 !important;
+}
+
+.dark .footer-link:hover,
+.dark .footer-link.active {
+  color: #0277bd !important;
+}
+
+/* Dark mode tables */
+.dark .bc-table,
+.dark .table {
+  border-color: rgba(2, 119, 189, 0.5) !important;
+}
+
+.dark .bc-table-header,
+.dark .table-header {
+  background: rgba(2, 119, 189, 0.1) !important;
+  border-color: rgba(2, 119, 189, 0.5) !important;
+  color: #0277bd !important;
+}
+
+.dark .bc-table-body,
+.dark .table-body {
+  background: #252525 !important;
+}
+
+/* Dark mode pagination */
+.dark .page-link {
+  color: #c2c2c2 !important;
+}
+
+.dark .page-link:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .page-active,
+.dark .page-active:hover {
+  background: #0277bd !important;
+  color: #ffffff !important;
+}
+
+/* Dark mode text colors */
+.dark [class*="text-[hsl(var(--bc-text))]"] {
+  color: #dadada !important;
+}
+
+.dark [class*="text-[hsl(var(--bc-text-muted))]"] {
+  color: #818181 !important;
+}
+
+/* Dark mode backgrounds - general overrides */
+.dark [class*="bg-[hsl(var(--bc-bg))]"],
+.dark [class*="bg-[hsl(var(--bc-body-bg))]"] {
+  background: #181818 !important;
+}
+
+.dark [class*="bg-[hsl(var(--bc-bg-light))]"] {
+  background: #3b3b3b !important;
+}
+
+/* Dark mode borders */
+.dark [class*="border-[hsl(var(--bc-border))]"],
+.dark [class*="border-[hsl(var(--bc-section-border))]"] {
+  border-color: #474747 !important;
+}
+
+/* Dark mode special cards */
+.dark .card-five-star {
+  background: rgba(254, 165, 56, 0.2) !important;
+  border-color: #fea538 !important;
+}
+
+.dark .card-four-star {
+  background: rgba(171, 71, 188, 0.2) !important;
+  border-color: #ab47bc !important;
+}
+
+.dark .card-three-star {
+  background: rgba(67, 160, 71, 0.2) !important;
+  border-color: #43a047 !important;
+}
+
+.dark .card-two-and-one-star {
+  background: #3b3b3b !important;
+  border-color: #626262 !important;
+}
+
+/* Dark mode like button */
+.dark .btn-like {
+  color: #818181 !important;
+}
+
+.dark .btn-like:hover {
+  color: #e91e63 !important;
+}
+
+.dark .btn-like:hover i {
+  background: rgba(233, 30, 99, 0.1) !important;
+}
+
+/* Dark mode upgrade/sidebar special */
+.dark .bc-side-upgrade,
+.dark .side-upgrade {
+  background: rgba(171, 71, 188, 0.2) !important;
+  color: #ab47bc !important;
+}
+
+/* Ensure shadcn components respect dark mode */
+.dark [class*="bg-background"] {
+  background: #181818 !important;
+}
+
+.dark [class*="bg-muted"] {
+  background: #3b3b3b !important;
+}
+
+.dark [class*="text-foreground"] {
+  color: #dadada !important;
+}
+
+.dark [class*="text-muted-foreground"] {
+  color: #818181 !important;
+}
+
+.dark [class*="border-border"] {
+  border-color: #474747 !important;
+}
+
+/* Dark mode popovers and sheets */
+.dark [data-radix-popper-content-wrapper] [class*="bg-popover"],
+.dark [role="listbox"],
+.dark [cmdk-root] {
+  background: #252525 !important;
+  border-color: #474747 !important;
+}
+
+/* Dark mode select/combobox items */
+.dark [cmdk-item],
+.dark [role="option"] {
+  color: #dadada !important;
+}
+
+.dark [cmdk-item][data-selected="true"],
+.dark [role="option"][data-highlighted] {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #181818;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #474747;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
 /* BLOX City Custom Design System */
 :root {
   /* Primary Info Blue (matching reference #039be5) */
