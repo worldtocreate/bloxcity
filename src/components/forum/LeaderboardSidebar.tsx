@@ -108,7 +108,7 @@ export default function LeaderboardSidebar() {
             {users.map((user, index) => (
               <Link
                 key={user.id}
-                to={`/user/${user.username}`}
+                to={`/id/${user.username}/profile`}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
               >
                 <span className={`w-5 text-center font-bold text-sm ${

@@ -300,7 +300,7 @@ export default function Friends() {
                 <div className="divide-y divide-[hsl(var(--bc-border))]">
                   {friends.map(friend => (
                     <div key={friend.id} className="p-4 flex items-center justify-between">
-                      <Link to={`/user/${friend.username}`} className="flex items-center gap-3 flex-1">
+                      <Link to={`/id/${friend.username}/profile`} className="flex items-center gap-3 flex-1">
                         <div className="relative">
                           <UserAvatar
                             avatarUrl={friend.avatar_url}
@@ -357,7 +357,7 @@ export default function Friends() {
                 <div className="divide-y divide-[hsl(var(--bc-border))]">
                   {pendingRequests.map(request => (
                     <div key={request.id} className="p-4 flex items-center justify-between">
-                      <Link to={`/user/${request.sender?.username}`} className="flex items-center gap-3 flex-1">
+                      <Link to={`/id/${request.sender?.username}/profile`} className="flex items-center gap-3 flex-1">
                         <UserAvatar
                           avatarUrl={request.sender?.avatar_url || null}
                           username={request.sender?.username || 'User'}
@@ -418,7 +418,7 @@ export default function Friends() {
                 <div className="divide-y divide-[hsl(var(--bc-border))]">
                   {sentRequests.map(request => (
                     <div key={request.id} className="p-4 flex items-center justify-between">
-                      <Link to={`/user/${request.receiver?.username}`} className="flex items-center gap-3 flex-1">
+                      <Link to={`/id/${request.receiver?.username}/profile`} className="flex items-center gap-3 flex-1">
                         <UserAvatar
                           avatarUrl={request.receiver?.avatar_url || null}
                           username={request.receiver?.username || 'User'}

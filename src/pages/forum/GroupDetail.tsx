@@ -377,7 +377,7 @@ export default function GroupDetail() {
               <div className="flex items-center gap-2 mt-2 text-sm">
                 <span className="text-[hsl(var(--bc-text-muted))]">Owner:</span>
                 <Link 
-                  to={`/user/${group.owner.username}`} 
+                  to={`/id/${group.owner.username}/profile`} 
                   className="flex items-center gap-1 text-[hsl(var(--bc-primary))] hover:underline"
                 >
                   <Crown className="w-4 h-4" />
@@ -507,7 +507,7 @@ export default function GroupDetail() {
               {wallPosts.map((post) => (
                 <div key={post.id} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
                   <div className="flex items-start gap-3">
-                    <Link to={`/user/${post.author.username}`}>
+                    <Link to={`/id/${post.author.username}/profile`}>
                       <UserAvatar 
                         username={post.author.username}
                         avatarUrl={post.author.avatar_url}
@@ -517,7 +517,7 @@ export default function GroupDetail() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <Link 
-                          to={`/user/${post.author.username}`}
+                          to={`/id/${post.author.username}/profile`}
                           className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] flex items-center gap-1"
                         >
                           {post.author.username}
@@ -556,7 +556,7 @@ export default function GroupDetail() {
               {members.map((member) => (
                 <Link
                   key={member.id}
-                  to={`/user/${member.user.username}`}
+                  to={`/id/${member.user.username}/profile`}
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition"
                 >
                   <UserAvatar 

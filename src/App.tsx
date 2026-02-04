@@ -392,7 +392,7 @@ function GameDetail() {
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
         <div className="aspect-video bg-[hsl(var(--bc-bg-light))] flex items-center justify-center">{game.thumbnail_url ? <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" /> : <span className="text-[hsl(var(--bc-text-muted))]">No Thumbnail</span>}</div>
         <div className="p-6 space-y-4">
-          {isEditing ? (<div className="space-y-4"><Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="Game Title" /><Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Description" /><div className="flex gap-2"><Button onClick={handleSaveEdit}>Save</Button><Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button></div></div>) : (<><div className="flex items-start justify-between"><div><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{game.title}</h1><Link to={`/user/${game.creator?.username}`} className="text-[hsl(var(--bc-primary))] hover:underline text-sm">by {game.creator?.username}</Link></div>{canEdit && <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>}</div>{game.description && <p className="text-[hsl(var(--bc-text-muted))]">{game.description}</p>}</>)}
+          {isEditing ? (<div className="space-y-4"><Input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="Game Title" /><Textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} placeholder="Description" /><div className="flex gap-2"><Button onClick={handleSaveEdit}>Save</Button><Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button></div></div>) : (<><div className="flex items-start justify-between"><div><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{game.title}</h1><Link to={`/id/${game.creator?.username}/profile`} className="text-[hsl(var(--bc-primary))] hover:underline text-sm">by {game.creator?.username}</Link></div>{canEdit && <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>}</div>{game.description && <p className="text-[hsl(var(--bc-text-muted))]">{game.description}</p>}</>)}
           <div className="flex items-center gap-6 text-sm text-[hsl(var(--bc-text-muted))]"><span>{game.play_count || 0} plays</span><span>{game.favorite_count || 0} favorites</span></div>
           <div className="flex gap-3 pt-4 border-t border-[hsl(var(--bc-border))]"><Button className="flex-1">Play Now</Button><Button variant="outline" onClick={toggleFavorite} className={isFavorited ? "text-red-500" : ""}>♥</Button></div>
         </div>
@@ -400,7 +400,7 @@ function GameDetail() {
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Comments ({comments.length})</h2>
         {forumUser ? (<div className="flex gap-3 mb-6"><Input value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Write a comment..." onKeyDown={(e) => e.key === "Enter" && handleSubmitComment()} /><Button onClick={handleSubmitComment} disabled={submittingComment || !newComment.trim()}>{submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send"}</Button></div>) : <p className="text-[hsl(var(--bc-text-muted))] mb-6"><Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">Login</Link> to comment</p>}
-        <div className="space-y-4">{comments.length === 0 ? <p className="text-center text-[hsl(var(--bc-text-muted))] py-8">No comments yet</p> : comments.map((c) => (<div key={c.id} className="flex gap-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg"><img src={c.author?.avatar_url || "/placeholder.svg"} alt="" className="w-8 h-8 rounded-full" /><div className="flex-1"><div className="flex items-center justify-between"><Link to={`/user/${c.author?.username}`} className="font-medium text-[hsl(var(--bc-text))]">{c.author?.username}</Link>{(forumUser?.id === c.author_id || isAdmin) && <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 text-sm">Delete</button>}</div><p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p></div></div>))}</div>
+        <div className="space-y-4">{comments.length === 0 ? <p className="text-center text-[hsl(var(--bc-text-muted))] py-8">No comments yet</p> : comments.map((c) => (<div key={c.id} className="flex gap-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg"><img src={c.author?.avatar_url || "/placeholder.svg"} alt="" className="w-8 h-8 rounded-full" /><div className="flex-1"><div className="flex items-center justify-between"><Link to={`/id/${c.author?.username}/profile`} className="font-medium text-[hsl(var(--bc-text))]">{c.author?.username}</Link>{(forumUser?.id === c.author_id || isAdmin) && <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 text-sm">Delete</button>}</div><p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p></div></div>))}</div>
       </div>
     </div>
   );
@@ -495,7 +495,7 @@ function GameView() {
               <div className="flex items-start justify-between">
                 <div>
                   <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{game.title}</h1>
-                  <Link to={`/user/${game.creator?.username}`} className="text-[hsl(var(--bc-primary))] hover:underline text-sm">by {game.creator?.username}</Link>
+                  <Link to={`/id/${game.creator?.username}/profile`} className="text-[hsl(var(--bc-primary))] hover:underline text-sm">by {game.creator?.username}</Link>
                 </div>
                 {canEdit && <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>}
               </div>
@@ -544,7 +544,7 @@ function GameView() {
                     <img src={c.author?.avatar_url || "/placeholder.svg"} alt="" className="w-8 h-8 rounded-full" />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <Link to={`/user/${c.author?.username}`} className="font-medium text-[hsl(var(--bc-text))]">{c.author?.username}</Link>
+                        <Link to={`/id/${c.author?.username}/profile`} className="font-medium text-[hsl(var(--bc-text))]">{c.author?.username}</Link>
                         {(forumUser?.id === c.author_id || isAdmin) && <button onClick={() => handleDeleteComment(c.id)} className="text-red-500 text-sm hover:underline">Delete</button>}
                       </div>
                       <p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p>
@@ -1434,7 +1434,7 @@ function MarketItem() {
                         <span className="inline-flex items-center px-2 py-1 rounded bg-[hsl(var(--bc-primary))]/10 text-[hsl(var(--bc-primary))] text-xs">{CATEGORY_NAMES[item.category] || item.category}</span>
                       </div>
                       <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{item.name}</h1>
-                      <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <Link to={`/user/${item.creatorId}`} className="text-[hsl(var(--bc-primary))] hover:underline">{item.creator}</Link></p>
+                      <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <Link to={`/id/${item.creatorId}/profile`} className="text-[hsl(var(--bc-primary))] hover:underline">{item.creator}</Link></p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="icon" onClick={() => setIsFavorited(!isFavorited)} className={isFavorited ? "text-red-500 border-red-500" : ""}>♥</Button>
@@ -1479,7 +1479,7 @@ function MarketItem() {
                   {sellers.map((seller) => (
                     <div key={seller.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--bc-bg))] border border-[hsl(var(--bc-border))]">
                       <div>
-                        <Link to={`/user/${seller.id}`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">{seller.username}</Link>
+                        <Link to={`/id/${seller.username}/profile`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">{seller.username}</Link>
                         <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{seller.serial}</p>
                       </div>
                       <div className="text-right">
@@ -1629,7 +1629,7 @@ const App = () => (
                 <Route path="privacy" element={<SettingsPrivacy />} />
                 <Route path="security" element={<SettingsSecurity />} />
               </Route>
-              <Route path="user/:id" element={<ForumUserProfile />} />
+              <Route path="id/:id/profile" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="players" element={<ForumUsers />} />
               <Route path="groups" element={<Groups />} />

@@ -561,7 +561,7 @@ export default function ForumDashboard() {
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             {/* Profile Picture */}
-            <Link to={`/user/${forumUser?.username}`} className="shrink-0">
+            <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
               {forumUser?.avatar_url ? (
                 <img 
                   src={forumUser.avatar_url} 
@@ -598,7 +598,7 @@ export default function ForumDashboard() {
       {/* Status Posting Box */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
         <div className="flex gap-3">
-          <Link to={`/user/${forumUser?.username}`} className="shrink-0">
+          <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
             {forumUser?.avatar_url ? (
               <img 
                 src={forumUser.avatar_url} 
@@ -691,7 +691,7 @@ export default function ForumDashboard() {
               <div className="space-y-3">
                 {friendRequests.slice(0, 3).map(request => (
                   <div key={request.id} className="flex items-center gap-3">
-                    <Link to={`/user/${request.sender.username}`}>
+                    <Link to={`/id/${request.sender.username}/profile`}>
                       <UserAvatar
                         avatarUrl={request.sender.avatar_url}
                         username={request.sender.username}
@@ -701,7 +701,7 @@ export default function ForumDashboard() {
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link 
-                        to={`/user/${request.sender.username}`}
+                        to={`/id/${request.sender.username}/profile`}
                         className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] text-sm truncate block"
                       >
                         {request.sender.username}
@@ -755,7 +755,7 @@ export default function ForumDashboard() {
                 {friendStatuses.map(friend => (
                   <div key={friend.id} className="p-4">
                     <div className="flex gap-3">
-                      <Link to={`/user/${friend.username}`}>
+                      <Link to={`/id/${friend.username}/profile`}>
                         <UserAvatar
                           avatarUrl={friend.avatar_url}
                           username={friend.username}
@@ -767,7 +767,7 @@ export default function ForumDashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <Link 
-                            to={`/user/${friend.username}`}
+                            to={`/id/${friend.username}/profile`}
                             className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]"
                           >
                             {friend.username}

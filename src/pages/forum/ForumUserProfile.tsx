@@ -147,7 +147,7 @@ function FollowersList({ forumUserId, showTitle = true }: { forumUserId: string;
           {currentList.map(u => (
             <Link
               key={u.id}
-              to={`/user/${u.username}`}
+              to={`/id/${u.username}/profile`}
               className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
             >
               <UserAvatar avatarUrl={u.avatar_url} username={u.username} size="sm" />
@@ -290,12 +290,12 @@ function ProfileWall({
         <div className="space-y-3">
           {posts.map(post => (
             <div key={post.id} className="flex gap-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg">
-              <Link to={`/user/${post.author.username}`}>
+              <Link to={`/id/${post.author.username}/profile`}>
                 <UserAvatar avatarUrl={post.author.avatar_url} username={post.author.username} size="sm" />
               </Link>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <Link to={`/user/${post.author.username}`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">
+                  <Link to={`/id/${post.author.username}/profile`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">
                     {post.author.username}
                   </Link>
                   <div className="flex items-center gap-2">
@@ -406,7 +406,7 @@ function AffiliatesSectionProfileInline({
         {affiliates.map((u) => (
           <Link
             key={u.id}
-            to={`/forum/user/${u.username}`}
+            to={`/id/${u.username}/profile`}
             className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
           >
             <UserAvatar avatarUrl={u.avatar_url} username={u.username} size="sm" />
