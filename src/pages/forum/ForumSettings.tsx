@@ -1608,7 +1608,7 @@ export default function ForumSettings() {
           </div>
         </div>
         <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-3">
-          Your profile URL: <span className="text-[hsl(var(--bc-primary))]">bloxcity.lovable.app/user/{(forumUser as any).serial_id}</span>
+          Your profile URL: <span className="text-[hsl(var(--bc-primary))]">bloxcity.net/user/{(forumUser as any).serial_id}</span>
         </p>
       </div>
 
