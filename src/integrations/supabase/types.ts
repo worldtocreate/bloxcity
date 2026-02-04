@@ -695,6 +695,38 @@ export type Database = {
         }
         Relationships: []
       }
+      forum_coin_compensations: {
+        Row: {
+          amount: number
+          claimed_at: string
+          compensation_id: string
+          forum_user_id: string
+          id: string
+        }
+        Insert: {
+          amount: number
+          claimed_at?: string
+          compensation_id: string
+          forum_user_id: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          claimed_at?: string
+          compensation_id?: string
+          forum_user_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_coin_compensations_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_coin_grants: {
         Row: {
           admin_id: string
@@ -868,6 +900,42 @@ export type Database = {
           {
             foreignKeyName: "forum_direct_messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_follows_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_follows_following_id_fkey"
+            columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -2354,6 +2422,8 @@ export type Database = {
           date_of_birth: string | null
           dm_encryption_pin_hash: string | null
           dob_updated_at: string | null
+          follower_count: number | null
+          following_count: number | null
           has_pending_warning: boolean | null
           hide_online_status: boolean | null
           hide_threads: boolean | null
@@ -2376,6 +2446,7 @@ export type Database = {
           self_disabled_at: string | null
           self_disabled_reason: string | null
           self_disabled_until: string | null
+          serial_id: number
           settings_pin_hash: string | null
           signature: string | null
           social_discord: string | null
@@ -2388,6 +2459,7 @@ export type Database = {
           thread_count: number | null
           user_id: string
           username: string
+          wall_is_private: boolean | null
           warning_accepted_at: string | null
           warning_content: string | null
           warning_moderator_note: string | null
@@ -2406,6 +2478,8 @@ export type Database = {
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           dob_updated_at?: string | null
+          follower_count?: number | null
+          following_count?: number | null
           has_pending_warning?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
@@ -2428,6 +2502,7 @@ export type Database = {
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
+          serial_id?: number
           settings_pin_hash?: string | null
           signature?: string | null
           social_discord?: string | null
@@ -2440,6 +2515,7 @@ export type Database = {
           thread_count?: number | null
           user_id: string
           username: string
+          wall_is_private?: boolean | null
           warning_accepted_at?: string | null
           warning_content?: string | null
           warning_moderator_note?: string | null
@@ -2458,6 +2534,8 @@ export type Database = {
           date_of_birth?: string | null
           dm_encryption_pin_hash?: string | null
           dob_updated_at?: string | null
+          follower_count?: number | null
+          following_count?: number | null
           has_pending_warning?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
@@ -2480,6 +2558,7 @@ export type Database = {
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
+          serial_id?: number
           settings_pin_hash?: string | null
           signature?: string | null
           social_discord?: string | null
@@ -2492,6 +2571,7 @@ export type Database = {
           thread_count?: number | null
           user_id?: string
           username?: string
+          wall_is_private?: boolean | null
           warning_accepted_at?: string | null
           warning_content?: string | null
           warning_moderator_note?: string | null
@@ -2537,6 +2617,61 @@ export type Database = {
           {
             foreignKeyName: "forum_verification_requests_forum_user_id_fkey"
             columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_wall_posts: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_deleted: boolean | null
+          profile_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          profile_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_wall_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_wall_posts_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_wall_posts_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -2759,6 +2894,10 @@ export type Database = {
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
+      claim_coin_compensation: {
+        Args: { p_amount: number; p_compensation_id: string }
+        Returns: number
+      }
       claim_daily_coins: { Args: never; Returns: number }
       click_ad: {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
