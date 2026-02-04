@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon } from "lucide-react";
@@ -314,6 +314,9 @@ function GameView() {
 // Inline SettingsLayout component (settings pages with sidebar)
 function SettingsLayout() {
   const location = window.location.pathname;
+  // Preserve the parent <Route element> context (ForumLayout) so settings pages
+  // can keep using useOutletContext() without rendering blank.
+  const outletContext = useOutletContext<any>();
   
   const settingsNavItems = [
     { title: 'Account', url: '/settings', icon: User, exact: true },
@@ -354,7 +357,7 @@ function SettingsLayout() {
 
         {/* Settings Content - rendered via Outlet */}
         <div className="flex-1 min-w-0">
-          <Outlet />
+          <Outlet context={outletContext} />
         </div>
       </div>
     </div>
