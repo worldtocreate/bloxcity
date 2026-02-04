@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
+import { createLovableAuth } from '@lovable.dev/cloud-auth-js';
 import { Loader2, AlertCircle, ScrollText, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import { z } from 'zod';
 import { Progress } from '@/components/ui/progress';
+
+const lovableAuth = createLovableAuth({});
 
 declare global {
   interface Window {
@@ -591,12 +593,18 @@ export default function ForumRegister() {
               setLoading(true);
               setError('');
               try {
-                const { error } = await lovable.auth.signInWithOAuth('google', {
+                const result = await lovableAuth.signInWithOAuth('google', {
                   redirect_uri: window.location.origin,
                 });
-                if (error) {
-                  setError(error.message || 'Google sign up failed');
+                if (result.redirected) {
+                  return;
                 }
+                if (result.error) {
+                  setError(result.error.message || 'Google sign up failed');
+                  setLoading(false);
+                  return;
+                }
+                await supabase.auth.setSession(result.tokens);
               } catch (err: any) {
                 setError(err.message || 'Google sign up failed');
               }
