@@ -1404,7 +1404,7 @@ function MarketItem() {
       <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <Link to="/market" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition-colors">
-            ← Back to Catalog
+            ← Back to Market
           </Link>
         </div>
       </div>

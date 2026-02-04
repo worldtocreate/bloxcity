@@ -114,7 +114,7 @@ export default function Market() {
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Catalog</h1>
+              <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Market</h1>
               <p className="text-[hsl(var(--bc-text-muted))]">
                 Browse and buy items for your character
               </p>
@@ -127,7 +127,7 @@ export default function Market() {
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search catalog..."
+                  placeholder="Search market..."
                   className="pl-10 bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]"
                 />
               </div>
