@@ -12,6 +12,7 @@ import MembershipBadge from '@/components/forum/MembershipBadge';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
+import CompensationDialog from '@/components/forum/CompensationDialog';
 import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 import UserAdBanner from '@/components/forum/UserAdBanner';
 
@@ -448,6 +449,14 @@ export default function ForumDashboard() {
 
   return (
     <div className="space-y-4">
+      {/* Compensation Dialog for existing users */}
+      {forumUser && (
+        <CompensationDialog 
+          forumUserId={forumUser.id} 
+          userCreatedAt={forumUser.created_at} 
+        />
+      )}
+      
       {/* Top Banner Ad */}
       <UserAdBanner type="banner" />
       

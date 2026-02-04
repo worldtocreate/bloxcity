@@ -284,13 +284,50 @@ export default function ForumLayout() {
     return <Maintenance message={maintenanceSettings.message} />;
   }
 
-  // Check if user is suspended (only after loading completes) - show blank page
+  // Check if user is suspended (only after loading completes) - show suspension page
   if (!loading && forumUser?.is_suspended) {
     const now = new Date();
     const endsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
     
     if (!endsAt || now < endsAt) {
-      return null;
+      return (
+        <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-[hsl(var(--bc-bg-card))] border border-red-200 rounded-2xl p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-red-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-red-600 mb-2">Account Suspended</h1>
+            <p className="text-[hsl(var(--bc-text-muted))] mb-4">
+              Your account has been suspended for violating our community guidelines.
+            </p>
+            {forumUser.suspension_reason && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-left">
+                <p className="text-sm font-medium text-red-700 mb-1">Reason:</p>
+                <p className="text-sm text-red-600">{forumUser.suspension_reason}</p>
+              </div>
+            )}
+            {endsAt && (
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                Suspension ends: {endsAt.toLocaleDateString()} at {endsAt.toLocaleTimeString()}
+              </p>
+            )}
+            {!endsAt && (
+              <p className="text-sm text-red-600 font-medium">
+                This suspension is permanent.
+              </p>
+            )}
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = '/login';
+              }}
+              className="mt-6 w-full bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] font-medium py-2 rounded-lg transition"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      );
     }
   }
 
