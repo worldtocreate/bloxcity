@@ -382,6 +382,7 @@ import Create from "./pages/forum/Create";
 // Roadmap inlined below
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
+// Upgrade, Money, Banned, Badges pages coming soon
 
 // Need useParams for GameDetail
 function useGameParams() {
