@@ -9,6 +9,8 @@ import {
   Users,
   UsersRound,
   Settings,
+  Lock,
+  Shield,
   Mail,
   ChevronLeft,
   Heart,
@@ -267,6 +269,41 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     >
                       <Settings className="w-5 h-5 flex-shrink-0" />
                       {!collapsed && <span>Settings</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                {/* Settings sub-pages */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/settings/privacy"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/settings/privacy')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Lock className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Privacy</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/settings/security"
+                      onClickCapture={handleLinkClick}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                        isActive('/settings/security')
+                          ? 'bg-[hsl(var(--bc-primary))] text-white'
+                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+                      }`}
+                    >
+                      <Shield className="w-5 h-5 flex-shrink-0" />
+                      {!collapsed && <span>Security</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
