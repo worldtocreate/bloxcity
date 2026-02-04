@@ -1,6 +1,7 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail } from "lucide-react";
 import { useState } from "react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import landingBg from "@/assets/landing-background.png";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,35 +62,33 @@ const Index = () => {
   return (
     <div className="has-header">
       <Header />
-      <div className="maintenance-container">
-        <div className="maintenance-content">
+      
+      {/* Hero Section with Background */}
+      <div 
+        className="landing-hero"
+        style={{ backgroundImage: `url(${landingBg})` }}
+      >
+        <div className="landing-hero-overlay" />
+        <div className="landing-content">
           {/* Logo/Brand */}
-          <div className="brand-section">
-            <div className="logo-icon">
-              <img src={bloxcityLogo} alt="BLOX City Logo" />
-            </div>
-            <h1 className="brand-title">BLOX City</h1>
-            <div className="brand-tagline">Est. March 2016</div>
-          </div>
+          <img src={bloxcityLogo} alt="BLOX City Logo" className="landing-logo" />
+          <h1 className="landing-title">BLOX City</h1>
+          <div className="landing-tagline">Est. March 2016</div>
 
           {/* Main Message */}
-          <div className="message-section">
-            <h2 className="message-title">We're Coming Back</h2>
-            <p className="message-text">
-              The original BLOX City experience from March 2016 is returning in 2026. 
-              Our beloved website and client are being rebuilt from the ground up.
-            </p>
-          </div>
+          <h2 className="landing-subtitle">We're Coming Back</h2>
+          <p className="landing-description">
+            The original BLOX City experience from March 2016 is returning in 2026. 
+            Our beloved website and client are being rebuilt from the ground up.
+          </p>
 
           {/* CTA Button */}
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <a href="/reserve" className="reservation-button" style={{ display: 'inline-block', textDecoration: 'none' }}>
-              Reserve Your Username →
-            </a>
-          </div>
+          <a href="/reserve" className="bc-btn bc-btn-info" style={{ marginBottom: '3rem' }}>
+            Reserve Your Username →
+          </a>
 
           {/* Info Cards */}
-          <div className="info-cards">
+          <div className="info-cards" style={{ maxWidth: '700px', width: '100%' }}>
             <div className="info-card">
               <Calendar className="info-icon" />
               <h3>Original Launch</h3>
@@ -106,7 +105,13 @@ const Index = () => {
               <p>bloxcity.net</p>
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Content Sections */}
+      <div className="maintenance-container" style={{ paddingTop: '0', minHeight: 'auto' }}>
+        <div className="maintenance-content">
+          
           {/* We Are BLOX City Section */}
           <div className="about-hero-section">
             <h2>We are BLOX City.</h2>
@@ -176,11 +181,11 @@ const Index = () => {
                     value={newsletterEmail}
                     onChange={(e) => setNewsletterEmail(e.target.value)}
                     placeholder="Enter your email address"
-                    className="reservation-input"
+                    className="bc-input reservation-input"
                     required
                     disabled={newsletterLoading}
                   />
-                  <button type="submit" className="reservation-button" disabled={newsletterLoading}>
+                  <button type="submit" className="bc-btn bc-btn-info reservation-button" disabled={newsletterLoading}>
                     {newsletterLoading ? "Subscribing..." : "Subscribe"}
                   </button>
                 </form>
@@ -212,8 +217,6 @@ const Index = () => {
               </a>
             </div>
           </div>
-
-
 
           {/* Footer */}
           <footer className="maintenance-footer">
