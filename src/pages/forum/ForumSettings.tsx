@@ -1005,62 +1005,71 @@ export default function ForumSettings() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto py-6 px-4">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Left Sidebar */}
-        <div className="md:col-span-1">
-          <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-3">Account Settings</h2>
-          <ul className="space-y-1">
-            <li>
+    <div className="max-w-5xl mx-auto py-4 px-4">
+      {/* Mobile Tab Selector */}
+      <div className="md:hidden mb-4">
+        <select 
+          value={activeTab}
+          onChange={(e) => setActiveTab(e.target.value as SettingsTab)}
+          className="w-full p-3 rounded-lg bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text))] font-medium"
+        >
+          <option value="general">General</option>
+          <option value="security">Security & Privacy</option>
+          <option value="billing">Billing</option>
+        </select>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Settings Sidebar - Desktop only */}
+        <div className="hidden md:block w-56 flex-shrink-0">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 sticky top-20">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Account Settings</h2>
+            <nav className="space-y-1">
               <button
                 onClick={() => setActiveTab('general')}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition font-medium ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
                   activeTab === 'general'
                     ? 'bg-[hsl(var(--bc-primary))] text-white'
                     : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
                 }`}
               >
-                General
+                <User className="w-5 h-5" />
+                <span>General</span>
               </button>
-            </li>
-            <li>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition font-medium ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
                   activeTab === 'security'
                     ? 'bg-[hsl(var(--bc-primary))] text-white'
                     : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
                 }`}
               >
-                Security & Privacy
+                <Shield className="w-5 h-5" />
+                <span>Security & Privacy</span>
               </button>
-            </li>
-            <li>
               <button
                 onClick={() => setActiveTab('billing')}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition font-medium ${
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
                   activeTab === 'billing'
                     ? 'bg-[hsl(var(--bc-primary))] text-white'
                     : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
                 }`}
               >
-                Billing
+                <Award className="w-5 h-5" />
+                <span>Billing</span>
               </button>
-            </li>
-          </ul>
+            </nav>
+          </div>
         </div>
 
         {/* Main Content */}
-        <div className="md:col-span-3">
+        <div className="flex-1 min-w-0">
           {/* Success Alert */}
           {successMessage && (
-            <div className="bg-green-100 border border-green-300 text-green-700 font-semibold text-center py-3 px-4 rounded-lg mb-4">
+            <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 font-semibold text-center py-3 px-4 rounded-lg mb-4">
               {successMessage}
             </div>
           )}
-
-          {/* Tab Title */}
-          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4 capitalize">{activeTab}</h1>
 
           {/* Tab Content */}
           {activeTab === 'general' && renderGeneralTab()}

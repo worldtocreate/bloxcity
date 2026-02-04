@@ -1041,57 +1041,13 @@ function GameView() {
   );
 }
 
-// Inline SettingsLayout component (settings pages with sidebar)
+// Inline SettingsLayout component - passes context through to settings pages
 function SettingsLayout() {
-  const location = window.location.pathname;
   // Preserve the parent <Route element> context (ForumLayout) so settings pages
   // can keep using useOutletContext() without rendering blank.
   const outletContext = useOutletContext<any>();
   
-  const settingsNavItems = [
-    { title: 'Account', url: '/settings', icon: User, exact: true },
-    { title: 'Privacy', url: '/settings/privacy', icon: LockIcon },
-    { title: 'Security', url: '/settings/security', icon: Shield },
-  ];
-
-  const isActive = (path: string, exact?: boolean) => {
-    if (exact) return location === path;
-    return location === path || location.startsWith(path + '/');
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Settings Sidebar */}
-        <div className="w-full md:w-64 flex-shrink-0">
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 sticky top-20">
-            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Settings</h2>
-            <nav className="space-y-1">
-              {settingsNavItems.map((item) => (
-                <Link
-                  key={item.url}
-                  to={item.url}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                    isActive(item.url, item.exact)
-                      ? 'bg-[hsl(var(--bc-primary))] text-white'
-                      : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span>{item.title}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        {/* Settings Content - rendered via Outlet */}
-        <div className="flex-1 min-w-0">
-          <Outlet context={outletContext} />
-        </div>
-      </div>
-    </div>
-  );
+  return <Outlet context={outletContext} />;
 }
 
 // Inline SettingsPrivacy component - Full page for DMs and wall visibility
