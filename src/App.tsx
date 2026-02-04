@@ -21,6 +21,83 @@ import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
 
+// Inline error pages
+function Error403() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+            <span className="text-4xl">🚫</span>
+          </div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Error 403: You are not allowed to access this resource.</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-6">You don't have permission to view this page.</p>
+          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition font-medium">
+            ← Go back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Error419() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+            <span className="text-4xl">⏱️</span>
+          </div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Error 419: Authentication timeout.</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-6">Try reloading the page and trying again.</p>
+          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition font-medium">
+            ← Go back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Error500() {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Error 500: Something went wrong on our end.</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-6">Please try again later.</p>
+          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition font-medium">
+            ← Go back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureDisabled({ title = 'Feature Disabled' }: { title?: string }) {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[hsla(var(--bc-accent),0.15)] flex items-center justify-center">
+            <AlertTriangle className="w-10 h-10 text-[hsl(var(--bc-accent))]" />
+          </div>
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">{title}</h1>
+          <p className="text-[hsl(var(--bc-text-muted))]">This feature is currently disabled.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // NOTE: Full g0dfrey panel inlined to avoid production module resolution issues.
 const AUTHORIZED_USERNAMES = ['soba', 'dylan'];
 
@@ -1809,6 +1886,12 @@ const App = () => (
 
             {/* Admin Route - outside ForumLayout */}
             <Route path="/admin" element={<Admin />} />
+            
+            {/* Error pages */}
+            <Route path="/error/403" element={<Error403 />} />
+            <Route path="/error/419" element={<Error419 />} />
+            <Route path="/error/500" element={<Error500 />} />
+            <Route path="/feature-disabled" element={<FeatureDisabled />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
