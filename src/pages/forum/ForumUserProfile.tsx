@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star, Heart, Users, Lock, Trash2 } from 'lucide-react';
+import { User, Calendar, MessageSquare, Pin, MessageCircle, Ban, Loader2, Eye, Clock, FileText, TrendingUp, ExternalLink, Star, Heart, Users, Lock, Trash2, Gamepad2 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
@@ -479,18 +479,16 @@ export default function ForumUserProfile() {
   }>();
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [threads, setThreads] = useState<ThreadData[]>([]);
+  const [userGames, setUserGames] = useState<Array<{id: string; title: string; thumbnail_url: string | null; play_count: number; favorite_count: number; category: string}>>([]);
   const [pinnedThreadIds, setPinnedThreadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blocking, setBlocking] = useState(false);
   const [stats, setStats] = useState<ProfileStats>({ totalViews: 0, totalReplies: 0, threadCount: 0 });
-  const [activeTab, setActiveTab] = useState<'threads' | 'activity'>('threads');
   const [statusLiked, setStatusLiked] = useState(false);
   const [statusLikeCount, setStatusLikeCount] = useState(0);
 
   const isOwnProfile = forumUser?.username === username;
-  const canSeeThreads = isOwnProfile || isAdmin || !profile?.hide_threads;
 
   useEffect(() => {
     if (username) {
@@ -553,7 +551,7 @@ export default function ForumUserProfile() {
       setIsBlocked(!!blockData);
     }
 
-    // Fetch pinned thread IDs
+    // Fetch pinned thread IDs (kept for potential future use)
     const { data: pinned } = await supabase
       .from('forum_pinned_threads')
       .select('thread_id')
@@ -563,28 +561,17 @@ export default function ForumUserProfile() {
       setPinnedThreadIds(new Set(pinned.map(p => p.thread_id)));
     }
 
-    // Fetch threads (if visible)
-    if (!userData.hide_threads || isOwnProfile || isAdmin) {
-      const { data: threadData } = await supabase
-        .from('forum_threads')
-        .select('id, title, reply_count, view_count, created_at, category:category_id (name, slug)')
-        .eq('author_id', userData.id)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (threadData) {
-        setThreads(threadData as unknown as ThreadData[]);
-        
-        // Calculate stats
-        const totalViews = threadData.reduce((sum, t: any) => sum + (t.view_count || 0), 0);
-        const totalReplies = threadData.reduce((sum, t: any) => sum + (t.reply_count || 0), 0);
-        setStats({
-          totalViews,
-          totalReplies,
-          threadCount: threadData.length
-        });
-      }
+    // Fetch user's games
+    const { data: gamesData } = await supabase
+      .from('forum_games')
+      .select('id, title, thumbnail_url, play_count, favorite_count, category')
+      .eq('creator_id', userData.id)
+      .eq('is_private', false)
+      .order('created_at', { ascending: false })
+      .limit(6);
+    
+    if (gamesData) {
+      setUserGames(gamesData);
     }
 
     // Fetch status likes
@@ -962,58 +949,41 @@ export default function ForumUserProfile() {
         <UserGroups forumUserId={profile.id} />
       </div>
 
-      {/* Threads Section */}
-      {canSeeThreads && (
+      {/* User Games Section */}
+      {userGames.length > 0 && (
         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl">
           <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Recent Threads</h2>
-            <span className="text-sm text-[hsl(var(--bc-text-muted))]">{threads.length} threads</span>
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+              <Gamepad2 className="w-5 h-5" />
+              Games
+            </h2>
+            <span className="text-sm text-[hsl(var(--bc-text-muted))]">{userGames.length} games</span>
           </div>
 
-          {threads.length === 0 ? (
-            <div className="p-8 text-center text-[hsl(var(--bc-text-muted))]">
-              <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No threads yet</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-[hsl(var(--bc-border))]">
-              {threads.map((thread) => (
-                <Link
-                  key={thread.id}
-                  to={`/thread/${thread.id}`}
-                  className="block p-4 hover:bg-[hsl(var(--bc-bg-light))] transition"
-                >
-                  <div className="flex items-start gap-3">
-                    {pinnedThreadIds.has(thread.id) && (
-                      <Pin className="w-4 h-4 text-[hsl(var(--bc-primary))] mt-1 flex-shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[hsl(var(--bc-text))] truncate">{thread.title}</h3>
-                      <div className="flex items-center gap-3 mt-1.5 text-sm text-[hsl(var(--bc-text-muted))]">
-                        <span className="px-2 py-0.5 bg-[hsl(var(--bc-bg-light))] rounded text-xs">{thread.category?.name}</span>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          {thread.reply_count}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="w-3.5 h-3.5" />
-                          {thread.view_count}
-                        </span>
-                        <span>{getTimeSince(thread.created_at)}</span>
-                      </div>
-                    </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            {userGames.map((game) => (
+              <Link
+                key={game.id}
+                to={`/game/${game.id}`}
+                className="bg-[hsl(var(--bc-bg-light))] rounded-xl overflow-hidden hover:ring-2 hover:ring-[hsl(var(--bc-primary))] transition block"
+              >
+                <div className="h-24 bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] flex items-center justify-center">
+                  {game.thumbnail_url ? (
+                    <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Gamepad2 className="w-8 h-8 text-white/50" />
+                  )}
+                </div>
+                <div className="p-3">
+                  <h3 className="font-medium text-[hsl(var(--bc-text))] truncate">{game.title}</h3>
+                  <div className="flex items-center gap-3 mt-1 text-xs text-[hsl(var(--bc-text-muted))]">
+                    <span>{game.play_count || 0} plays</span>
+                    <span>{game.favorite_count || 0} favorites</span>
                   </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {!canSeeThreads && (
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
-          <MessageSquare className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-3" />
-          <p className="text-[hsl(var(--bc-text-muted))]">This user has hidden their threads from public view.</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
