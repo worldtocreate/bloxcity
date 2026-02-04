@@ -33,18 +33,18 @@ const SORT_OPTIONS = [
 
 // Placeholder items for demo
 const PLACEHOLDER_ITEMS = [
-  { id: '1', name: 'Classic Fedora', category: 'hats', price: 75, isLimited: false, thumbnail: null, creator: 'BLOX', favorites: 1250, sales: 5420 },
-  { id: '2', name: 'Sparkle Time Fedora', category: 'hats', price: 15000, isLimited: true, limitedStock: 50, thumbnail: null, creator: 'BLOX', favorites: 8920, sales: 48 },
-  { id: '3', name: 'Winning Smile', category: 'faces', price: 350, isLimited: false, thumbnail: null, creator: 'BLOX', favorites: 12500, sales: 45000 },
-  { id: '4', name: 'Woman Face', category: 'faces', price: 25, isLimited: false, thumbnail: null, creator: 'BLOX', favorites: 89000, sales: 250000 },
+  { id: '1', name: 'Classic Fedora', category: 'hats', price: 75, isLimited: false, thumbnail: null, creator: 'BLOX City', favorites: 1250, sales: 5420 },
+  { id: '2', name: 'Sparkle Time Fedora', category: 'hats', price: 15000, isLimited: true, limitedStock: 50, thumbnail: null, creator: 'BLOX City', favorites: 8920, sales: 48 },
+  { id: '3', name: 'Winning Smile', category: 'faces', price: 350, isLimited: false, thumbnail: null, creator: 'BLOX City', favorites: 12500, sales: 45000 },
+  { id: '4', name: 'Woman Face', category: 'faces', price: 25, isLimited: false, thumbnail: null, creator: 'BLOX City', favorites: 89000, sales: 250000 },
   { id: '5', name: 'Classic Tee', category: 't-shirts', price: 5, isLimited: false, thumbnail: null, creator: 'Designer123', favorites: 2500, sales: 15000 },
   { id: '6', name: 'Adidas Hoodie', category: 'shirts', price: 50, isLimited: false, thumbnail: null, creator: 'Designer123', favorites: 3400, sales: 12000 },
-  { id: '7', name: 'Blue Jeans', category: 'pants', price: 25, isLimited: false, thumbnail: null, creator: 'BLOX', favorites: 4500, sales: 28000 },
-  { id: '8', name: 'Dominus Empyreus', category: 'hats', price: 1250000, isLimited: true, limitedStock: 13, thumbnail: null, creator: 'BLOX', favorites: 150000, sales: 13 },
-  { id: '9', name: 'Royal Bundle', category: 'bundles', price: 2500, isLimited: true, limitedStock: 500, thumbnail: null, creator: 'BLOX', favorites: 4200, sales: 380 },
+  { id: '7', name: 'Blue Jeans', category: 'pants', price: 25, isLimited: false, thumbnail: null, creator: 'BLOX City', favorites: 4500, sales: 28000 },
+  { id: '8', name: 'Dominus Empyreus', category: 'hats', price: 1250000, isLimited: true, limitedStock: 13, thumbnail: null, creator: 'BLOX City', favorites: 150000, sales: 13 },
+  { id: '9', name: 'Royal Bundle', category: 'bundles', price: 2500, isLimited: true, limitedStock: 500, thumbnail: null, creator: 'BLOX City', favorites: 4200, sales: 380 },
   { id: '10', name: 'Bucket Hat', category: 'hats', price: 50, isLimited: false, thumbnail: null, creator: 'HatMaker', favorites: 890, sales: 4500 },
-  { id: '11', name: 'Chill Face', category: 'faces', price: 125, isLimited: false, thumbnail: null, creator: 'BLOX', favorites: 15600, sales: 67000 },
-  { id: '12', name: 'Starter Bundle', category: 'bundles', price: 500, isLimited: false, thumbnail: null, creator: 'BLOX', favorites: 8200, sales: 15000 },
+  { id: '11', name: 'Chill Face', category: 'faces', price: 125, isLimited: false, thumbnail: null, creator: 'BLOX City', favorites: 15600, sales: 67000 },
+  { id: '12', name: 'Starter Bundle', category: 'bundles', price: 500, isLimited: false, thumbnail: null, creator: 'BLOX City', favorites: 8200, sales: 15000 },
 ];
 
 function formatNumber(num: number): string {
