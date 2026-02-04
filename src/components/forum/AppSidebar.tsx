@@ -68,7 +68,6 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
     return location.pathname.startsWith(path);
   };
 
-  // Close sidebar on mobile when clicking a link
   const handleLinkClick = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -76,12 +75,15 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-3 border-b border-[hsl(var(--bc-border))]">
+    <Sidebar collapsible="icon" className="border-r" style={{ 
+      background: 'hsl(var(--bc-section-bg))', 
+      borderColor: 'hsl(var(--bc-section-border))' 
+    }}>
+      <SidebarHeader className="p-3" style={{ borderBottom: '1px solid hsl(var(--bc-section-border))' }}>
         <Link to="/" className="flex items-center gap-2" onClickCapture={handleLinkClick}>
-          <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 rounded-lg flex-shrink-0" />
+          <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 flex-shrink-0" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
           {!collapsed && (
-            <span className="font-bold text-[hsl(var(--bc-text))]">BLOX City</span>
+            <span className="font-bold" style={{ color: 'hsl(var(--bc-text))' }}>BLOX City</span>
           )}
         </Link>
       </SidebarHeader>
@@ -90,7 +92,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
         {/* Main Navigation */}
         <SidebarGroup>
           {!collapsed && (
-            <SidebarGroupLabel className="text-xs font-semibold text-[hsl(var(--bc-text-muted))] uppercase tracking-wider mb-2 px-2">
+            <SidebarGroupLabel className="bc-side-title mb-2">
               Navigation
             </SidebarGroupLabel>
           )}
@@ -102,13 +104,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to={item.url}
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive(item.url)
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive(item.url) ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className="bc-side-icon" />
                       {!collapsed && <span>{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -121,7 +120,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
         {/* Coming Soon Section */}
         <SidebarGroup className="mt-4">
           {!collapsed && (
-            <SidebarGroupLabel className="text-xs font-semibold text-[hsl(var(--bc-text-muted))] uppercase tracking-wider mb-2 px-2">
+            <SidebarGroupLabel className="bc-side-title mb-2">
               Coming Soon
             </SidebarGroupLabel>
           )}
@@ -133,13 +132,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to={item.url}
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive(item.url)
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive(item.url) ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0', opacity: 0.6 }}
                     >
-                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      <item.icon className="bc-side-icon" />
                       {!collapsed && <span>{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -153,7 +149,7 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
         {isLoggedIn && (
           <SidebarGroup className="mt-4">
             {!collapsed && (
-              <SidebarGroupLabel className="text-xs font-semibold text-[hsl(var(--bc-text-muted))] uppercase tracking-wider mb-2 px-2">
+              <SidebarGroupLabel className="bc-side-title mb-2">
                 Account
               </SidebarGroupLabel>
             )}
@@ -164,13 +160,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/create"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/create')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/create') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <Plus className="w-5 h-5 flex-shrink-0" />
+                      <Plus className="bc-side-icon" />
                       {!collapsed && <span>Create</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -180,13 +173,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/request"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/request')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/request') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <BadgeCheck className="w-5 h-5 flex-shrink-0" />
+                      <BadgeCheck className="bc-side-icon" />
                       {!collapsed && <span>Request Verification</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -196,13 +186,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/upgrades"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/upgrades')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/upgrades') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <Sparkles className="w-5 h-5 flex-shrink-0" />
+                      <Sparkles className="bc-side-icon" />
                       {!collapsed && <span>Upgrades</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -212,13 +199,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/friends"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/friends')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/friends') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <Heart className="w-5 h-5 flex-shrink-0" />
+                      <Heart className="bc-side-icon" />
                       {!collapsed && <span>Friends</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -228,13 +212,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/messages"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/messages')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/messages') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <Mail className="w-5 h-5 flex-shrink-0" />
+                      <Mail className="bc-side-icon" />
                       {!collapsed && <span>Messages</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -244,13 +225,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/support"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/support')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/support') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <HelpCircle className="w-5 h-5 flex-shrink-0" />
+                      <HelpCircle className="bc-side-icon" />
                       {!collapsed && <span>Support</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -260,13 +238,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <Link
                       to="/settings"
                       onClickCapture={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        isActive('/settings')
-                          ? 'bg-[hsl(var(--bc-primary))] text-white'
-                          : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                      }`}
+                      className={`bc-side-link ${isActive('/settings') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                     >
-                      <Settings className="w-5 h-5 flex-shrink-0" />
+                      <Settings className="bc-side-icon" />
                       {!collapsed && <span>Settings</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -278,13 +253,10 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                       <Link
                         to="/g0dfrey"
                         onClickCapture={handleLinkClick}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                          isActive('/g0dfrey')
-                            ? 'bg-[hsl(var(--bc-primary))] text-white'
-                            : 'text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
-                        }`}
+                        className={`bc-side-link ${isActive('/g0dfrey') ? 'active' : ''}`}
+                        style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
                       >
-                        <Shield className="w-5 h-5 flex-shrink-0" />
+                        <Shield className="bc-side-icon" />
                         {!collapsed && <span>The g0dfrey panel</span>}
                       </Link>
                     </SidebarMenuButton>
@@ -299,12 +271,13 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
 
       {/* Only show collapse button on desktop */}
       {!isMobile && (
-        <SidebarFooter className="p-2 border-t border-[hsl(var(--bc-border))]">
+        <SidebarFooter className="p-2" style={{ borderTop: '1px solid hsl(var(--bc-section-border))' }}>
           <SidebarMenuButton
             onClick={toggleSidebar}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))] transition-colors"
+            className="bc-side-link w-full justify-center"
+            style={{ borderRadius: 'var(--bc-rounded-lg)' }}
           >
-            <ChevronLeft className={`w-5 h-5 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
+            <ChevronLeft className={`bc-side-icon transition-transform ${collapsed ? 'rotate-180' : ''}`} />
             {!collapsed && <span className="text-sm">Collapse</span>}
           </SidebarMenuButton>
         </SidebarFooter>

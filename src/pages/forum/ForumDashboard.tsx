@@ -477,24 +477,20 @@ export default function ForumDashboard() {
           <WelcomeDialog isLoggedIn={false} />
           
           {/* Login CTA */}
-          <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] rounded-2xl p-8 text-white text-center">
-            <h1 className="text-3xl font-bold mb-3">Welcome to BLOX City</h1>
-            <p className="opacity-90 mb-6 max-w-md mx-auto">
-              Join our community to connect with friends, earn coins, and redeem exclusive memberships!
-            </p>
-            <div className="flex justify-center gap-4">
-              <Link
-                to="/login"
-                className="bg-white text-[hsl(var(--bc-primary))] hover:bg-white/90 px-6 py-3 rounded-lg font-semibold transition"
-              >
-                Log In
-              </Link>
-              <Link
-                to="/register"
-                className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-lg font-semibold transition"
-              >
-                Sign Up
-              </Link>
+          <div className="bc-card" style={{ background: 'hsl(var(--bc-info))', border: 'none' }}>
+            <div className="bc-card-body text-white text-center py-8">
+              <h1 className="text-3xl font-bold mb-3">Welcome to BLOX City</h1>
+              <p className="opacity-90 mb-6 max-w-md mx-auto">
+                Join our community to connect with friends, earn coins, and redeem exclusive memberships!
+              </p>
+              <div className="flex justify-center gap-4">
+                <Link to="/login" className="bc-btn bc-btn-success">
+                  Log In
+                </Link>
+                <Link to="/register" className="bc-btn bc-btn-gray">
+                  Sign Up
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -567,33 +563,34 @@ export default function ForumDashboard() {
       <UserAdBanner type="banner" />
       
       <div className="flex gap-6">
-      <div className="flex-1 space-y-6 min-w-0">
-      {/* Welcome Header with Profile Picture */}
-      <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] rounded-2xl p-6 text-white">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            {/* Profile Picture */}
-            <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
-              {forumUser?.avatar_url ? (
-                <img 
-                  src={forumUser.avatar_url} 
-                  alt={forumUser.username}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                  <User className="w-8 h-8 text-white" />
-                </div>
-              )}
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-                Welcome back, {forumUser?.username}!
-                {forumUser?.is_verified && <VerifiedBadge size="lg" />}
-              </h1>
-              <p className="opacity-90">Check out what your friends are up to</p>
+        <div className="flex-1 space-y-6 min-w-0">
+          {/* Welcome Header with Profile Picture */}
+      <div className="bc-card" style={{ background: 'hsl(var(--bc-info))', border: 'none' }}>
+        <div className="bc-card-body text-white">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              {/* Profile Picture */}
+              <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
+                {forumUser?.avatar_url ? (
+                  <img 
+                    src={forumUser.avatar_url} 
+                    alt={forumUser.username}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                    <User className="w-8 h-8 text-white" />
+                  </div>
+                )}
+              </Link>
+              <div>
+                <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
+                  Welcome back, {forumUser?.username}!
+                  {forumUser?.is_verified && <VerifiedBadge size="lg" />}
+                </h1>
+                <p className="opacity-90">Check out what your friends are up to</p>
+              </div>
             </div>
-          </div>
           <div className="flex items-center gap-3">
             <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-white/30 transition">
               <Coins className="w-5 h-5 text-yellow-300" />
@@ -606,47 +603,51 @@ export default function ForumDashboard() {
           </div>
         </div>
       </div>
+    </div>
 
       {/* Status Posting Box */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-        <div className="flex gap-3">
-          <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
-            {forumUser?.avatar_url ? (
-              <img 
-                src={forumUser.avatar_url} 
-                alt={forumUser.username}
-                className="w-10 h-10 rounded-full object-cover"
+      <div className="bc-card">
+        <div className="bc-card-body">
+          <div className="flex gap-3">
+            <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
+              {forumUser?.avatar_url ? (
+                <img 
+                  src={forumUser.avatar_url} 
+                  alt={forumUser.username}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+              )}
+            </Link>
+            <div className="flex-1">
+              <textarea
+                value={statusText}
+                onChange={(e) => setStatusText(e.target.value.slice(0, 280))}
+                placeholder="What's on your mind?"
+                className="bc-input"
+                style={{ resize: 'none' }}
+                rows={2}
               />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs" style={{ color: 'hsl(var(--bc-text-muted))' }}>{statusText.length}/280</span>
+                <button
+                  onClick={handlePostStatus}
+                  disabled={postingStatus || !statusText.trim()}
+                  className="bc-btn bc-btn-info bc-btn-sm"
+                >
+                  {postingStatus ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Post Status
+                    </>
+                  )}
+                </button>
               </div>
-            )}
-          </Link>
-          <div className="flex-1">
-            <textarea
-              value={statusText}
-              onChange={(e) => setStatusText(e.target.value.slice(0, 280))}
-              placeholder="What's on your mind?"
-              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder:text-[hsl(var(--bc-text-muted))] resize-none focus:outline-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))]"
-              rows={2}
-            />
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-[hsl(var(--bc-text-muted))]">{statusText.length}/280</span>
-              <button
-                onClick={handlePostStatus}
-                disabled={postingStatus || !statusText.trim()}
-                className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:opacity-50 text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2"
-              >
-                {postingStatus ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    Post Status
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -924,7 +925,7 @@ export default function ForumDashboard() {
           </div>
         </Link>
       </div>
-    </div>
+      </div>
     </div>
   );
 }
