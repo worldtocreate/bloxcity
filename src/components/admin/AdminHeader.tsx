@@ -21,13 +21,6 @@ const AdminHeader = ({ user, onLogout, darkMode, onToggleDarkMode }: AdminHeader
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button
-            onClick={onToggleDarkMode}
-            className={`p-2 rounded-lg transition ${darkMode ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
           <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email}</span>
           <button
             onClick={onLogout}
