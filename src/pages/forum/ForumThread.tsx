@@ -398,7 +398,7 @@ export default function ForumThread() {
                   <div className="sm:w-48 p-4 bg-[hsl(var(--bc-bg-light))] border-b sm:border-b-0 sm:border-r border-[hsl(var(--bc-border))]">
                     <div className="flex sm:flex-col items-center sm:items-start gap-3">
                       <Link 
-                        to={`/user/${post.author.username}`}
+                        to={`/id/${post.author.username}/profile`}
                         className="block hover:opacity-80 transition"
                       >
                         {post.author.avatar_url ? (
@@ -415,7 +415,7 @@ export default function ForumThread() {
                       </Link>
                       <div>
                         <Link 
-                          to={`/user/${post.author.username}`}
+                          to={`/id/${post.author.username}/profile`}
                           className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] flex items-center gap-1 transition"
                         >
                           {post.author.username}

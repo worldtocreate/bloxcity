@@ -144,7 +144,7 @@ export default function ForumStaff() {
                   {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
                     <Link
                       key={member.id}
-                      to={`/user/${member.username}`}
+                      to={`/id/${member.username}/profile`}
                       className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] border border-[hsl(var(--bc-border))] rounded-xl transition group"
                     >
                       <UserAvatar
@@ -187,7 +187,7 @@ export default function ForumStaff() {
                     {staff.filter(s => s.role === 'moderator' && s.username.toLowerCase() !== 'blox city').map(member => (
                       <Link
                         key={member.id}
-                        to={`/user/${member.username}`}
+                        to={`/id/${member.username}/profile`}
                         className="flex items-center gap-4 p-4 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] border border-[hsl(var(--bc-border))] rounded-xl transition group"
                       >
                         <UserAvatar

@@ -165,7 +165,7 @@ export default function ForumUsers() {
             {users.map((user) => (
               <Link
                 key={user.id}
-                to={`/user/${user.username}`}
+                to={`/id/${user.username}/profile`}
                 className="flex items-center gap-4 p-4 hover:bg-[hsl(var(--bc-bg-light))] transition group"
               >
                 <UserAvatar

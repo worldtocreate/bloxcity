@@ -99,7 +99,7 @@ export default function FriendsList({ forumUserId, limit = 6, showTitle = true }
         {friends.map(friend => (
           <Link
             key={friend.id}
-            to={`/user/${friend.username}`}
+            to={`/id/${friend.username}/profile`}
             className="flex flex-col items-center p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition"
           >
             <UserAvatar
