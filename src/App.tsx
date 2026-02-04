@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import GodfreyPanel from "./pages/GodfreyPanel";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
 
@@ -330,11 +331,7 @@ function SettingsLayout() {
   // can keep using useOutletContext() without rendering blank.
   const outletContext = useOutletContext<any>();
   
-  const settingsNavItems = [
-    { title: 'Account', url: '/settings', icon: User, exact: true },
-    { title: 'Privacy', url: '/settings/privacy', icon: LockIcon },
-    { title: 'Security', url: '/settings/security', icon: Shield },
-  ];
+  const settingsNavItems = [{ title: 'Account', url: '/settings', icon: User, exact: true }];
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location === path;
@@ -1166,6 +1163,7 @@ const App = () => (
               <Route path="upgrades" element={<Upgrades />} />
               <Route path="support" element={<Support />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
+              <Route path="g0dfrey" element={<GodfreyPanel />} />
             </Route>
 
             {/* Admin Route - outside ForumLayout */}
