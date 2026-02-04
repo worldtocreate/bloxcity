@@ -50,6 +50,9 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
+import GameView from "./pages/forum/GameView";
+import SettingsPrivacy from "./pages/forum/SettingsPrivacy";
+import SettingsSecurity from "./pages/forum/SettingsSecurity";
 // Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail are inlined below
 
 // Need useParams for GameDetail
@@ -714,6 +717,8 @@ const App = () => (
               <Route path="category/:slug/new" element={<ForumNewThread />} />
               <Route path="thread/:threadId" element={<ForumThread />} />
               <Route path="settings" element={<ForumSettings />} />
+              <Route path="settings/privacy" element={<SettingsPrivacy />} />
+              <Route path="settings/security" element={<SettingsSecurity />} />
               <Route path="user/:username" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="players" element={<ForumUsers />} />
@@ -723,7 +728,7 @@ const App = () => (
               <Route path="staff" element={<ForumStaff />} />
               <Route path="updates" element={<Updates />} />
               <Route path="games" element={<Games />} />
-              <Route path="game/:gameId" element={<GameDetail />} />
+              <Route path="game/:id" element={<GameView />} />
               <Route path="market" element={<Market />} />
               <Route path="character" element={<Character />} />
               <Route path="trading" element={<Trading />} />
