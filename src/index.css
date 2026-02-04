@@ -1140,20 +1140,174 @@ body {
 /* ========================================
    CARD COMPONENT STYLES
 ======================================== */
-.bc-card {
+.bc-card,
+.card {
   background: hsl(var(--bc-section-bg));
   border: 1px solid hsl(var(--bc-section-border));
   border-radius: var(--bc-rounded-lg);
   box-shadow: var(--bc-shadow-sm);
 }
 
-.bc-card-body {
+.bc-card-body,
+.card-body {
   padding: 18px;
 }
 
-.bc-card-inner {
+.bc-card-inner,
+.card-inner {
   background: hsl(var(--bc-input-bg));
-  border-color: hsl(var(--bc-input-border));
+  border: 1px solid hsl(var(--bc-input-border));
+  border-radius: var(--bc-rounded-md);
+  padding: 10px 14px;
+}
+
+/* Form styles */
+.form {
+  display: block;
+  width: 100%;
+  outline: none;
+  margin: 0;
+  height: 42px;
+  line-height: 42px;
+  border: 1px solid hsl(var(--bc-input-border));
+  padding-left: 14px;
+  padding-right: 14px;
+  font-weight: 500;
+  border-radius: var(--bc-rounded-lg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: hsl(var(--bc-input-bg));
+  color: hsl(var(--bc-text));
+  transition: all 0.2s;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.form:focus {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  border-color: hsl(var(--bc-info));
+}
+
+.form::placeholder {
+  color: hsl(var(--bc-gray-500));
+}
+
+textarea.form {
+  padding-top: 14px;
+  line-height: 1.5;
+  height: auto;
+  resize: none;
+}
+
+.form-sm {
+  height: 36px;
+  line-height: 34px;
+  font-size: 0.875rem;
+}
+
+/* Button styles using class names */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 42px;
+  line-height: 40px;
+  padding: 0 18px;
+  border-radius: var(--bc-rounded-lg);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--bc-shadow);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.btn:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+.btn:active {
+  transform: scale(0.96);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: hsl(var(--bc-info));
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background: hsl(var(--bc-info-light));
+}
+
+.btn-success {
+  background: hsl(var(--bc-success));
+  color: white !important;
+}
+
+.btn-success:hover {
+  background: hsl(var(--bc-success-light));
+}
+
+.btn-danger {
+  background: hsl(var(--bc-danger));
+  color: white !important;
+}
+
+.btn-danger:hover {
+  background: hsl(var(--bc-danger-light));
+}
+
+.btn-secondary {
+  background: hsl(var(--bc-gray-200));
+  color: hsl(var(--bc-text)) !important;
+  border-color: hsl(var(--bc-border));
+}
+
+.btn-secondary:hover {
+  background: hsl(var(--bc-gray-300));
+}
+
+.btn-sm {
+  height: 36px;
+  line-height: 34px;
+  font-size: 0.875rem;
+  padding: 0 14px;
+}
+
+.btn-xs {
+  height: 30px;
+  line-height: 28px;
+  font-size: 0.8rem;
+  padding: 0 12px;
+}
+
+/* Checkbox styling */
+.form-check-input {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid hsl(var(--bc-border));
+  border-radius: 4px;
+  background: hsl(var(--bc-input-bg));
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.form-check-input:checked {
+  background: hsl(var(--bc-info));
+  border-color: hsl(var(--bc-info));
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 /* ========================================
