@@ -273,7 +273,7 @@ function GodfreyPanel() {
 import ForumLayout from "./components/forum/ForumLayout";
 // SettingsLayout is inlined below due to module resolution issues
 import ForumHome from "./pages/forum/ForumHome";
-import ForumLeaderboard from "./pages/forum/ForumLeaderboard";
+// ForumLeaderboard inlined below due to module resolution issues
 import ForumCategory from "./pages/forum/ForumCategory";
 import ForumThread from "./pages/forum/ForumThread";
 import ForumNewThread from "./pages/forum/ForumNewThread";
@@ -1491,6 +1491,149 @@ function MarketItem() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline ForumLeaderboard component to avoid module resolution issues
+function ForumLeaderboard() {
+  const [users, setUsers] = useState<Array<{
+    id: string;
+    serial_id: number;
+    username: string;
+    avatar_url: string | null;
+    post_count: number;
+    thread_count: number;
+    xp: number;
+    level: number;
+    membership_tier: string | null;
+    avatar_effect: string | null;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'xp' | 'posts' | 'threads'>('xp');
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setLoading(true);
+      let orderColumn = 'xp';
+      if (activeTab === 'posts') orderColumn = 'post_count';
+      if (activeTab === 'threads') orderColumn = 'thread_count';
+      
+      const { data } = await supabase
+        .from('forum_users')
+        .select('id, serial_id, username, avatar_url, post_count, thread_count, xp, level, membership_tier, avatar_effect')
+        .eq('is_suspended', false)
+        .order(orderColumn, { ascending: false })
+        .limit(50);
+      
+      if (data) setUsers(data);
+      setLoading(false);
+    };
+    fetchLeaderboard();
+  }, [activeTab]);
+
+  const tabs = [
+    { key: 'xp' as const, label: 'XP' },
+    { key: 'posts' as const, label: 'Posts' },
+    { key: 'threads' as const, label: 'Threads' },
+  ];
+
+  const getValue = (user: typeof users[0]) => {
+    if (activeTab === 'posts') return user.post_count;
+    if (activeTab === 'threads') return user.thread_count;
+    return user.xp;
+  };
+
+  const getLabel = () => {
+    if (activeTab === 'posts') return 'posts';
+    if (activeTab === 'threads') return 'threads';
+    return 'XP';
+  };
+
+  const getRankColor = (index: number) => {
+    if (index === 0) return 'text-[hsl(var(--bc-accent))]';
+    if (index === 1) return 'text-gray-400';
+    if (index === 2) return 'text-amber-600';
+    return 'text-[hsl(var(--bc-text-muted))]';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-xl bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+          <Crown className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Leaderboard</h1>
+          <p className="text-[hsl(var(--bc-text-muted))]">Top players ranked by activity</p>
+        </div>
+      </div>
+      <div className="bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))] overflow-hidden">
+        <div className="flex border-b border-[hsl(var(--bc-border))]">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-medium transition ${
+                activeTab === tab.key
+                  ? 'text-[hsl(var(--bc-primary))] border-b-2 border-[hsl(var(--bc-primary))] bg-[hsla(var(--bc-primary),0.05)]'
+                  : 'text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] hover:bg-[hsl(var(--bc-bg-light))]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="p-4">
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-4 p-3 animate-pulse">
+                  <div className="w-8 h-8 bg-[hsl(var(--bc-bg-light))] rounded" />
+                  <div className="w-10 h-10 bg-[hsl(var(--bc-bg-light))] rounded-full" />
+                  <div className="flex-1 h-5 bg-[hsl(var(--bc-bg-light))] rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {users.map((user, index) => (
+                <Link
+                  key={user.id}
+                  to={`/${user.serial_id}/${user.username}/profile`}
+                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
+                >
+                  <div className="w-10 flex items-center justify-center">
+                    <span className={`text-lg font-bold ${getRankColor(index)}`}>#{index + 1}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg-light))] flex items-center justify-center text-[hsl(var(--bc-text))] font-medium">
+                    {user.username[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-primary))] transition">
+                        {user.username}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))]">
+                        Lv.{user.level}
+                      </span>
+                    </div>
+                    {index < 3 && (
+                      <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                        {index === 0 ? '🥇 1st Place' : index === 1 ? '🥈 2nd Place' : '🥉 3rd Place'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-[hsl(var(--bc-text))]">{getValue(user).toLocaleString()}</div>
+                    <div className="text-xs text-[hsl(var(--bc-text-muted))]">{getLabel()}</div>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
