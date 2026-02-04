@@ -10,29 +10,23 @@ const tierConfig = {
   bronze: {
     label: 'Bronze',
     icon: Medal,
-    bgColor: 'bg-amber-800',
-    textColor: 'text-amber-800',
-    borderColor: 'border-amber-800',
-    gradientFrom: 'from-amber-700',
-    gradientTo: 'to-amber-900',
+    bgColor: '#8B4513', // Brown
+    gradientFrom: '#A0522D',
+    gradientTo: '#6B3E0A',
   },
   silver: {
     label: 'Silver',
     icon: Star,
-    bgColor: 'bg-slate-400',
-    textColor: 'text-slate-400',
-    borderColor: 'border-slate-400',
-    gradientFrom: 'from-slate-300',
-    gradientTo: 'to-slate-500',
+    bgColor: '#A8A8A8', // Silver
+    gradientFrom: '#C0C0C0',
+    gradientTo: '#808080',
   },
   platinum: {
-    label: 'Platinum',
+    label: 'Premium',
     icon: Crown,
-    bgColor: 'bg-zinc-900',
-    textColor: 'text-zinc-900',
-    borderColor: 'border-zinc-900',
-    gradientFrom: 'from-zinc-800',
-    gradientTo: 'to-black',
+    bgColor: '#1a1a1a', // Black
+    gradientFrom: '#2d2d2d',
+    gradientTo: '#000000',
   },
 };
 
@@ -51,7 +45,8 @@ export default function MembershipBadge({ tier, size = 'sm', showLabel = true }:
 
   return (
     <span 
-      className={`inline-flex items-center gap-1 ${sizes.padding} rounded-full bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} text-white font-medium ${sizes.fontSize} shadow-sm`}
+      className={`inline-flex items-center gap-1 ${sizes.padding} rounded-full text-white font-medium ${sizes.fontSize} shadow-sm`}
+      style={{ background: `linear-gradient(135deg, ${config.gradientFrom}, ${config.gradientTo})` }}
       title={`${config.label} Member`}
     >
       <Icon className={sizes.iconSize} />

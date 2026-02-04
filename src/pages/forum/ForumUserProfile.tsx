@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   User, Calendar, MessageSquare, MessageCircle, Ban, Loader2, 
   Clock, Users, MoreVertical, Flag, Award, Frown, Rocket, Medal,
-  UserPlus, Globe, ShieldCheck, X
+  UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -71,6 +71,14 @@ interface Friend {
   avatar_url: string | null;
 }
 
+interface GameData {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  play_count: number;
+  favorite_count: number;
+}
+
 export default function ForumUserProfile() {
   const { serialId, username } = useParams<{ serialId: string; username: string }>();
   const navigate = useNavigate();
@@ -84,6 +92,7 @@ export default function ForumUserProfile() {
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [games, setGames] = useState<GameData[]>([]);
   const [primaryGroup, setPrimaryGroup] = useState<GroupData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
@@ -235,6 +244,19 @@ export default function ForumUserProfile() {
       if (friendUsers) {
         setFriends(friendUsers as Friend[]);
       }
+    }
+
+    // Fetch user's games
+    const { data: gamesData } = await supabase
+      .from('forum_games')
+      .select('id, title, thumbnail_url, play_count, favorite_count')
+      .eq('creator_id', userData.id)
+      .eq('is_private', false)
+      .order('play_count', { ascending: false })
+      .limit(6);
+    
+    if (gamesData) {
+      setGames(gamesData as GameData[]);
     }
 
     setLoading(false);
@@ -653,6 +675,67 @@ export default function ForumUserProfile() {
                 </div>
                 <div className="text-xs text-[hsl(var(--bc-text-muted))]">
                   {profile.username} has not made any friends.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Games Section */}
+          <div className="flex items-center justify-between">
+            <div className="text-xl font-semibold text-[hsl(var(--bc-text))]">Games</div>
+            <Link 
+              to={`/games?creator=${profile.username}`}
+              className="bc-btn bc-btn-secondary bc-btn-sm"
+            >
+              View All
+            </Link>
+          </div>
+          <div className="bc-card p-4">
+            {games.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {games.map((game) => (
+                  <Link
+                    key={game.id}
+                    to={`/game/${game.id}`}
+                    className="group"
+                  >
+                    <div className="aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-[hsl(var(--bc-info))] to-[hsl(var(--bc-primary))] mb-2">
+                      {game.thumbnail_url ? (
+                        <img 
+                          src={game.thumbnail_url} 
+                          alt={game.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Gamepad2 className="w-8 h-8 text-white/60" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-info))] transition">
+                      {game.title}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-[hsl(var(--bc-text-muted))]">
+                      <span className="flex items-center gap-1">
+                        <Play className="w-3 h-3" />
+                        {game.play_count || 0}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Heart className="w-3 h-3" />
+                        {game.favorite_count || 0}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Gamepad2 className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-2" />
+                <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">
+                  No Games
+                </div>
+                <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                  {profile.username} has not created any games.
                 </div>
               </div>
             )}
