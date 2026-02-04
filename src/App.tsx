@@ -8,7 +8,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2 } from "lucide-react";
+import TwoFactorSetup from "@/components/forum/TwoFactorSetup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -207,13 +208,14 @@ function GameView() {
   if (!game) return <div className="max-w-4xl mx-auto p-6 text-center"><AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" /><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">Game Not Found</h1><Link to="/games"><Button>Back to Games</Button></Link></div>;
 
   const canEdit = forumUser && (forumUser.id === game.creator_id || isAdmin);
-  const isUnderReview = game.is_under_review || game.thumbnail_status === 'pending';
+  // Games are playable by default - only blocked when admin explicitly flags as under_review
+  const isUnderReview = game.is_under_review === true;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-        <div className="aspect-video bg-[hsl(var(--bc-bg-light))] flex items-center justify-center relative">
-          {game.thumbnail_url ? <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" /> : <span className="text-[hsl(var(--bc-text-muted))]">No Thumbnail</span>}
+        <div className="aspect-video bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] flex items-center justify-center relative">
+          {game.thumbnail_url ? <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" /> : <Gamepad2 className="w-16 h-16 text-white/50" />}
           {canEdit && (
             <label className="absolute bottom-3 right-3 cursor-pointer">
               <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} disabled={uploadingThumbnail} />
@@ -364,25 +366,31 @@ function SettingsLayout() {
   );
 }
 
-// Inline SettingsPrivacy component
+// Inline SettingsPrivacy component - Full page for DMs and wall visibility
 function SettingsPrivacy() {
   const { forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
   const { toast } = useToast();
   const [allowDms, setAllowDms] = useState(true);
   const [wallIsPrivate, setWallIsPrivate] = useState(false);
+  const [hideThreads, setHideThreads] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (forumUser) {
       setAllowDms(forumUser.allow_dms !== false);
       setWallIsPrivate((forumUser as any).wall_is_private === true);
+      setHideThreads((forumUser as any).hide_threads === true);
     }
   }, [forumUser]);
 
   const handleSave = async () => {
     if (!forumUser) return;
     setSaving(true);
-    const { error } = await supabase.from("forum_users").update({ allow_dms: allowDms, wall_is_private: wallIsPrivate }).eq("id", forumUser.id);
+    const { error } = await supabase.from("forum_users").update({ 
+      allow_dms: allowDms, 
+      wall_is_private: wallIsPrivate,
+      hide_threads: hideThreads 
+    }).eq("id", forumUser.id);
     if (error) toast({ title: "Error saving settings", variant: "destructive" });
     else { toast({ title: "Privacy settings saved" }); refreshForumUser(); }
     setSaving(false);
@@ -392,48 +400,76 @@ function SettingsPrivacy() {
   if (!forumUser) return <div className="max-w-2xl mx-auto p-6 text-center"><p className="text-[hsl(var(--bc-text-muted))]">Please login to access settings.</p><Link to="/login"><Button className="mt-4">Login</Button></Link></div>;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Privacy Settings</h1><p className="text-[hsl(var(--bc-text-muted))]">Control who can interact with you</p></div>
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div><h3 className="font-medium text-[hsl(var(--bc-text))]">Allow Direct Messages</h3><p className="text-sm text-[hsl(var(--bc-text-muted))]">Let other users send you private messages</p></div>
-          <button onClick={() => setAllowDms(!allowDms)} className={`w-12 h-6 rounded-full transition ${allowDms ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}><div className={`w-5 h-5 bg-white rounded-full transition transform ${allowDms ? 'translate-x-6' : 'translate-x-0.5'}`} /></button>
-        </div>
-        <div className="flex items-center justify-between">
-          <div><h3 className="font-medium text-[hsl(var(--bc-text))]">Private Profile Wall</h3><p className="text-sm text-[hsl(var(--bc-text-muted))]">Only friends can see your profile wall</p></div>
-          <button onClick={() => setWallIsPrivate(!wallIsPrivate)} className={`w-12 h-6 rounded-full transition ${wallIsPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}><div className={`w-5 h-5 bg-white rounded-full transition transform ${wallIsPrivate ? 'translate-x-6' : 'translate-x-0.5'}`} /></button>
-        </div>
-        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : "Save Privacy Settings"}</Button>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Privacy Settings</h1>
+        <p className="text-[hsl(var(--bc-text-muted))]">Control who can interact with you and what they can see</p>
       </div>
-      <Link to="/settings" className="inline-block text-[hsl(var(--bc-primary))] hover:underline text-sm">← Back to Settings</Link>
+      
+      {/* Direct Messages */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-6">
+        <h3 className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+          <Mail className="w-5 h-5" />
+          Direct Messages
+        </h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-medium text-[hsl(var(--bc-text))]">Allow Direct Messages</h4>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))]">Let other users send you private messages</p>
+          </div>
+          <button onClick={() => setAllowDms(!allowDms)} className={`w-12 h-6 rounded-full transition ${allowDms ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}>
+            <div className={`w-5 h-5 bg-white rounded-full transition transform ${allowDms ? 'translate-x-6' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Profile Visibility */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-6">
+        <h3 className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+          <LockIcon className="w-5 h-5" />
+          Profile Visibility
+        </h3>
+        
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-medium text-[hsl(var(--bc-text))]">Private Profile Wall</h4>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))]">Only friends can see and post on your wall</p>
+          </div>
+          <button onClick={() => setWallIsPrivate(!wallIsPrivate)} className={`w-12 h-6 rounded-full transition ${wallIsPrivate ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}>
+            <div className={`w-5 h-5 bg-white rounded-full transition transform ${wallIsPrivate ? 'translate-x-6' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-medium text-[hsl(var(--bc-text))]">Hide Forum Threads</h4>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))]">Hide your threads from your public profile</p>
+          </div>
+          <button onClick={() => setHideThreads(!hideThreads)} className={`w-12 h-6 rounded-full transition ${hideThreads ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))]'}`}>
+            <div className={`w-5 h-5 bg-white rounded-full transition transform ${hideThreads ? 'translate-x-6' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+      </div>
+
+      <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : "Save Privacy Settings"}</Button>
     </div>
   );
 }
 
-// Inline SettingsSecurity component
+// Inline SettingsSecurity component - Full page for 2FA and PINs
 function SettingsSecurity() {
-  const { forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
+  const { forumUser, loading: authLoading, refreshForumUser, emailVerified } = useForumAuth();
   const { toast } = useToast();
-  const [has2FA, setHas2FA] = useState(false);
   const [dmPin, setDmPin] = useState("");
   const [settingsPin, setSettingsPin] = useState("");
   const [savingPin, setSavingPin] = useState(false);
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     if (forumUser) {
-      check2FA();
       setDmPin((forumUser as any).dm_pin || "");
       setSettingsPin((forumUser as any).settings_pin || "");
     }
   }, [forumUser]);
-
-  const check2FA = async () => {
-    if (!forumUser) return;
-    const { data } = await supabase.from("forum_2fa_settings").select("is_enabled").eq("forum_user_id", forumUser.id).single();
-    setHas2FA(data?.is_enabled === true);
-    setChecking(false);
-  };
 
   const handleSavePin = async (type: 'dm' | 'settings') => {
     if (!forumUser) return;
@@ -451,52 +487,76 @@ function SettingsSecurity() {
     setSavingPin(false);
   };
 
-  if (authLoading || checking) return <div className="min-h-[40vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (authLoading) return <div className="min-h-[40vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
   if (!forumUser) return <div className="max-w-2xl mx-auto p-6 text-center"><p className="text-[hsl(var(--bc-text-muted))]">Please login to access settings.</p><Link to="/login"><Button className="mt-4">Login</Button></Link></div>;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Security Settings</h1><p className="text-[hsl(var(--bc-text-muted))]">Protect your account</p></div>
-      
-      {/* 2FA Section */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-medium text-[hsl(var(--bc-text))]">Two-Factor Authentication</h3>
-            <p className="text-sm text-[hsl(var(--bc-text-muted))]">Add an extra layer of security</p>
-          </div>
-          <div className={`px-3 py-1 rounded-full text-sm ${has2FA ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-            {has2FA ? 'Enabled' : 'Disabled'}
-          </div>
-        </div>
-        <Link to="/settings" className="mt-4 inline-block text-[hsl(var(--bc-primary))] hover:underline text-sm">Manage 2FA in main settings →</Link>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Security Settings</h1>
+        <p className="text-[hsl(var(--bc-text-muted))]">Protect your account with additional security measures</p>
       </div>
+      
+      {/* Two-Factor Authentication - Full component */}
+      <TwoFactorSetup forumUserId={forumUser.id} emailVerified={emailVerified} />
 
-      {/* DM PIN */}
+      {/* DM Encryption PIN */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-4">
         <div>
-          <h3 className="font-medium text-[hsl(var(--bc-text))]">DM Encryption PIN</h3>
-          <p className="text-sm text-[hsl(var(--bc-text-muted))]">Required to view direct messages</p>
+          <h3 className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+            <LockIcon className="w-5 h-5" />
+            DM Encryption PIN
+          </h3>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))]">Required to view your direct messages. Keep this safe!</p>
         </div>
         <div className="flex gap-3">
-          <Input type="password" value={dmPin} onChange={(e) => setDmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="4-digit PIN" maxLength={4} className="flex-1" />
-          <Button onClick={() => handleSavePin('dm')} disabled={savingPin}>{savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}</Button>
+          <Input 
+            type="password" 
+            value={dmPin} 
+            onChange={(e) => setDmPin(e.target.value.replace(/\D/g, '').slice(0, 4))} 
+            placeholder="4-digit PIN" 
+            maxLength={4} 
+            className="flex-1" 
+          />
+          <Button onClick={() => handleSavePin('dm')} disabled={savingPin}>
+            {savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+          </Button>
         </div>
+        {dmPin && (
+          <Button variant="outline" size="sm" onClick={() => { setDmPin(''); handleSavePin('dm'); }}>
+            Remove DM PIN
+          </Button>
+        )}
       </div>
 
       {/* Settings PIN */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 space-y-4">
         <div>
-          <h3 className="font-medium text-[hsl(var(--bc-text))]">Settings PIN</h3>
-          <p className="text-sm text-[hsl(var(--bc-text-muted))]">Required to make sensitive changes</p>
+          <h3 className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            Settings PIN
+          </h3>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))]">Required to make sensitive account changes</p>
         </div>
         <div className="flex gap-3">
-          <Input type="password" value={settingsPin} onChange={(e) => setSettingsPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="4-digit PIN" maxLength={4} className="flex-1" />
-          <Button onClick={() => handleSavePin('settings')} disabled={savingPin}>{savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}</Button>
+          <Input 
+            type="password" 
+            value={settingsPin} 
+            onChange={(e) => setSettingsPin(e.target.value.replace(/\D/g, '').slice(0, 4))} 
+            placeholder="4-digit PIN" 
+            maxLength={4} 
+            className="flex-1" 
+          />
+          <Button onClick={() => handleSavePin('settings')} disabled={savingPin}>
+            {savingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+          </Button>
         </div>
+        {settingsPin && (
+          <Button variant="outline" size="sm" onClick={() => { setSettingsPin(''); handleSavePin('settings'); }}>
+            Remove Settings PIN
+          </Button>
+        )}
       </div>
-
-      <Link to="/settings" className="inline-block text-[hsl(var(--bc-primary))] hover:underline text-sm">← Back to Settings</Link>
     </div>
   );
 }

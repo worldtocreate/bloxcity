@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2, Mail, BadgeCheck, Send } from 'lucide-react';
+import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2, Mail, BadgeCheck, Send, Gamepad2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DeletedPost {
@@ -42,6 +42,19 @@ interface GroupMediaRequest {
   };
 }
 
+interface GameThumbnailRequest {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  thumbnail_status: string;
+  thumbnail_denial_reason: string | null;
+  is_under_review: boolean;
+  creator: {
+    username: string;
+    avatar_url: string | null;
+  };
+}
+
 interface AffiliateRequest {
   id: string;
   status: string;
@@ -58,10 +71,11 @@ interface ContentModerationTabProps {
 }
 
 export default function ContentModerationTab({ darkMode }: ContentModerationTabProps) {
-  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'group-media' | 'affiliates' | 'logs'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'group-media' | 'game-thumbnails' | 'affiliates' | 'logs'>('posts');
   const [deletedPosts, setDeletedPosts] = useState<DeletedPost[]>([]);
   const [deletedThreads, setDeletedThreads] = useState<DeletedThread[]>([]);
   const [groupMediaRequests, setGroupMediaRequests] = useState<GroupMediaRequest[]>([]);
+  const [gameThumbnailRequests, setGameThumbnailRequests] = useState<GameThumbnailRequest[]>([]);
   const [affiliateRequests, setAffiliateRequests] = useState<AffiliateRequest[]>([]);
   const [moderationLogs, setModerationLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +115,15 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         .order('created_at', { ascending: false });
       
       setGroupMediaRequests((data || []) as unknown as GroupMediaRequest[]);
+    } else if (activeTab === 'game-thumbnails') {
+      // Fetch games with pending thumbnails or flagged for review
+      const { data } = await supabase
+        .from('forum_games')
+        .select('id, title, thumbnail_url, thumbnail_status, thumbnail_denial_reason, is_under_review, creator:creator_id (username, avatar_url)')
+        .or('thumbnail_status.eq.pending,is_under_review.eq.true')
+        .order('created_at', { ascending: false });
+      
+      setGameThumbnailRequests((data || []) as unknown as GameThumbnailRequest[]);
     } else if (activeTab === 'affiliates') {
       const { data } = await supabase
         .from('forum_affiliate_requests')
@@ -260,6 +283,68 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
     setProcessing(null);
   };
 
+  // Game thumbnail handlers
+  const handleApproveGameThumbnail = async (gameId: string) => {
+    setProcessing(gameId);
+    try {
+      const { error } = await supabase
+        .from('forum_games')
+        .update({ thumbnail_status: 'approved', thumbnail_denial_reason: null })
+        .eq('id', gameId);
+      
+      if (error) throw error;
+      toast.success('Thumbnail approved!');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to approve');
+    }
+    setProcessing(null);
+  };
+
+  const handleDenyGameThumbnail = async (gameId: string) => {
+    if (!denialReason.trim()) {
+      toast.error('Please provide a reason');
+      return;
+    }
+    setProcessing(gameId);
+    try {
+      const { error } = await supabase
+        .from('forum_games')
+        .update({ 
+          thumbnail_status: 'denied', 
+          thumbnail_denial_reason: denialReason.trim(),
+          thumbnail_url: null 
+        })
+        .eq('id', gameId);
+      
+      if (error) throw error;
+      toast.success('Thumbnail denied');
+      setShowDenyModal(null);
+      setDenialReason('');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to deny');
+    }
+    setProcessing(null);
+  };
+
+  const handleToggleGameReview = async (gameId: string, currentStatus: boolean) => {
+    setProcessing(gameId);
+    try {
+      const { error } = await supabase
+        .from('forum_games')
+        .update({ is_under_review: !currentStatus })
+        .eq('id', gameId);
+      
+      if (error) throw error;
+      toast.success(currentStatus ? 'Game removed from review' : 'Game placed under review');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update');
+    }
+    setProcessing(null);
+  };
+
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900';
   const textClass = darkMode ? 'text-white' : 'text-gray-800';
@@ -331,6 +416,22 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
           {groupMediaRequests.length > 0 && (
             <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
               {groupMediaRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('game-thumbnails')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeTab === 'game-thumbnails'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Gamepad2 className="w-4 h-4" />
+          Game Thumbnails
+          {gameThumbnailRequests.length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {gameThumbnailRequests.length}
             </span>
           )}
         </button>
@@ -455,6 +556,49 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
                     </div>
                   </div>
                 ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Game Thumbnails */}
+      {activeTab === 'game-thumbnails' && (
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          {loading ? (
+            <div className={`p-8 text-center ${mutedClass}`}>Loading...</div>
+          ) : gameThumbnailRequests.length === 0 ? (
+            <div className={`p-8 text-center ${mutedClass}`}>
+              <Gamepad2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending game thumbnails or reviews</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+              {gameThumbnailRequests.map(game => (
+                <div key={game.id} className={`rounded-lg border overflow-hidden ${cardClass}`}>
+                  <div className="h-32 bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                    {game.thumbnail_url ? <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" /> : <Gamepad2 className="w-10 h-10 text-white/50" />}
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <h3 className={`font-medium ${textClass} truncate`}>{game.title}</h3>
+                    <p className={`text-xs ${mutedClass}`}>by {game.creator?.username}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {game.thumbnail_status === 'pending' && <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded">Thumbnail Pending</span>}
+                      {game.is_under_review && <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded">Under Review</span>}
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      {game.thumbnail_status === 'pending' && (
+                        <>
+                          <button onClick={() => handleApproveGameThumbnail(game.id)} disabled={processing === game.id} className="flex-1 px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center justify-center gap-1"><Check className="w-3 h-3" /> Approve</button>
+                          <button onClick={() => setShowDenyModal(game.id)} disabled={processing === game.id} className="flex-1 px-2 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center justify-center gap-1"><X className="w-3 h-3" /> Deny</button>
+                        </>
+                      )}
+                      <button onClick={() => handleToggleGameReview(game.id, game.is_under_review)} disabled={processing === game.id} className={`flex-1 px-2 py-1.5 rounded text-xs flex items-center justify-center gap-1 ${game.is_under_review ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-orange-600 hover:bg-orange-700 text-white'}`}>
+                        <AlertTriangle className="w-3 h-3" /> {game.is_under_review ? 'Clear Review' : 'Flag Review'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
