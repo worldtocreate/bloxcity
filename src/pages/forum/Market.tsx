@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Search, Filter, Heart, Star, Clock, TrendingUp, 
   Shirt, Sparkles, Crown, Palette, Box, 
-  Grid3X3, List, Coins
+  Grid3X3, List, Coins, Info
 } from 'lucide-react';
 
 // Categories for the market
@@ -106,8 +107,18 @@ export default function Market() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
+      {/* Development Notice */}
+      <div className="max-w-7xl mx-auto px-4 pt-4">
+        <Alert className="bg-amber-500/10 border-amber-500/30">
+          <Info className="h-4 w-4 text-amber-500" />
+          <AlertDescription className="text-amber-600 dark:text-amber-400">
+            This page is currently for visual purposes only while we develop the full marketplace functionality.
+          </AlertDescription>
+        </Alert>
+      </div>
+
       {/* Header */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
+      <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))] mt-4">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
