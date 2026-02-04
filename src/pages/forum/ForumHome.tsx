@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Shield, Search, ChevronRight } from 'lucide-react';
-import UserAvatar from '@/components/forum/UserAvatar';
+import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
+
 interface Category {
   id: string;
   name: string;
@@ -10,13 +11,6 @@ interface Category {
   slug: string;
   is_admin_only: boolean;
   thread_count?: number;
-}
-
-interface TopPoster {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  post_count: number;
 }
 
 interface OutletContext {
@@ -28,7 +22,6 @@ export default function ForumHome() {
   const navigate = useNavigate();
   const { isAdmin, forumUser } = useOutletContext<OutletContext>();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [topPosters, setTopPosters] = useState<TopPoster[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,7 +29,6 @@ export default function ForumHome() {
 
   useEffect(() => {
     fetchCategories();
-    fetchTopPosters();
   }, []);
 
   const fetchCategories = async () => {
@@ -61,19 +53,6 @@ export default function ForumHome() {
     setLoading(false);
   };
 
-  const fetchTopPosters = async () => {
-    const { data } = await supabase
-      .from('forum_users')
-      .select('id, username, avatar_url, post_count')
-      .eq('is_suspended', false)
-      .order('post_count', { ascending: false })
-      .limit(6);
-    
-    if (data) {
-      setTopPosters(data);
-    }
-  };
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -94,31 +73,8 @@ export default function ForumHome() {
   return (
     <div className="flex gap-6">
       {/* Sidebar - Leaderboard */}
-      <div className="hidden lg:block w-64 flex-shrink-0 space-y-4">
-        <Link
-          to="/forum/leaderboard"
-          className="block w-full px-4 py-3 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 text-white font-semibold rounded-lg text-center transition"
-        >
-          Leaderboard
-        </Link>
-
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
-          <div className="divide-y divide-[hsl(var(--bc-border))]">
-            {topPosters.map((user, index) => (
-              <Link
-                key={user.id}
-                to={`/players?q=${user.username}`}
-                className="flex items-center gap-3 p-3 hover:bg-[hsl(var(--bc-bg-light))] transition"
-              >
-                <UserAvatar avatarUrl={user.avatar_url} username={user.username} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-[hsl(var(--bc-text))] truncate">{user.username}</div>
-                  <div className="text-sm text-[hsl(var(--bc-text-muted))]">#{index + 1}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+      <div className="hidden lg:block w-64 flex-shrink-0">
+        <LeaderboardSidebar />
       </div>
 
       {/* Main Content */}
