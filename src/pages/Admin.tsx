@@ -181,18 +181,25 @@ const GamesManagementTab = ({ darkMode }: { darkMode: boolean }) => {
                     </td>
                     <td className={`py-3 ${textClass}`}>{g.creator?.username || "Unknown"}</td>
                     <td className="py-3">
-                      <div className="w-20 h-12 rounded-lg overflow-hidden bg-gray-200/20 flex items-center justify-center">
-                        <Image className={`w-5 h-5 ${mutedClass}`} />
-                        {g.thumbnail_url && (
+                      <div className="w-20 h-12 rounded-lg overflow-hidden bg-gray-200/20 flex items-center justify-center relative">
+                        {g.thumbnail_url ? (
                           <img
                             src={g.thumbnail_url}
                             alt=""
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover absolute inset-0"
                             loading="lazy"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                const icon = document.createElement('div');
+                                icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${mutedClass}"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+                                parent.appendChild(icon);
+                              }
                             }}
                           />
+                        ) : (
+                          <Image className={`w-5 h-5 ${mutedClass}`} />
                         )}
                       </div>
                     </td>

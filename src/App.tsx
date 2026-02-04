@@ -291,6 +291,7 @@ import Updates from "./pages/Updates";
 import Games from "./pages/forum/Games";
 // GameDetail inlined below
 import Market from "./pages/forum/Market";
+import MarketItem from "./pages/forum/MarketItem";
 import Character from "./pages/forum/Character";
 import Trading from "./pages/forum/Trading";
 // Players page removed - using ForumUsers at /players instead
@@ -1397,6 +1398,7 @@ const App = () => (
               <Route path="games" element={<Games />} />
               <Route path="game/:id" element={<GameView />} />
               <Route path="market" element={<Market />} />
+              <Route path="market/item/:id" element={<MarketItem />} />
               <Route path="character" element={<Character />} />
               <Route path="trading" element={<Trading />} />
               <Route path="login" element={<ForumLogin />} />
