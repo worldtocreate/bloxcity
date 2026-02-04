@@ -372,7 +372,7 @@ export default function ForumLayout() {
   }
 
   // Block admin access if 2FA is not enabled (except on settings page to allow setup)
-  const isSettingsPage = location.pathname === '/settings';
+  const isSettingsPage = location.pathname.startsWith('/settings');
   const adminNeeds2FA = !loading && !checkingTwoFA && isAdmin && forumUser && (!twoFAStatus || !twoFAStatus.is_enabled);
   
   if (adminNeeds2FA && !isSettingsPage) {

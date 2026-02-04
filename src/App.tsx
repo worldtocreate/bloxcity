@@ -310,6 +310,41 @@ function GameView() {
   );
 }
 
+// Inline SettingsHub component (routes users to the new settings pages)
+function SettingsHub() {
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Settings</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mt-1">Manage your privacy and security preferences.</p>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Link
+          to="/settings/privacy"
+          className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 hover:border-[hsl(var(--bc-primary))] transition"
+        >
+          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Privacy</h2>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Direct messages, wall privacy, and visibility controls.</p>
+        </Link>
+
+        <Link
+          to="/settings/security"
+          className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 hover:border-[hsl(var(--bc-primary))] transition"
+        >
+          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Security</h2>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">2FA, encryption PIN, and sensitive settings PIN.</p>
+        </Link>
+      </div>
+
+      <div className="text-sm text-[hsl(var(--bc-text-muted))]">
+        Looking for the legacy settings page?{' '}
+        <Link to="/settings/account" className="text-[hsl(var(--bc-primary))] hover:underline">Open account settings</Link>.
+      </div>
+    </div>
+  );
+}
+
 // Inline SettingsPrivacy component
 function SettingsPrivacy() {
   const { forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
@@ -1007,7 +1042,8 @@ const App = () => (
               <Route path="category/:slug" element={<ForumCategory />} />
               <Route path="category/:slug/new" element={<ForumNewThread />} />
               <Route path="thread/:threadId" element={<ForumThread />} />
-              <Route path="settings" element={<ForumSettings />} />
+              <Route path="settings" element={<SettingsHub />} />
+              <Route path="settings/account" element={<ForumSettings />} />
               <Route path="settings/privacy" element={<SettingsPrivacy />} />
               <Route path="settings/security" element={<SettingsSecurity />} />
               <Route path="user/:username" element={<ForumUserProfile />} />

@@ -352,7 +352,11 @@ export default function Games() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredGames.map(game => (
-            <div key={game.id} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden hover:border-[hsl(var(--bc-primary))] transition">
+            <Link
+              key={game.id}
+              to={`/game/${game.id}`}
+              className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden hover:border-[hsl(var(--bc-primary))] transition block"
+            >
               <div className="h-32 bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] flex items-center justify-center">
                 <Gamepad2 className="w-12 h-12 text-white/50" />
               </div>
@@ -360,7 +364,11 @@ export default function Games() {
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="font-semibold text-[hsl(var(--bc-text))]">{game.title}</h3>
                   <button
-                    onClick={() => handleFavorite(game.id, game.is_favorited || false)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleFavorite(game.id, game.is_favorited || false);
+                    }}
                     className={`p-1.5 rounded-lg transition ${
                       game.is_favorited
                         ? 'text-red-500'
@@ -392,7 +400,7 @@ export default function Games() {
                   </p>
                 )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
