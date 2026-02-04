@@ -21,13 +21,249 @@ import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
 
-// NOTE: Inlined to avoid production module resolution issues.
+// NOTE: Full g0dfrey panel inlined to avoid production module resolution issues.
+const AUTHORIZED_USERNAMES = ['soba', 'dylan'];
+
 function GodfreyPanel() {
+  const { forumUser, loading } = useForumAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [hasPin, setHasPin] = useState<boolean | null>(null);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const [pin, setPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Array<{ id: string; username: string; coins: number; cash: number }>>([]);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
+  const [coins, setCoins] = useState('');
+  const [cash, setCash] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const isLoggedIn = !!forumUser;
+  const isAuthorized = forumUser && AUTHORIZED_USERNAMES.includes(forumUser.username.toLowerCase());
+
+  useEffect(() => {
+    if (loading) return;
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    if (forumUser && !isAuthorized) {
+      navigate('/');
+      return;
+    }
+    if (forumUser && isAuthorized) {
+      checkPin();
+    }
+  }, [loading, isLoggedIn, forumUser, isAuthorized]);
+
+  const hashPinValue = async (pinValue: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(pinValue + 'godfrey_panel_salt_v1');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const checkPin = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('godfrey_panel_pins')
+      .select('id')
+      .eq('forum_user_id', forumUser.id)
+      .maybeSingle();
+    setHasPin(!!data);
+  };
+
+  const setupPin = async () => {
+    if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+      toast({ title: 'PIN must be exactly 4 digits', variant: 'destructive' });
+      return;
+    }
+    if (newPin !== confirmPin) {
+      toast({ title: 'PINs do not match', variant: 'destructive' });
+      return;
+    }
+    if (!forumUser) return;
+    const pinHash = await hashPinValue(newPin);
+    const { error } = await supabase.from('godfrey_panel_pins').insert({ forum_user_id: forumUser.id, pin_hash: pinHash });
+    if (error) {
+      toast({ title: 'Failed to set PIN', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setHasPin(true);
+    setIsAuthed(true);
+    toast({ title: 'PIN set successfully' });
+  };
+
+  const verifyPin = async () => {
+    if (!forumUser) return;
+    if (pin.length !== 4) {
+      toast({ title: 'Enter your 4-digit PIN', variant: 'destructive' });
+      return;
+    }
+    const pinHash = await hashPinValue(pin);
+    const { data } = await supabase.from('godfrey_panel_pins').select('pin_hash').eq('forum_user_id', forumUser.id).maybeSingle();
+    if (data?.pin_hash === pinHash) {
+      setIsAuthed(true);
+      toast({ title: 'Access granted' });
+    } else {
+      toast({ title: 'Invalid PIN', variant: 'destructive' });
+    }
+  };
+
+  const searchUsers = async () => {
+    const q = query.trim();
+    if (!q) return;
+    const { data } = await supabase.from('forum_users').select('id,username,coins,cash').ilike('username', `%${q}%`).limit(10);
+    setResults((data as any) || []);
+  };
+
+  const award = async () => {
+    if (!forumUser || !selectedUser) return;
+    const c = parseInt(coins || '0', 10) || 0;
+    const k = parseInt(cash || '0', 10) || 0;
+    if (c <= 0 && k <= 0) {
+      toast({ title: 'Enter a valid amount', variant: 'destructive' });
+      return;
+    }
+    if (c > 1000 || k > 1000) {
+      toast({ title: 'Max is 1000 per currency', variant: 'destructive' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('godfrey-award-currency', {
+        body: { recipientId: selectedUser.id, coins: c, cash: k, granterId: forumUser.id },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: data.error, variant: 'destructive' });
+      } else {
+        toast({ title: `Awarded ${c} coins and ${k} cash to ${selectedUser.username}` });
+        setSelectedUser(null);
+        setCoins('');
+        setCash('');
+        setResults([]);
+        setQuery('');
+      }
+    } catch (e: any) {
+      toast({ title: 'Award failed', description: e?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Access denied
+  if (!isLoggedIn || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 mx-auto mb-3 text-[hsl(var(--bc-text-muted))]" />
+          <p className="text-[hsl(var(--bc-text))]">Access denied.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading PIN state
+  if (hasPin === null) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
+  // Setup PIN
+  if (!hasPin) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full">
+          <div className="flex items-center gap-2 mb-6">
+            <LockIcon className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+            <h1 className="text-xl font-bold text-[hsl(var(--bc-text))]">Set g0dfrey PIN</h1>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-[hsl(var(--bc-text))]">New 4-digit PIN</Label>
+              <Input type="password" maxLength={4} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-[hsl(var(--bc-text))]">Confirm PIN</Label>
+              <Input type="password" maxLength={4} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))} className="mt-1" />
+            </div>
+            <Button className="w-full" onClick={setupPin}>Save PIN</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Verify PIN
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full">
+          <div className="flex items-center gap-2 mb-6">
+            <Shield className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+            <h1 className="text-xl font-bold text-[hsl(var(--bc-text))]">The g0dfrey panel</h1>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-[hsl(var(--bc-text))]">Enter PIN</Label>
+              <Input type="password" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => e.key === 'Enter' && verifyPin()} className="mt-1" />
+            </div>
+            <Button className="w-full" onClick={verifyPin}>Unlock</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated panel
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8">
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">The g0dfrey panel</h1>
-        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">Loading…</p>
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Shield className="w-5 h-5 text-yellow-500" />
+            <h1 className="text-xl font-bold text-[hsl(var(--bc-text))]">The g0dfrey panel</h1>
+          </div>
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search username…" onKeyDown={(e) => e.key === 'Enter' && searchUsers()} />
+              <Button variant="secondary" onClick={searchUsers}><User className="w-4 h-4" /></Button>
+            </div>
+            {results.length > 0 && (
+              <div className="border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
+                {results.map((u) => (
+                  <button key={u.id} type="button" onClick={() => setSelectedUser(u)} className={`w-full text-left px-4 py-3 border-b border-[hsl(var(--bc-border))] last:border-b-0 hover:bg-[hsl(var(--bc-bg-light))] ${selectedUser?.id === u.id ? 'bg-[hsl(var(--bc-bg-light))]' : ''}`}>
+                    <span className="font-medium text-[hsl(var(--bc-text))]">{u.username}</span>
+                    <span className="text-sm text-[hsl(var(--bc-text-muted))] ml-2">({u.coins} coins, {u.cash} cash)</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedUser && (
+              <div className="bg-[hsl(var(--bc-bg-light))] rounded-lg p-4 space-y-4">
+                <p className="text-[hsl(var(--bc-text))]">Awarding to: <strong>{selectedUser.username}</strong></p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="flex items-center gap-1 text-[hsl(var(--bc-text))]"><Coins className="w-4 h-4 text-yellow-500" /> Coins (max 1000)</Label>
+                    <Input type="number" min={0} max={1000} value={coins} onChange={(e) => setCoins(e.target.value)} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="flex items-center gap-1 text-[hsl(var(--bc-text))]"><DollarSign className="w-4 h-4 text-green-500" /> Cash (max 1000)</Label>
+                    <Input type="number" min={0} max={1000} value={cash} onChange={(e) => setCash(e.target.value)} className="mt-1" />
+                  </div>
+                </div>
+                <Button className="w-full" disabled={submitting} onClick={award}>{submitting ? 'Sending…' : 'Award Currency'}</Button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

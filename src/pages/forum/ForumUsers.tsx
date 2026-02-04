@@ -57,12 +57,12 @@ export default function ForumUsers() {
     const { count } = await countQuery;
     setTotalCount(count || 0);
 
-    // Fetch users for current page
+    // Fetch users for current page, sorted by last_seen_at descending (most recent first)
     let usersQuery = supabase
       .from('forum_users')
       .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, post_count, created_at, bio, last_seen_at')
       .eq('is_suspended', false)
-      .order('created_at', { ascending: false })
+      .order('last_seen_at', { ascending: false, nullsFirst: false })
       .range((page - 1) * USERS_PER_PAGE, page * USERS_PER_PAGE - 1);
     
     if (query) {
