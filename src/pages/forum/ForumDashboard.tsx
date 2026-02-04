@@ -20,9 +20,9 @@ function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: strin
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
 
-  const COMPENSATION_ID = 'feb2026-coin-refresh-issue';
+  const COMPENSATION_ID = 'feb2026-coin-refresh-issue-v2';
   const COMPENSATION_AMOUNT = 100;
-  const CUTOFF_DATE = new Date('2026-02-03T00:00:00Z');
+  const CUTOFF_DATE = new Date('2026-02-04T23:59:59Z');
 
   useEffect(() => {
     const checkEligibility = async () => {
@@ -70,7 +70,7 @@ function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: strin
       <DialogContent className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]">
         <DialogHeader>
           <DialogTitle className="text-[hsl(var(--bc-text))] flex items-center gap-2">
-            <Gift className="w-5 h-5 text-yellow-500" />
+            <Gift className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
             Compensation Notice
           </DialogTitle>
           <DialogDescription className="text-[hsl(var(--bc-text-muted))]">
@@ -79,11 +79,11 @@ function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: strin
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-[hsl(var(--bc-text))]">
-            On the 3rd of February 2026, we experienced some technical issues with your daily coin refresh. 
-            As a token of our apologies, we're awarding your account <strong className="text-yellow-500">100 coins</strong> in compensation.
+            On the 4th of February 2026, we experienced some technical issues with your daily coin refresh. 
+            As a token of our apologies, we're awarding your account <strong className="text-[hsl(var(--bc-accent))]">100 coins</strong> in compensation.
           </p>
           {claimed ? (
-            <div className="flex items-center justify-center gap-2 text-green-500 py-4">
+            <div className="flex items-center justify-center gap-2 text-[hsl(var(--bc-primary))] py-4">
               <Sparkles className="w-5 h-5" />
               <span className="font-semibold">Coins Claimed!</span>
             </div>
@@ -91,7 +91,7 @@ function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: strin
             <button
               onClick={handleClaim}
               disabled={claiming}
-              className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-[hsl(var(--bc-accent))] to-[hsl(var(--bc-primary))] hover:opacity-90 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
             >
               {claiming ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

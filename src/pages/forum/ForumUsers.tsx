@@ -10,6 +10,7 @@ import { getRelativeTime } from '@/lib/timeUtils';
 
 interface UserListItem {
   id: string;
+  serial_id: number;
   username: string;
   avatar_url: string | null;
   is_verified: boolean;
@@ -60,7 +61,7 @@ export default function ForumUsers() {
     // Fetch users for current page, sorted by last_seen_at descending (most recent first)
     let usersQuery = supabase
       .from('forum_users')
-      .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, post_count, created_at, bio, last_seen_at')
+      .select('id, serial_id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, post_count, created_at, bio, last_seen_at')
       .eq('is_suspended', false)
       .order('last_seen_at', { ascending: false, nullsFirst: false })
       .range((page - 1) * USERS_PER_PAGE, page * USERS_PER_PAGE - 1);
@@ -165,7 +166,7 @@ export default function ForumUsers() {
             {users.map((user) => (
               <Link
                 key={user.id}
-                to={`/id/${user.username}/profile`}
+                to={`/${user.serial_id}/${user.username}/profile`}
                 className="flex items-center gap-4 p-4 hover:bg-[hsl(var(--bc-bg-light))] transition group"
               >
                 <UserAvatar

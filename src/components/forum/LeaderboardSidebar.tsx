@@ -6,6 +6,7 @@ import UserAvatar from './UserAvatar';
 
 interface LeaderboardUser {
   id: string;
+  serial_id: number;
   username: string;
   avatar_url: string | null;
   post_count: number;
@@ -36,7 +37,7 @@ export default function LeaderboardSidebar() {
     
     const { data } = await supabase
       .from('forum_users')
-      .select('id, username, avatar_url, post_count, thread_count, xp, level, membership_tier, avatar_effect')
+      .select('id, serial_id, username, avatar_url, post_count, thread_count, xp, level, membership_tier, avatar_effect')
       .eq('is_suspended', false)
       .order(orderColumn, { ascending: false })
       .limit(5);
@@ -108,7 +109,7 @@ export default function LeaderboardSidebar() {
             {users.map((user, index) => (
               <Link
                 key={user.id}
-                to={`/id/${user.username}/profile`}
+                to={`/${user.serial_id}/${user.username}/profile`}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition group"
               >
                 <span className={`w-5 text-center font-bold text-sm ${

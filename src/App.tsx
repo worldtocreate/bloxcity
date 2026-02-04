@@ -1629,7 +1629,7 @@ const App = () => (
                 <Route path="privacy" element={<SettingsPrivacy />} />
                 <Route path="security" element={<SettingsSecurity />} />
               </Route>
-              <Route path="id/:id/profile" element={<ForumUserProfile />} />
+              <Route path=":serialId/:username/profile" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
               <Route path="players" element={<ForumUsers />} />
               <Route path="groups" element={<Groups />} />
