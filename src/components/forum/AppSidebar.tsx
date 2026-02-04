@@ -268,20 +268,6 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
         )}
 
       </SidebarContent>
-
-      {/* Only show collapse button on desktop */}
-      {!isMobile && (
-        <SidebarFooter className="p-2" style={{ borderTop: '1px solid hsl(var(--bc-section-border))' }}>
-          <SidebarMenuButton
-            onClick={toggleSidebar}
-            className="bc-side-link w-full justify-center"
-            style={{ borderRadius: 'var(--bc-rounded-lg)' }}
-          >
-            <ChevronLeft className={`bc-side-icon transition-transform ${collapsed ? 'rotate-180' : ''}`} />
-            {!collapsed && <span className="text-sm">Collapse</span>}
-          </SidebarMenuButton>
-        </SidebarFooter>
-      )}
     </Sidebar>
   );
 }
