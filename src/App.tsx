@@ -193,14 +193,24 @@ function GameView() {
     const file = e.target.files?.[0];
     if (!file || !game) return;
     setUploadingThumbnail(true);
-    const ext = file.name.split('.').pop();
-    const path = `game-thumbnails/${game.id}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('forum-uploads').upload(path, file, { upsert: true });
-    if (uploadError) { toast({ title: "Upload failed", variant: "destructive" }); setUploadingThumbnail(false); return; }
-    const { data: urlData } = supabase.storage.from('forum-uploads').getPublicUrl(path);
-    await supabase.from("forum_games").update({ thumbnail_url: urlData.publicUrl, thumbnail_status: 'pending' }).eq("id", game.id);
-    toast({ title: "Thumbnail uploaded", description: "Pending review" });
-    fetchGame();
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `game-thumbnails/${game.id}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('forum-uploads').upload(path, file, { upsert: true });
+      if (uploadError) { 
+        console.error('Upload error:', uploadError);
+        toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" }); 
+        setUploadingThumbnail(false); 
+        return; 
+      }
+      const { data: urlData } = supabase.storage.from('forum-uploads').getPublicUrl(path);
+      await supabase.from("forum_games").update({ thumbnail_url: urlData.publicUrl, thumbnail_status: 'pending' }).eq("id", game.id);
+      toast({ title: "Thumbnail uploaded", description: "Pending review" });
+      fetchGame();
+    } catch (err: any) {
+      console.error('Upload exception:', err);
+      toast({ title: "Upload failed", description: err.message || "Unknown error", variant: "destructive" });
+    }
     setUploadingThumbnail(false);
   };
 

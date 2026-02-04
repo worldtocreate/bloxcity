@@ -23,6 +23,7 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import GamesManagementTab from "@/components/admin/GamesManagementTab";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -2090,6 +2091,9 @@ const Admin = () => {
 
         {/* Groups Tab */}
         {activeTab === "groups" && <GroupsTab darkMode={darkMode} />}
+
+        {/* Games Management Tab */}
+        {activeTab === "games" && <GamesManagementTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (

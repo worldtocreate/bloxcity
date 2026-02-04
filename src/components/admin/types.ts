@@ -90,6 +90,7 @@ export type AdminTab =
   | "ads"
   | "achievements"
   | "groups"
+  | "games"
   | "gold-checkmarks"
   | "verification-requests"
   | "support-tickets"

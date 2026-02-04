@@ -31,6 +31,7 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "verification-requests", label: "Verify Requests", icon: BadgeCheck, category: "Verification" },
   
   // Content
+  { id: "games", label: "Games Management", icon: Gamepad2, category: "Content" },
   { id: "game-thumbnails", label: "Game Thumbnails", icon: Gamepad2, category: "Content" },
   { id: "ads", label: "Advertisements", icon: Megaphone, category: "Content" },
   { id: "groups", label: "Groups", icon: UsersRound, category: "Content" },
