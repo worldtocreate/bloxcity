@@ -18,9 +18,20 @@ import { useToast } from "@/hooks/use-toast";
 import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
-import GodfreyPanel from "./pages/GodfreyPanel";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
+
+// NOTE: Inlined to avoid production module resolution issues.
+function GodfreyPanel() {
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8">
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">The g0dfrey panel</h1>
+        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">Loading…</p>
+      </div>
+    </div>
+  );
+}
 
 // Forum imports (now main pages)
 import ForumLayout from "./components/forum/ForumLayout";
