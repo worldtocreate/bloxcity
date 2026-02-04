@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   User, Shirt, Crown, Sparkles, Palette, Box, 
   Search, RotateCcw, Save, ShoppingBag, Heart,
   ChevronLeft, ChevronRight, Layers, 
-  Trash2, Plus, Star
+  Trash2, Plus, Star, Info
 } from 'lucide-react';
 
 // Placeholder categories for avatar customization
@@ -115,6 +116,16 @@ export default function Character() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
+      {/* Development Notice */}
+      <div className="max-w-7xl mx-auto px-4 pt-4">
+        <Alert className="bg-amber-500/10 border-amber-500/30">
+          <Info className="h-4 w-4 text-amber-500" />
+          <AlertDescription className="text-amber-600 dark:text-amber-400">
+            This page is currently for visual purposes only while we develop the full avatar customization system.
+          </AlertDescription>
+        </Alert>
+      </div>
+
       {/* Header */}
       <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
         <div className="max-w-7xl mx-auto px-4 py-4">
