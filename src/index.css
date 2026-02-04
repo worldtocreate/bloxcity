@@ -142,344 +142,809 @@
 
 /* ========================================
    DARK MODE COMPONENT OVERRIDES
-   Based on provided dark theme CSS files
+   Comprehensive dark theme styling
 ======================================== */
+
+/* Core body and background */
 .dark body {
-  background: #181818 !important;
-  color: #dadada !important;
+  background: hsl(0 0% 9%) !important;
+  color: hsl(0 0% 85%) !important;
 }
 
-/* Dark mode cards */
+.dark #root {
+  background: hsl(0 0% 9%);
+}
+
+/* ========================================
+   DARK MODE CARDS & SURFACES
+======================================== */
 .dark .bc-card,
+.dark .card,
 .dark [class*="bg-card"],
 .dark [class*="bg-[hsl(var(--bc-bg-card))]"],
-.dark [class*="bg-[hsl(var(--bc-section-bg))]"] {
-  background: #252525 !important;
-  border-color: #474747 !important;
+.dark [class*="bg-[hsl(var(--bc-section-bg))]"],
+.dark [class*="bg-[hsl(var(--card))]"] {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
 }
 
-.dark .bc-card-inner {
-  background: #3b3b3b !important;
-  border-color: #626262 !important;
+.dark .card-body,
+.dark .bc-card-body {
+  background: hsl(0 0% 15%) !important;
 }
 
-/* Dark mode inputs */
-.dark .bc-input,
-.dark input[class*="bc-"],
-.dark textarea[class*="bc-"],
-.dark select[class*="bc-"],
+.dark .bc-card-inner,
+.dark .card-inner {
+  background: hsl(0 0% 23%) !important;
+  border-color: hsl(0 0% 35%) !important;
+}
+
+/* Inner nested cards/surfaces */
+.dark [class*="bg-[hsl(var(--bc-bg-light))]"],
 .dark [class*="bg-[hsl(var(--bc-input-bg))]"] {
-  background: #3b3b3b !important;
-  border-color: #626262 !important;
-  color: #ffffff !important;
+  background: hsl(0 0% 23%) !important;
 }
 
-.dark .bc-input::placeholder {
-  color: #9e9e9e !important;
+/* ========================================
+   DARK MODE INPUTS & FORMS
+======================================== */
+.dark .bc-input,
+.dark .form,
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select,
+.dark [class*="bg-input"] {
+  background: hsl(0 0% 23%) !important;
+  border-color: hsl(0 0% 38%) !important;
+  color: hsl(0 0% 95%) !important;
 }
 
-/* Dark mode navbar */
-.dark .bc-navbar,
-.dark [class*="bg-[hsl(var(--bc-section-bg))]"][class*="border-b"] {
-  background: #252525 !important;
-  border-color: #474747 !important;
+.dark .bc-input:focus,
+.dark .form:focus,
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: hsl(199 97% 46%) !important;
+  box-shadow: 0 0 0 2px hsla(199, 97%, 46%, 0.2) !important;
 }
 
-.dark .bc-nav-link {
-  color: #818181 !important;
+.dark .bc-input::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: hsl(0 0% 50%) !important;
 }
 
-.dark .bc-nav-link:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+/* Checkboxes and radio buttons */
+.dark input[type="checkbox"],
+.dark input[type="radio"] {
+  background: hsl(0 0% 23%) !important;
+  border-color: hsl(0 0% 45%) !important;
 }
 
-.dark .bc-nav-link.active {
-  color: #0288d1 !important;
+.dark input[type="checkbox"]:checked,
+.dark input[type="radio"]:checked {
+  background: hsl(199 97% 46%) !important;
+  border-color: hsl(199 97% 46%) !important;
 }
 
-/* Dark mode sidebar */
-.dark .bc-sidebar {
-  background: #252525 !important;
-  border-color: #474747 !important;
+/* ========================================
+   DARK MODE BUTTONS
+======================================== */
+.dark .bc-btn,
+.dark .btn {
+  border-color: hsla(0, 0%, 100%, 0.15) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.dark .bc-side-link {
-  color: #818181 !important;
+.dark .bc-btn-gray,
+.dark .btn-secondary {
+  background: hsl(0 0% 30%) !important;
+  color: hsl(0 0% 90%) !important;
+  border-color: hsl(0 0% 40%) !important;
 }
 
-.dark .bc-side-link:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+.dark .bc-btn-gray:hover,
+.dark .btn-secondary:hover {
+  background: hsl(0 0% 35%) !important;
 }
 
-.dark .bc-side-link:active {
-  background: rgba(255, 255, 255, 0.1) !important;
+/* Primary buttons stay vibrant */
+.dark .bc-btn-info,
+.dark .btn-primary {
+  background: hsl(199 97% 46%) !important;
+  color: white !important;
 }
 
-.dark .bc-side-link.active {
-  background: rgba(3, 155, 229, 0.2) !important;
-  color: #039be5 !important;
+.dark .bc-btn-info:hover,
+.dark .btn-primary:hover {
+  background: hsl(199 97% 52%) !important;
 }
 
-.dark .bc-side-title {
-  color: #818181 !important;
+/* Success buttons */
+.dark .bc-btn-success,
+.dark .btn-success {
+  background: hsl(122 39% 45%) !important;
+  color: white !important;
 }
 
-/* Dark mode buttons - keep border visible */
-.dark .bc-btn {
-  border-color: rgba(255, 255, 255, 0.2) !important;
+.dark .bc-btn-success:hover,
+.dark .btn-success:hover {
+  background: hsl(122 39% 52%) !important;
 }
 
-.dark .bc-btn-gray {
-  color: #bdbdbd !important;
+/* Danger buttons */
+.dark .bc-btn-danger,
+.dark .btn-danger {
+  background: hsl(4 84% 55%) !important;
+  color: white !important;
 }
 
+.dark .bc-btn-danger:hover,
+.dark .btn-danger:hover {
+  background: hsl(4 84% 62%) !important;
+}
+
+/* Ghost/outline buttons */
+.dark .btn-ghost,
+.dark .bc-btn-ghost {
+  background: transparent !important;
+  color: hsl(0 0% 80%) !important;
+}
+
+.dark .btn-ghost:hover,
+.dark .bc-btn-ghost:hover {
+  background: hsla(0, 0%, 100%, 0.08) !important;
+}
+
+/* Circle buttons */
 .dark .btn-circle,
 .dark .bc-btn-circle {
-  color: #818181 !important;
+  color: hsl(0 0% 60%) !important;
+  background: transparent !important;
 }
 
 .dark .btn-circle:hover,
 .dark .bc-btn-circle:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: hsla(0, 0%, 100%, 0.08) !important;
+  color: hsl(0 0% 85%) !important;
 }
 
-.dark .btn-circle:active,
-.dark .bc-btn-circle:active {
-  background: rgba(255, 255, 255, 0.1) !important;
+/* ========================================
+   DARK MODE NAVBAR
+======================================== */
+.dark .bc-navbar,
+.dark .site-header,
+.dark header,
+.dark [class*="border-b"][class*="bg-[hsl(var(--bc-section-bg))]"] {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
 }
 
-/* Dark mode tabs */
+.dark .bc-nav-link,
+.dark .header-nav-link {
+  color: hsl(0 0% 60%) !important;
+}
+
+.dark .bc-nav-link:hover,
+.dark .header-nav-link:hover {
+  background: hsla(0, 0%, 100%, 0.06) !important;
+  color: hsl(0 0% 85%) !important;
+}
+
+.dark .bc-nav-link.active,
+.dark .header-nav-link.active {
+  color: hsl(199 97% 50%) !important;
+}
+
+/* ========================================
+   DARK MODE SIDEBAR
+======================================== */
+.dark .bc-sidebar {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
+}
+
+.dark .bc-side-link {
+  color: hsl(0 0% 60%) !important;
+}
+
+.dark .bc-side-link:hover {
+  background: hsla(0, 0%, 100%, 0.06) !important;
+  color: hsl(0 0% 85%) !important;
+}
+
+.dark .bc-side-link:active {
+  background: hsla(0, 0%, 100%, 0.1) !important;
+}
+
+.dark .bc-side-link.active {
+  background: hsla(199, 97%, 46%, 0.2) !important;
+  color: hsl(199 97% 55%) !important;
+}
+
+.dark .bc-side-title {
+  color: hsl(0 0% 50%) !important;
+}
+
+.dark .bc-side-upgrade,
+.dark .side-upgrade {
+  background: hsla(291, 47%, 51%, 0.2) !important;
+  color: hsl(291 55% 65%) !important;
+}
+
+/* ========================================
+   DARK MODE TABS
+======================================== */
 .dark .bc-tab-link {
-  color: #dadada !important;
+  color: hsl(0 0% 75%) !important;
 }
 
 .dark .bc-tab-link:hover {
-  background: rgba(0, 0, 0, 0.04) !important;
+  background: hsla(0, 0%, 100%, 0.06) !important;
 }
 
 .dark .bc-tab-link.active,
 .dark .bc-tab-link.active:hover {
-  background: #0277bd !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: hsl(199 97% 40%) !important;
+  color: white !important;
+  border-color: hsla(0, 0%, 100%, 0.15) !important;
 }
 
-/* Dark mode dropdown menus */
+/* Shadcn tabs */
+.dark [data-state="active"][role="tab"] {
+  background: hsl(199 97% 46%) !important;
+  color: white !important;
+}
+
+.dark [role="tablist"] {
+  background: hsl(0 0% 18%) !important;
+  border-color: hsl(0 0% 28%) !important;
+}
+
+/* ========================================
+   DARK MODE DROPDOWN & MENUS
+======================================== */
+.dark .bc-dropdown-menu,
 .dark .dropdown-menu,
-.dark [class*="dropdown"] [class*="menu"],
-.dark [data-radix-popper-content-wrapper] > div {
-  background: #252525 !important;
-  border-color: #474747 !important;
+.dark [data-radix-popper-content-wrapper] > div,
+.dark [role="menu"],
+.dark [role="listbox"],
+.dark [cmdk-root] {
+  background: hsl(0 0% 18%) !important;
+  border-color: hsl(0 0% 32%) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
 }
 
-.dark .dropdown-link {
-  color: #dadada !important;
+.dark .bc-dropdown-link,
+.dark .dropdown-link,
+.dark [role="menuitem"],
+.dark [cmdk-item] {
+  color: hsl(0 0% 85%) !important;
 }
 
-.dark .dropdown-link:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+.dark .bc-dropdown-link:hover,
+.dark .dropdown-link:hover,
+.dark [role="menuitem"]:hover,
+.dark [role="menuitem"]:focus,
+.dark [cmdk-item][data-selected="true"],
+.dark [role="option"][data-highlighted] {
+  background: hsla(0, 0%, 100%, 0.08) !important;
 }
 
+.dark .bc-dropdown-title,
 .dark .dropdown-title {
-  color: #818181 !important;
+  color: hsl(0 0% 50%) !important;
 }
 
-/* Dark mode modals/dialogs */
+/* ========================================
+   DARK MODE MODALS & DIALOGS
+======================================== */
 .dark [role="dialog"],
-.dark [data-state="open"][role="dialog"] {
-  background: #252525 !important;
-  border-color: #474747 !important;
+.dark [data-state="open"][role="dialog"],
+.dark .modal,
+.dark .dialog {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
 }
 
 .dark [role="dialog"] [class*="bg-background"],
-.dark [role="dialog"] [class*="bg-card"] {
-  background: #252525 !important;
+.dark [role="dialog"] [class*="bg-card"],
+.dark .modal-content {
+  background: hsl(0 0% 15%) !important;
 }
 
-/* Dark mode tooltips */
+.dark .modal-header,
+.dark .dialog-header {
+  border-color: hsl(0 0% 28%) !important;
+}
+
+/* Dialog overlay */
+.dark [data-state="open"][data-overlay] {
+  background: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* ========================================
+   DARK MODE TOOLTIPS & POPOVERS
+======================================== */
 .dark [role="tooltip"],
-.dark .tippy-box {
-  background: #424242 !important;
+.dark .tippy-box,
+.dark [data-radix-popper-content-wrapper] [role="tooltip"] {
+  background: hsl(0 0% 25%) !important;
+  color: hsl(0 0% 95%) !important;
+  border-color: hsl(0 0% 35%) !important;
 }
 
-/* Dark mode progress bar */
-.dark .bc-progress {
-  background: #3b3b3b !important;
-  border-color: #626262 !important;
-}
-
-/* Dark mode footer */
-.dark .bc-footer,
-.dark .footer {
-  background: #252525 !important;
-  border-color: #474747 !important;
-}
-
-.dark .footer-link {
-  color: #818181 !important;
-}
-
-.dark .footer-link:hover,
-.dark .footer-link.active {
-  color: #0277bd !important;
-}
-
-/* Dark mode tables */
+/* ========================================
+   DARK MODE TABLES
+======================================== */
 .dark .bc-table,
-.dark .table {
-  border-color: rgba(2, 119, 189, 0.5) !important;
+.dark table {
+  border-color: hsl(0 0% 28%) !important;
 }
 
 .dark .bc-table-header,
-.dark .table-header {
-  background: rgba(2, 119, 189, 0.1) !important;
-  border-color: rgba(2, 119, 189, 0.5) !important;
-  color: #0277bd !important;
+.dark thead,
+.dark th {
+  background: hsla(199, 97%, 46%, 0.15) !important;
+  border-color: hsla(199, 97%, 46%, 0.3) !important;
+  color: hsl(199 97% 60%) !important;
 }
 
 .dark .bc-table-body,
-.dark .table-body {
-  background: #252525 !important;
+.dark tbody {
+  background: hsl(0 0% 15%) !important;
 }
 
-/* Dark mode pagination */
+.dark tbody tr {
+  border-color: hsl(0 0% 25%) !important;
+}
+
+.dark tbody tr:hover {
+  background: hsl(0 0% 18%) !important;
+}
+
+.dark td {
+  border-color: hsl(0 0% 25%) !important;
+}
+
+/* ========================================
+   DARK MODE PAGINATION
+======================================== */
 .dark .page-link {
-  color: #c2c2c2 !important;
+  color: hsl(0 0% 70%) !important;
+  background: transparent !important;
 }
 
 .dark .page-link:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: hsla(0, 0%, 100%, 0.08) !important;
+  color: hsl(0 0% 90%) !important;
 }
 
 .dark .page-active,
 .dark .page-active:hover {
-  background: #0277bd !important;
-  color: #ffffff !important;
+  background: hsl(199 97% 46%) !important;
+  color: white !important;
 }
 
-/* Dark mode text colors */
+/* ========================================
+   DARK MODE ALERTS & BADGES
+======================================== */
+.dark .bc-alert {
+  border-color: hsla(0, 0%, 100%, 0.15) !important;
+}
+
+.dark .bc-badge {
+  border-color: hsla(0, 0%, 100%, 0.15) !important;
+}
+
+/* Info alerts with softer background */
+.dark .bg-blue-50,
+.dark [class*="bg-blue-"] {
+  background: hsla(199, 97%, 46%, 0.15) !important;
+}
+
+.dark .border-blue-200,
+.dark [class*="border-blue-"] {
+  border-color: hsla(199, 97%, 46%, 0.4) !important;
+}
+
+.dark .text-blue-700,
+.dark [class*="text-blue-"] {
+  color: hsl(199 90% 65%) !important;
+}
+
+/* Success alerts */
+.dark .bg-green-50,
+.dark .bg-green-100 {
+  background: hsla(122, 39%, 45%, 0.15) !important;
+}
+
+.dark .border-green-200,
+.dark .border-green-300 {
+  border-color: hsla(122, 39%, 45%, 0.4) !important;
+}
+
+.dark .text-green-700,
+.dark .text-green-600 {
+  color: hsl(122 50% 55%) !important;
+}
+
+/* Warning alerts */
+.dark .bg-yellow-50,
+.dark .bg-amber-50 {
+  background: hsla(45, 96%, 56%, 0.12) !important;
+}
+
+.dark .border-yellow-200,
+.dark .border-amber-200 {
+  border-color: hsla(45, 96%, 56%, 0.35) !important;
+}
+
+.dark .text-yellow-700,
+.dark .text-amber-700,
+.dark .text-yellow-800,
+.dark .text-amber-800 {
+  color: hsl(45 90% 60%) !important;
+}
+
+/* Error/danger alerts */
+.dark .bg-red-50 {
+  background: hsla(4, 84%, 55%, 0.12) !important;
+}
+
+.dark .border-red-200 {
+  border-color: hsla(4, 84%, 55%, 0.35) !important;
+}
+
+.dark .text-red-700,
+.dark .text-red-500 {
+  color: hsl(4 80% 65%) !important;
+}
+
+/* ========================================
+   DARK MODE PROGRESS BAR
+======================================== */
+.dark .bc-progress {
+  background: hsl(0 0% 23%) !important;
+  border-color: hsl(0 0% 35%) !important;
+}
+
+/* ========================================
+   DARK MODE FOOTER
+======================================== */
+.dark .bc-footer,
+.dark .footer {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
+}
+
+.dark .footer-link,
+.dark .bc-footer-link {
+  color: hsl(0 0% 55%) !important;
+}
+
+.dark .footer-link:hover,
+.dark .bc-footer-link:hover,
+.dark .footer-link.active,
+.dark .bc-footer-link.active {
+  color: hsl(199 97% 55%) !important;
+}
+
+.dark .footer-copyright {
+  color: hsl(0 0% 80%) !important;
+}
+
+.dark .footer-social-link {
+  color: hsl(0 0% 55%) !important;
+}
+
+.dark .footer-social-link:hover {
+  color: hsl(199 97% 55%) !important;
+}
+
+/* ========================================
+   DARK MODE TEXT COLORS
+======================================== */
 .dark [class*="text-[hsl(var(--bc-text))]"] {
-  color: #dadada !important;
+  color: hsl(0 0% 85%) !important;
 }
 
 .dark [class*="text-[hsl(var(--bc-text-muted))]"] {
-  color: #818181 !important;
-}
-
-/* Dark mode backgrounds - general overrides */
-.dark [class*="bg-[hsl(var(--bc-bg))]"],
-.dark [class*="bg-[hsl(var(--bc-body-bg))]"] {
-  background: #181818 !important;
-}
-
-.dark [class*="bg-[hsl(var(--bc-bg-light))]"] {
-  background: #3b3b3b !important;
-}
-
-/* Dark mode borders */
-.dark [class*="border-[hsl(var(--bc-border))]"],
-.dark [class*="border-[hsl(var(--bc-section-border))]"] {
-  border-color: #474747 !important;
-}
-
-/* Dark mode special cards */
-.dark .card-five-star {
-  background: rgba(254, 165, 56, 0.2) !important;
-  border-color: #fea538 !important;
-}
-
-.dark .card-four-star {
-  background: rgba(171, 71, 188, 0.2) !important;
-  border-color: #ab47bc !important;
-}
-
-.dark .card-three-star {
-  background: rgba(67, 160, 71, 0.2) !important;
-  border-color: #43a047 !important;
-}
-
-.dark .card-two-and-one-star {
-  background: #3b3b3b !important;
-  border-color: #626262 !important;
-}
-
-/* Dark mode like button */
-.dark .btn-like {
-  color: #818181 !important;
-}
-
-.dark .btn-like:hover {
-  color: #e91e63 !important;
-}
-
-.dark .btn-like:hover i {
-  background: rgba(233, 30, 99, 0.1) !important;
-}
-
-/* Dark mode upgrade/sidebar special */
-.dark .bc-side-upgrade,
-.dark .side-upgrade {
-  background: rgba(171, 71, 188, 0.2) !important;
-  color: #ab47bc !important;
-}
-
-/* Ensure shadcn components respect dark mode */
-.dark [class*="bg-background"] {
-  background: #181818 !important;
-}
-
-.dark [class*="bg-muted"] {
-  background: #3b3b3b !important;
+  color: hsl(0 0% 55%) !important;
 }
 
 .dark [class*="text-foreground"] {
-  color: #dadada !important;
+  color: hsl(0 0% 85%) !important;
 }
 
 .dark [class*="text-muted-foreground"] {
-  color: #818181 !important;
+  color: hsl(0 0% 55%) !important;
 }
 
+/* ========================================
+   DARK MODE BACKGROUNDS
+======================================== */
+.dark [class*="bg-[hsl(var(--bc-bg))]"],
+.dark [class*="bg-[hsl(var(--bc-body-bg))]"],
+.dark [class*="bg-background"] {
+  background: hsl(0 0% 9%) !important;
+}
+
+.dark [class*="bg-muted"] {
+  background: hsl(0 0% 23%) !important;
+}
+
+.dark [class*="bg-popover"],
+.dark [class*="bg-accent"] {
+  background: hsl(0 0% 18%) !important;
+}
+
+/* ========================================
+   DARK MODE BORDERS
+======================================== */
+.dark [class*="border-[hsl(var(--bc-border))]"],
+.dark [class*="border-[hsl(var(--bc-section-border))]"],
 .dark [class*="border-border"] {
-  border-color: #474747 !important;
+  border-color: hsl(0 0% 28%) !important;
 }
 
-/* Dark mode popovers and sheets */
-.dark [data-radix-popper-content-wrapper] [class*="bg-popover"],
-.dark [role="listbox"],
-.dark [cmdk-root] {
-  background: #252525 !important;
-  border-color: #474747 !important;
+/* ========================================
+   DARK MODE SPECIAL CARDS (Rarity)
+======================================== */
+.dark .card-five-star {
+  background: hsla(36, 99%, 58%, 0.15) !important;
+  border-color: hsl(36 99% 50%) !important;
 }
 
-/* Dark mode select/combobox items */
-.dark [cmdk-item],
-.dark [role="option"] {
-  color: #dadada !important;
+.dark .card-four-star {
+  background: hsla(291, 47%, 51%, 0.15) !important;
+  border-color: hsl(291 55% 60%) !important;
 }
 
-.dark [cmdk-item][data-selected="true"],
-.dark [role="option"][data-highlighted] {
-  background: rgba(255, 255, 255, 0.08) !important;
+.dark .card-three-star {
+  background: hsla(122, 39%, 45%, 0.15) !important;
+  border-color: hsl(122 45% 50%) !important;
 }
 
-/* Dark mode scrollbar */
+.dark .card-two-and-one-star {
+  background: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 35%) !important;
+}
+
+/* ========================================
+   DARK MODE LIKE BUTTON
+======================================== */
+.dark .btn-like {
+  color: hsl(0 0% 55%) !important;
+}
+
+.dark .btn-like:hover {
+  color: hsl(340 82% 60%) !important;
+}
+
+/* ========================================
+   DARK MODE SCROLLBAR
+======================================== */
 .dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #181818;
+  background: hsl(0 0% 12%);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #474747;
-  border-radius: 4px;
+  background: hsl(0 0% 30%);
+  border-radius: 5px;
+  border: 2px solid hsl(0 0% 12%);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: hsl(0 0% 40%);
+}
+
+/* Firefox scrollbar */
+.dark * {
+  scrollbar-color: hsl(0 0% 30%) hsl(0 0% 12%);
+  scrollbar-width: thin;
+}
+
+/* ========================================
+   DARK MODE SHADCN SPECIFIC OVERRIDES
+======================================== */
+
+/* Select component */
+.dark [data-radix-select-viewport] {
+  background: hsl(0 0% 18%) !important;
+}
+
+.dark [data-radix-select-item] {
+  color: hsl(0 0% 85%) !important;
+}
+
+.dark [data-radix-select-item][data-highlighted] {
+  background: hsla(0, 0%, 100%, 0.08) !important;
+}
+
+/* Separator */
+.dark [data-orientation="horizontal"][role="separator"],
+.dark .bc-divider {
+  background: hsl(0 0% 28%) !important;
+}
+
+/* Avatar fallback */
+.dark [data-radix-avatar-fallback] {
+  background: hsl(0 0% 30%) !important;
+  color: hsl(0 0% 70%) !important;
+}
+
+/* Switch component */
+.dark [role="switch"] {
+  background: hsl(0 0% 30%) !important;
+}
+
+.dark [role="switch"][data-state="checked"] {
+  background: hsl(199 97% 46%) !important;
+}
+
+/* Slider component */
+.dark [role="slider"] {
+  background: hsl(199 97% 46%) !important;
+}
+
+.dark [data-orientation="horizontal"][role="slider"] ~ span {
+  background: hsl(0 0% 30%) !important;
+}
+
+/* Command palette */
+.dark [cmdk-root] {
+  background: hsl(0 0% 15%) !important;
+}
+
+.dark [cmdk-input] {
+  background: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 30%) !important;
+  color: hsl(0 0% 90%) !important;
+}
+
+.dark [cmdk-group-heading] {
+  color: hsl(0 0% 50%) !important;
+}
+
+/* Sheet/drawer */
+.dark [data-vaul-drawer] {
+  background: hsl(0 0% 15%) !important;
+}
+
+/* Accordion */
+.dark [data-state="open"][data-orientation="vertical"],
+.dark [data-state="closed"][data-orientation="vertical"] {
+  border-color: hsl(0 0% 28%) !important;
+}
+
+/* ========================================
+   DARK MODE GAMES PAGE
+======================================== */
+.dark .games-category-item {
+  color: hsl(0 0% 75%) !important;
+}
+
+.dark .games-category-item:hover {
+  background: hsl(0 0% 20%) !important;
+}
+
+.dark .games-category-item.active {
+  background: hsl(199 97% 46%) !important;
+  color: white !important;
+}
+
+.dark .game-thumbnail {
+  background: hsl(0 0% 20%) !important;
+}
+
+.dark .game-card-title {
+  color: hsl(0 0% 85%) !important;
+}
+
+.dark .game-card-creator {
+  color: hsl(0 0% 55%) !important;
+}
+
+.dark .game-card-creator a:hover {
+  color: hsl(199 97% 55%) !important;
+}
+
+/* ========================================
+   DARK MODE INFO CARDS (Landing)
+======================================== */
+.dark .info-card {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
+}
+
+.dark .info-card:hover {
+  border-color: hsl(199 97% 50%) !important;
+  box-shadow: 0 10px 30px hsla(199, 97%, 46%, 0.15) !important;
+}
+
+.dark .info-card h3 {
+  color: hsl(0 0% 55%) !important;
+}
+
+.dark .info-card p {
+  color: hsl(0 0% 85%) !important;
+}
+
+/* ========================================
+   DARK MODE SECTIONS
+======================================== */
+.dark .bc-section,
+.dark .reservation-section,
+.dark .newsletter-section,
+.dark .domain-notice,
+.dark .about-section,
+.dark .mission-section,
+.dark .team-section {
+  background: hsl(0 0% 15%) !important;
+  border-color: hsl(0 0% 28%) !important;
+}
+
+.dark .bc-section h3,
+.dark .reservation-section h3,
+.dark .newsletter-section h3 {
+  color: hsl(0 0% 90%) !important;
+}
+
+.dark .bc-section p,
+.dark .reservation-section > p,
+.dark .newsletter-section > p {
+  color: hsl(0 0% 60%) !important;
+}
+
+/* ========================================
+   DARK MODE LANDING HERO
+======================================== */
+.dark .landing-hero-overlay {
+  background: linear-gradient(to bottom, 
+    hsla(0, 0%, 9%, 0.4) 0%,
+    hsla(0, 0%, 9%, 0.75) 50%,
+    hsla(0, 0%, 9%, 0.98) 100%
+  ) !important;
+}
+
+.dark .landing-title,
+.dark .brand-title {
+  color: hsl(0 0% 95%) !important;
+}
+
+.dark .landing-tagline,
+.dark .brand-tagline {
+  color: hsl(0 0% 60%) !important;
+}
+
+.dark .landing-subtitle,
+.dark .message-title {
+  color: hsl(0 0% 90%) !important;
+}
+
+.dark .landing-description,
+.dark .message-text {
+  color: hsl(0 0% 60%) !important;
+}
+
+/* ========================================
+   DARK MODE FORM CHECKBOX STYLING
+======================================== */
+.dark .form-check-input {
+  background: hsl(0 0% 25%) !important;
+  border-color: hsl(0 0% 45%) !important;
+}
+
+.dark .form-check-input:checked {
+  background: hsl(199 97% 46%) !important;
+  border-color: hsl(199 97% 46%) !important;
 }
 
 /* BLOX City Custom Design System */
