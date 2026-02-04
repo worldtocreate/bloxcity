@@ -722,54 +722,10 @@ export default function ForumSettings() {
         </div>
       </div>
 
-      {/* Website Theme Card */}
+      {/* Website Theme - Coming Soon */}
       <div className="card card-body">
-        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4">Website Theme</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Light Theme */}
-          <button
-            onClick={() => setTheme('light')}
-            className={`card card-body card-inner p-4 transition cursor-pointer ${
-              theme === 'light' ? 'ring-2 ring-[hsl(var(--bc-primary))]' : 'hover:border-[hsl(var(--bc-primary))]'
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <div className={`w-4 h-4 rounded-full border-2 ${
-                theme === 'light' 
-                  ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]' 
-                  : 'border-[hsl(var(--bc-border))]'
-              }`}>
-                {theme === 'light' && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-300 border-2 border-gray-200" />
-                <span className="font-semibold text-lg text-[hsl(var(--bc-text))]">Light Theme</span>
-              </div>
-            </div>
-          </button>
-
-          {/* Dark Theme */}
-          <button
-            onClick={() => setTheme('dark')}
-            className={`card card-body card-inner p-4 transition cursor-pointer ${
-              theme === 'dark' ? 'ring-2 ring-[hsl(var(--bc-primary))]' : 'hover:border-[hsl(var(--bc-primary))]'
-            }`}
-          >
-            <div className="flex items-center gap-4">
-              <div className={`w-4 h-4 rounded-full border-2 ${
-                theme === 'dark' 
-                  ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]' 
-                  : 'border-[hsl(var(--bc-border))]'
-              }`}>
-                {theme === 'dark' && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 border-2 border-gray-600" />
-                <span className="font-semibold text-lg text-[hsl(var(--bc-text))]">Dark Theme</span>
-              </div>
-            </div>
-          </button>
-        </div>
+        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Website Theme</h3>
+        <p className="text-sm text-[hsl(var(--bc-text-muted))]">Dark mode coming soon! Currently using light theme.</p>
       </div>
 
       {/* Profile Picture & Cover */}
