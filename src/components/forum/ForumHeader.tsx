@@ -1,13 +1,198 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, LogOut, Settings, Shield, User, Coins, Menu, DollarSign } from 'lucide-react';
+import { LogIn, LogOut, Settings, Shield, User, Coins, Menu, DollarSign, Bell, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import { VerificationBadge } from './VerifiedBadge';
-import UnreadBadge from './UnreadBadge';
-import NotificationBell from './NotificationBell';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+
+// Inline NotificationBell component
+function NotificationBellInline({ forumUserId }: { forumUserId: string }) {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications();
+    
+    // Subscribe to new notifications
+    const channel = supabase
+      .channel('notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'forum_notifications',
+          filter: `recipient_id=eq.${forumUserId}`
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [forumUserId]);
+
+  const fetchNotifications = async () => {
+    const { data, count } = await supabase
+      .from('forum_notifications')
+      .select('*, actor:actor_id(username, avatar_url)', { count: 'exact' })
+      .eq('recipient_id', forumUserId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    setNotifications(data || []);
+    
+    // Count unread
+    const { count: unread } = await supabase
+      .from('forum_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', forumUserId)
+      .eq('is_read', false);
+    
+    setUnreadCount(unread || 0);
+  };
+
+  const markAllRead = async () => {
+    await supabase
+      .from('forum_notifications')
+      .update({ is_read: true })
+      .eq('recipient_id', forumUserId)
+      .eq('is_read', false);
+    
+    setUnreadCount(0);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
+
+  const getNotificationLink = (n: any) => {
+    if (n.type === 'message') return '/messages';
+    if (n.type === 'friend_request') return '/friends';
+    if (n.type === 'follow') return `/user/${n.actor?.username}`;
+    if (n.type === 'reply' && n.reference_id) return `/thread/${n.reference_id}`;
+    if (n.type === 'trade') return '/trading';
+    return '/';
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="relative flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition p-2"
+      >
+        <Bell className="w-5 h-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {showDropdown && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+          <div className="absolute right-0 top-full mt-2 w-80 bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl shadow-xl z-50 overflow-hidden">
+            <div className="p-3 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
+              <span className="font-semibold text-[hsl(var(--bc-text))]">Notifications</span>
+              {unreadCount > 0 && (
+                <button onClick={markAllRead} className="text-xs text-[hsl(var(--bc-primary))] hover:underline">
+                  Mark all read
+                </button>
+              )}
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-[hsl(var(--bc-text-muted))]">No notifications</div>
+              ) : (
+                notifications.map((n) => (
+                  <Link
+                    key={n.id}
+                    to={getNotificationLink(n)}
+                    onClick={() => setShowDropdown(false)}
+                    className={`flex items-start gap-3 p-3 hover:bg-[hsl(var(--bc-bg-light))] transition ${!n.is_read ? 'bg-[hsla(var(--bc-primary),0.05)]' : ''}`}
+                  >
+                    {n.actor?.avatar_url ? (
+                      <img src={n.actor.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-[hsl(var(--bc-text))]">{n.title}</p>
+                      {n.content && <p className="text-xs text-[hsl(var(--bc-text-muted))] truncate">{n.content}</p>}
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                        {new Date(n.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {!n.is_read && <div className="w-2 h-2 rounded-full bg-[hsl(var(--bc-primary))]" />}
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Inline UnreadBadge component
+function UnreadBadgeInline({ forumUserId }: { forumUserId: string }) {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnread();
+    
+    const channel = supabase
+      .channel('dm-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'forum_direct_messages',
+          filter: `recipient_id=eq.${forumUserId}`
+        },
+        () => {
+          fetchUnread();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [forumUserId]);
+
+  const fetchUnread = async () => {
+    const { count } = await supabase
+      .from('forum_direct_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', forumUserId)
+      .eq('is_read', false);
+
+    setUnreadCount(count || 0);
+  };
+
+  return (
+    <Link 
+      to="/messages"
+      className="relative flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition"
+    >
+      <Mail className="w-5 h-5" />
+      {unreadCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 interface ForumHeaderProps {
   user: any;
@@ -85,8 +270,8 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
             <>
               {forumUser && (
                 <>
-                  <NotificationBell forumUserId={forumUser.id} />
-                  <UnreadBadge forumUserId={forumUser.id} />
+                  <NotificationBellInline forumUserId={forumUser.id} />
+                  <UnreadBadgeInline forumUserId={forumUser.id} />
                 </>
               )}
               
