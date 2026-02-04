@@ -8,7 +8,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2 } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import UserAvatar from "@/components/forum/UserAvatar";
+import MembershipBadge from "@/components/forum/MembershipBadge";
+import UserLevelBadge from "@/components/forum/UserLevelBadge";
 import TwoFactorSetup from "@/components/forum/TwoFactorSetup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -363,7 +367,7 @@ import ForumMessages from "./pages/forum/ForumMessages";
 import ForumFAQ from "./pages/forum/ForumFAQ";
 // TermsOfService, PrivacyPolicy, GameDetail inlined below
 import ForumStaff from "./pages/forum/ForumStaff";
-import Notes from "./pages/forum/Notes";
+// Notes inlined below
 import ForumUsers from "./pages/forum/ForumUsers";
 import ForumDashboard from "./pages/forum/ForumDashboard";
 import Updates from "./pages/Updates";
@@ -2118,6 +2122,205 @@ function ForumLeaderboard() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Inline Notes component with Terms, Privacy, Updates, and Team tabs
+function Notes() {
+  const [activeTab, setActiveTab] = useState('terms');
+  const [staff, setStaff] = useState<Array<{ id: string; serial_id: number; username: string; avatar_url: string | null; is_verified: boolean; membership_tier: string | null; avatar_effect: string | null; level: number; xp: number; role: 'admin' | 'moderator' }>>([]);
+  const [loadingStaff, setLoadingStaff] = useState(true);
+
+  useEffect(() => {
+    const fetchStaff = async () => {
+      const { data: roles } = await supabase.from('user_roles').select('user_id, role').in('role', ['admin', 'moderator']);
+      if (!roles || roles.length === 0) { setLoadingStaff(false); return; }
+      const userIds = roles.map(r => r.user_id);
+      const { data: forumUsers } = await supabase.from('forum_users').select('id, serial_id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp').in('user_id', userIds);
+      if (forumUsers) {
+        const staffWithRoles = forumUsers.map(user => {
+          const role = roles.find(r => r.user_id === user.user_id)?.role;
+          return { ...user, role: role as 'admin' | 'moderator' };
+        }).sort((a, b) => (a.role === 'admin' && b.role !== 'admin') ? -1 : (a.role !== 'admin' && b.role === 'admin') ? 1 : 0);
+        setStaff(staffWithRoles);
+      }
+      setLoadingStaff(false);
+    };
+    fetchStaff();
+  }, []);
+
+  const UPDATES_LIST = [
+    { text: 'New Sign Up Design', completed: true },
+    { text: 'New Forum Design', completed: true },
+    { text: 'New Dashboard', completed: true },
+    { text: 'Sign up with Discord & Google', completed: false },
+    { text: 'Revert Back To Original Sidebar & Topbar', completed: true },
+    { text: 'Login with Discord & Google', completed: false },
+    { text: '2FA', completed: true },
+    { text: 'Redesign Spaces', completed: false },
+    { text: 'Let Users Create & Play Games', completed: true },
+    { text: 'Update Filter System', completed: true },
+    { text: 'Add Coins As A Second Currency', completed: true },
+    { text: 'Add Notification Bell Allowing Users To View Account Notifications', completed: true },
+    { text: 'Add UGC Allowing Users To Create Their Own Hats, Faces & Gadgets', completed: false },
+    { text: 'Redesign Forum Leaderboard', completed: true },
+    { text: 'Settings Page Redesign', completed: true },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="bc-card">
+        <div className="bc-card-header flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'hsla(var(--bc-primary), 0.1)' }}>
+            <FileText className="w-6 h-6" style={{ color: 'hsl(var(--bc-primary))' }} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Notes</h1>
+            <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Important information about BLOX City</p>
+          </div>
+        </div>
+        <div className="bc-card-body">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full justify-start mb-6" style={{ background: 'hsl(var(--bc-input-bg))' }}>
+              <TabsTrigger value="terms" className="flex items-center gap-2"><Shield className="w-4 h-4" />Terms</TabsTrigger>
+              <TabsTrigger value="privacy" className="flex items-center gap-2"><Lock className="w-4 h-4" />Privacy</TabsTrigger>
+              <TabsTrigger value="updates" className="flex items-center gap-2"><FileText className="w-4 h-4" />Updates</TabsTrigger>
+              <TabsTrigger value="team" className="flex items-center gap-2"><Users className="w-4 h-4" />Team</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="terms" className="space-y-4">
+              <div style={{ color: 'hsl(var(--bc-text))' }}>
+                <p className="text-lg mb-4">Welcome to BLOX City! A user generated content platform enabling creativity with our users.</p>
+                <p className="mb-4">By using BLOX City you agree that we reserve the rights to suspend your account at any given time for any reason. Please read through this page carefully.</p>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Account Security</h3>
+                <p className="mb-2"><b>1</b>. Keep your password to yourself and do not share your account with anyone.</p>
+                <p className="mb-2"><b>2</b>. Do not attempt to compromise anyone's account or illegally access accounts.</p>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Username Policy</h3>
+                <p className="mb-2"><b>1</b>. Do not impersonate others with your username.</p>
+                <p className="mb-2"><b>2</b>. No special characters to bypass filters.</p>
+                <p className="mb-2"><b>3</b>. No personal information in usernames.</p>
+                <p className="mb-2"><b>4</b>. No hateful or vulgar content in usernames.</p>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Discussion</h3>
+                <p className="mb-2"><b>1</b>. Do not spam posts or replies.</p>
+                <p className="mb-2"><b>2</b>. Post in the correct subforum.</p>
+                <p className="mb-2"><b>3</b>. No drama or flame wars.</p>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Asset System</h3>
+                <p className="mb-2"><b>1</b>. No copyrighted content.</p>
+                <p className="mb-2"><b>2</b>. No pornography - permanent ban.</p>
+                <p className="mb-2"><b>3</b>. No copying others' assets.</p>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Glitches & Bugs</h3>
+                <p className="mb-2"><b>1</b>. Report bugs immediately - abusing them results in permanent removal.</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="privacy" className="space-y-4">
+              <div style={{ color: 'hsl(var(--bc-text))' }}>
+                <p className="text-lg mb-4">BLOX City respects the privacy of our users. This policy explains how we collect, use, and disclose information.</p>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Stored Information</h3>
+                <div className="p-4 rounded-lg mb-3" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                  <div className="font-semibold mb-1">1. Username</div>
+                  <p className="text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>Used for identification purposes only.</p>
+                </div>
+                <div className="p-4 rounded-lg mb-3" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                  <div className="font-semibold mb-1">2. Password</div>
+                  <p className="text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>Stored securely and cannot be retrieved by anyone including us.</p>
+                </div>
+                <div className="p-4 rounded-lg mb-3" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                  <div className="font-semibold mb-1">3. IP Address</div>
+                  <p className="text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>Collected & encrypted to prevent fraudulent accounts. Cannot be seen by staff.</p>
+                </div>
+                <h3 className="text-lg font-semibold mt-6 mb-3">Sharing Information</h3>
+                <p>BLOX City does not share/sell user information. We cooperate with law enforcement when provided a court order.</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="updates" className="space-y-4">
+              <p className="mb-4" style={{ color: 'hsl(var(--bc-text-muted))' }}>Updates we're working on. Items are checked off as they are completed:</p>
+              <div className="space-y-2">
+                {UPDATES_LIST.map((update, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 rounded-lg" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                    {update.completed ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                    <span style={{ color: 'hsl(var(--bc-text))' }}>{update.text}</span>
+                    <span className={`ml-auto text-sm font-medium ${update.completed ? 'text-green-600' : 'text-red-600'}`}>{update.completed ? 'Completed' : 'Incomplete'}</span>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="team" className="space-y-4">
+              {loadingStaff ? (
+                <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin" style={{ color: 'hsl(var(--bc-primary))' }} /></div>
+              ) : (
+                <>
+                  {/* System */}
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--bc-text))' }}><span className="w-2 h-2 rounded-full bg-blue-500" />System</h2>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-4 p-4 rounded-xl" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                        <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-blue-500/30">
+                          <img src="https://www.bloxcity.net/assets/IMG_2412_Original-1-CLfNpjOE.png" alt="BLOX City" className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2"><span className="font-semibold" style={{ color: 'hsl(var(--bc-text))' }}>BLOX City</span><BadgeCheck className="w-4 h-4 text-blue-500" /><span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">System</span></div>
+                          <p className="text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>Official System Account</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Admins */}
+                  <div className="mb-6">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--bc-text))' }}><span className="w-2 h-2 rounded-full bg-red-500" />Administrators</h2>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
+                        <Link key={member.id} to={`/${member.serial_id}/${member.username}/profile`} className="flex items-center gap-4 p-4 rounded-xl transition group" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                          <UserAvatar avatarUrl={member.avatar_url} username={member.username} size="lg" effect={member.avatar_effect} membershipTier={member.membership_tier as any} />
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold" style={{ color: 'hsl(var(--bc-text))' }}>{member.username}</span>
+                              {member.is_verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                              <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Admin</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              {member.membership_tier && <MembershipBadge tier={member.membership_tier as any} size="sm" />}
+                              <UserLevelBadge level={member.level} xp={member.xp} size="sm" />
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Moderators */}
+                  {staff.filter(s => s.role === 'moderator' && s.username.toLowerCase() !== 'blox city').length > 0 && (
+                    <div>
+                      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--bc-text))' }}><span className="w-2 h-2 rounded-full bg-green-500" />Moderators</h2>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {staff.filter(s => s.role === 'moderator' && s.username.toLowerCase() !== 'blox city').map(member => (
+                          <Link key={member.id} to={`/${member.serial_id}/${member.username}/profile`} className="flex items-center gap-4 p-4 rounded-xl transition group" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
+                            <UserAvatar avatarUrl={member.avatar_url} username={member.username} size="lg" effect={member.avatar_effect} membershipTier={member.membership_tier as any} />
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold" style={{ color: 'hsl(var(--bc-text))' }}>{member.username}</span>
+                                {member.is_verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
+                                <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">Moderator</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                {member.membership_tier && <MembershipBadge tier={member.membership_tier as any} size="sm" />}
+                                <UserLevelBadge level={member.level} xp={member.xp} size="sm" />
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {staff.length === 0 && <p className="text-center py-8" style={{ color: 'hsl(var(--bc-text-muted))' }}>No staff members found.</p>}
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
