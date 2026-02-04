@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search, Play } from 'lucide-react';
+import { MessageSquare, ChevronRight, Users, Shield, Ticket, Search, Play, Trophy } from 'lucide-react';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
-import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
 import teaserVideo from '@/assets/bloxcity-teaser.mp4';
 interface Category {
   id: string;
@@ -198,7 +197,22 @@ export default function ForumHome() {
 
       {/* Sidebar */}
       <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
-        <LeaderboardSidebar />
+        {/* Leaderboard Link */}
+        <Link
+          to="/forum/leaderboard"
+          className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-5 transition group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Leaderboard</h3>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))]">View top players</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-[hsl(var(--bc-text-muted))] group-hover:text-[hsl(var(--bc-primary))] ml-auto transition" />
+          </div>
+        </Link>
       </div>
     </div>
   );
