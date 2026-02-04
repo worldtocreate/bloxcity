@@ -363,6 +363,7 @@ import ForumMessages from "./pages/forum/ForumMessages";
 import ForumFAQ from "./pages/forum/ForumFAQ";
 // TermsOfService, PrivacyPolicy, GameDetail inlined below
 import ForumStaff from "./pages/forum/ForumStaff";
+import Notes from "./pages/forum/Notes";
 import ForumUsers from "./pages/forum/ForumUsers";
 import ForumDashboard from "./pages/forum/ForumDashboard";
 import Updates from "./pages/Updates";
@@ -729,7 +730,7 @@ function LandingPage() {
               <Link to="/terms-of-service" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">TERMS OF SERVICE</Link>
               <Link to="/privacy-policy" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">PRIVACY POLICY</Link>
               <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">FAQ</Link>
-              <Link to="/staff" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">TEAM</Link>
+              <Link to="/notes" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold">NOTES</Link>
             </div>
           </div>
           <div className="flex gap-3">
@@ -2279,6 +2280,7 @@ const App = () => (
               <Route path="faq" element={<ForumFAQ />} />
               <Route path="terms-of-service" element={<TermsOfService />} />
               <Route path="privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="notes" element={<Notes />} />
               <Route path="friends" element={<Friends />} />
               <Route path="achievements" element={<Achievements />} />
               <Route path="roadmap" element={<Roadmap />} />
