@@ -12,8 +12,102 @@ import MembershipBadge from '@/components/forum/MembershipBadge';
 import VerifiedBadge from '@/components/forum/VerifiedBadge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
-import CompensationDialog from '@/components/forum/CompensationDialog';
 import LeaderboardSidebar from '@/components/forum/LeaderboardSidebar';
+
+// Inlined CompensationDialog to fix module resolution issues
+function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: string; userCreatedAt: string }) {
+  const [open, setOpen] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimed, setClaimed] = useState(false);
+
+  const COMPENSATION_ID = 'feb2026-coin-refresh-issue';
+  const COMPENSATION_AMOUNT = 100;
+  const CUTOFF_DATE = new Date('2026-02-03T00:00:00Z');
+
+  useEffect(() => {
+    const checkEligibility = async () => {
+      // Only show to users who registered before the issue date
+      const userDate = new Date(userCreatedAt);
+      if (userDate >= CUTOFF_DATE) return;
+
+      // Check if already claimed
+      const { data: existing } = await supabase
+        .from('forum_coin_compensations')
+        .select('id')
+        .eq('forum_user_id', forumUserId)
+        .eq('compensation_id', COMPENSATION_ID)
+        .single();
+
+      if (!existing) {
+        setOpen(true);
+      }
+    };
+
+    checkEligibility();
+  }, [forumUserId, userCreatedAt]);
+
+  const handleClaim = async () => {
+    setClaiming(true);
+    try {
+      const { error } = await supabase.rpc('claim_coin_compensation', {
+        p_compensation_id: COMPENSATION_ID,
+        p_amount: COMPENSATION_AMOUNT
+      });
+
+      if (error) throw error;
+
+      setClaimed(true);
+      toast.success(`🪙 +${COMPENSATION_AMOUNT} coins claimed!`);
+      setTimeout(() => setOpen(false), 2000);
+    } catch (err) {
+      toast.error('Failed to claim compensation');
+    }
+    setClaiming(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]">
+        <DialogHeader>
+          <DialogTitle className="text-[hsl(var(--bc-text))] flex items-center gap-2">
+            <Gift className="w-5 h-5 text-yellow-500" />
+            Compensation Notice
+          </DialogTitle>
+          <DialogDescription className="text-[hsl(var(--bc-text-muted))]">
+            We're sorry for the inconvenience
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-[hsl(var(--bc-text))]">
+            On the 3rd of February 2026, we experienced some technical issues with your daily coin refresh. 
+            As a token of our apologies, we're awarding your account <strong className="text-yellow-500">100 coins</strong> in compensation.
+          </p>
+          {claimed ? (
+            <div className="flex items-center justify-center gap-2 text-green-500 py-4">
+              <Sparkles className="w-5 h-5" />
+              <span className="font-semibold">Coins Claimed!</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleClaim}
+              disabled={claiming}
+              className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition flex items-center justify-center gap-2"
+            >
+              {claiming ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Coins className="w-5 h-5" />
+                  Claim 100 Coins
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 import UserAdBanner from '@/components/forum/UserAdBanner';
 
 interface FriendStatus {
