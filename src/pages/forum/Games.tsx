@@ -358,10 +358,18 @@ export default function Games() {
               className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden hover:border-[hsl(var(--bc-primary))] transition block"
             >
               <div className="h-32 bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] flex items-center justify-center overflow-hidden">
-                {game.thumbnail_url ? (
-                  <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" />
-                ) : (
-                  <Gamepad2 className="w-12 h-12 text-white/50" />
+                <Gamepad2 className="w-12 h-12 text-white/50" />
+                {game.thumbnail_url && (
+                  <img
+                    src={game.thumbnail_url}
+                    alt={game.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      // If URL is bad/blocked, keep the gradient + icon fallback.
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 )}
               </div>
               <div className="p-4">

@@ -966,10 +966,17 @@ export default function ForumUserProfile() {
                 className="bg-[hsl(var(--bc-bg-light))] rounded-xl overflow-hidden hover:ring-2 hover:ring-[hsl(var(--bc-primary))] transition block"
               >
                 <div className="h-24 bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-accent))] flex items-center justify-center">
-                  {game.thumbnail_url ? (
-                    <img src={game.thumbnail_url} alt={game.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <Gamepad2 className="w-8 h-8 text-white/50" />
+                  <Gamepad2 className="w-8 h-8 text-white/50" />
+                  {game.thumbnail_url && (
+                    <img
+                      src={game.thumbnail_url}
+                      alt={game.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   )}
                 </div>
                 <div className="p-3">

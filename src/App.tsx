@@ -578,11 +578,15 @@ function SettingsLayout() {
   // can keep using useOutletContext() without rendering blank.
   const outletContext = useOutletContext<any>();
   
-  const settingsNavItems = [{ title: 'Account', url: '/settings', icon: User, exact: true }];
+  const settingsNavItems = [
+    { title: 'Account', url: '/settings', icon: User, exact: true },
+    { title: 'Privacy', url: '/settings/privacy', icon: LockIcon },
+    { title: 'Security', url: '/settings/security', icon: Shield },
+  ];
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location === path;
-    return location === path;
+    return location === path || location.startsWith(path + '/');
   };
 
   return (
