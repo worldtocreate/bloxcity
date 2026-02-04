@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { 
   Search, Filter, Heart, Star, Clock, TrendingUp, 
   Shirt, Sparkles, Crown, Palette, Box, 
-  Grid3X3, List
+  Grid3X3, List, Coins
 } from 'lucide-react';
 
 // Placeholder categories like Roblox catalog
@@ -277,8 +277,8 @@ export default function Market() {
                           By {item.creator}
                         </p>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="font-bold text-[hsl(var(--bc-primary))]">
-                            ${formatPrice(item.price)}
+                          <span className="font-bold text-[hsl(var(--bc-primary))] flex items-center gap-1">
+                            <Coins className="w-3.5 h-3.5 text-yellow-500" />{formatPrice(item.price)}
                           </span>
                           <span className="text-xs text-[hsl(var(--bc-text-muted))] flex items-center gap-1">
                             <Heart className="w-3 h-3" />
@@ -335,8 +335,8 @@ export default function Market() {
 
                         {/* Price */}
                         <div className="text-right">
-                          <span className="font-bold text-lg text-[hsl(var(--bc-primary))]">
-                            ${formatPrice(item.price)}
+                          <span className="font-bold text-lg text-[hsl(var(--bc-primary))] flex items-center gap-1">
+                            <Coins className="w-4 h-4 text-yellow-500" />{formatPrice(item.price)}
                           </span>
                         </div>
                       </CardContent>
