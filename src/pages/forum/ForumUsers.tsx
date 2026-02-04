@@ -5,8 +5,8 @@ import { Users, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import UserAvatar from '@/components/forum/UserAvatar';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
-import UserLevelBadge from '@/components/forum/UserLevelBadge';
 import { ForumUser } from '@/hooks/useForumAuth';
+import { getRelativeTime } from '@/lib/timeUtils';
 
 interface UserListItem {
   id: string;
@@ -15,12 +15,11 @@ interface UserListItem {
   is_verified: boolean;
   membership_tier: string | null;
   avatar_effect: string | null;
-  level: number;
-  xp: number;
   post_count: number;
   created_at: string;
   user_id: string;
   bio: string | null;
+  last_seen_at?: string | null;
   is_admin?: boolean;
   is_moderator?: boolean;
 }
@@ -61,7 +60,7 @@ export default function ForumUsers() {
     // Fetch users for current page
     let usersQuery = supabase
       .from('forum_users')
-      .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp, post_count, created_at, bio')
+      .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, post_count, created_at, bio, last_seen_at')
       .eq('is_suspended', false)
       .order('created_at', { ascending: false })
       .range((page - 1) * USERS_PER_PAGE, page * USERS_PER_PAGE - 1);
@@ -80,11 +79,29 @@ export default function ForumUsers() {
         .select('user_id, role')
         .in('user_id', userIds);
 
+      const ONLINE_THRESHOLD_MS = 3 * 60 * 1000;
+      const now = Date.now();
+      const isOnline = (lastSeen: string | null | undefined) => {
+        if (!lastSeen) return false;
+        const t = new Date(lastSeen).getTime();
+        return Number.isFinite(t) && (now - t) <= ONLINE_THRESHOLD_MS;
+      };
+
       const usersWithRoles = usersData.map(user => ({
         ...user,
         is_admin: roles?.some(r => r.user_id === user.user_id && r.role === 'admin'),
         is_moderator: roles?.some(r => r.user_id === user.user_id && r.role === 'moderator')
       }));
+
+      // Online users first, then most recently seen
+      usersWithRoles.sort((a: any, b: any) => {
+        const aOnline = isOnline(a.last_seen_at);
+        const bOnline = isOnline(b.last_seen_at);
+        if (aOnline !== bOnline) return aOnline ? -1 : 1;
+        const aSeen = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+        const bSeen = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+        return bSeen - aSeen;
+      });
       
       setUsers(usersWithRoles);
     }
@@ -164,6 +181,17 @@ export default function ForumUsers() {
                       {user.username}
                     </span>
                     <VerificationBadge size="sm" forumUserId={user.id} isVerified={user.is_verified} />
+                    {/* Online status */}
+                    {user.last_seen_at && (
+                      (() => {
+                        const online = new Date().getTime() - new Date(user.last_seen_at!).getTime() <= 3 * 60 * 1000;
+                        return (
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${online ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))]'}`}>
+                            {online ? 'Online' : 'Offline'}
+                          </span>
+                        );
+                      })()
+                    )}
                     {user.is_admin && (
                       <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Admin</span>
                     )}
@@ -173,14 +201,14 @@ export default function ForumUsers() {
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-sm text-[hsl(var(--bc-text-muted))]">
                     {user.membership_tier && <MembershipBadge tier={user.membership_tier as any} size="sm" />}
-                    <UserLevelBadge level={user.level} xp={user.xp} size="sm" />
+                    <span className="text-xs">
+                      Last seen {getRelativeTime(user.last_seen_at || null)}
+                    </span>
                   </div>
-                  {user.bio && (
-                    <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-1">{user.bio}</p>
-                  )}
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-1">{user.bio || 'No description yet.'}</p>
                 </div>
                 <div className="text-sm text-[hsl(var(--bc-text-muted))] hidden sm:block">
-                  Joined {new Date(user.created_at).toLocaleDateString()}
+                  {getRelativeTime(user.last_seen_at || null)}
                 </div>
               </Link>
             ))}
