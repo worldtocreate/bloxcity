@@ -381,8 +381,7 @@ import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
 // Roadmap inlined below
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
-// Upgrades, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
-// Upgrade, Money, Banned, Badges pages coming soon
+// Upgrades, Convert, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
 
 // Need useParams for GameDetail
 function useGameParams() {
@@ -1630,7 +1629,65 @@ function Support() {
   );
 }
 
-// Inline ForumResetPassword to avoid file/module persistence issues
+// Inline SuspendedPage component  
+function SuspendedPage() {
+  const { forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [agreed, setAgreed] = useState(false);
+  const [reactivating, setReactivating] = useState(false);
+
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center" style={{ background: 'hsl(var(--bc-body-bg))' }}><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (!forumUser?.is_suspended) { navigate('/'); return null; }
+
+  const suspensionEndsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
+  const isPermanent = !suspensionEndsAt;
+  const isExpired = suspensionEndsAt && suspensionEndsAt < new Date();
+
+  const handleReactivate = async () => {
+    if (!agreed || !isExpired) return;
+    setReactivating(true);
+    const { error } = await supabase.from('forum_users').update({ is_suspended: false, suspension_reason: null, suspension_ends_at: null }).eq('id', forumUser.id);
+    if (error) toast({ title: 'Reactivation Failed', description: error.message, variant: 'destructive' });
+    else { toast({ title: 'Account Reactivated', description: 'Welcome back!' }); await refreshForumUser(); navigate('/'); }
+    setReactivating(false);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+      <div className="w-full max-w-lg">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8">
+          <div className="text-center">
+            <div className="w-20 h-20 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-6"><AlertTriangle className="w-10 h-10 text-red-500" /></div>
+            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">Account Suspended</h1>
+            <div className="mb-6">
+              {isPermanent ? <span className="inline-block px-3 py-1 bg-red-500/20 text-red-500 rounded-full text-sm font-medium">Permanent Ban</span>
+               : isExpired ? <span className="inline-block px-3 py-1 bg-green-500/20 text-green-500 rounded-full text-sm font-medium">Suspension Expired</span>
+               : <span className="inline-block px-3 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-sm font-medium">Until {new Date(forumUser.suspension_ends_at!).toLocaleDateString()}</span>}
+            </div>
+            <div className="text-left mb-6 p-4 rounded-lg" style={{ background: 'hsl(var(--bc-input-bg))' }}>
+              <h3 className="font-medium text-[hsl(var(--bc-text))] mb-2">Reason</h3>
+              <p className="text-[hsl(var(--bc-text-muted))] text-sm">{forumUser.suspension_reason || 'No reason provided.'}</p>
+            </div>
+            {isExpired && !isPermanent && (
+              <div className="border-t border-[hsl(var(--bc-border))] pt-6 mt-6">
+                <label className="flex items-start gap-3 mb-4 text-left cursor-pointer">
+                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />
+                  <span className="text-sm text-[hsl(var(--bc-text-muted))]">I understand that future violations may result in a permanent ban.</span>
+                </label>
+                <Button onClick={handleReactivate} disabled={!agreed || reactivating} className="w-full">
+                  {reactivating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Reactivating...</> : <><CheckCircle className="w-4 h-4 mr-2" />Reactivate Account</>}
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-6">Contact support if you believe this was a mistake.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ForumResetPassword() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -2230,9 +2287,13 @@ const App = () => (
               <Route path="convert" element={<Convert />} />
               <Route path="upgrades" element={<Upgrades />} />
               <Route path="support" element={<Support />} />
+              <Route path="money" element={<Convert />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
               <Route path="g0dfrey" element={<GodfreyPanel />} />
             </Route>
+
+            {/* Suspended page - outside ForumLayout */}
+            <Route path="/suspended" element={<SuspendedPage />} />
 
             {/* Admin Route - outside ForumLayout */}
             <Route path="/admin" element={<Admin />} />
