@@ -32,13 +32,220 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 // NOTE: Inlined to avoid production module resolution issues.
 const GamesManagementTab = ({ darkMode }: { darkMode: boolean }) => {
-  const container = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
-  const text = darkMode ? "text-gray-200" : "text-gray-800";
-  const muted = darkMode ? "text-gray-400" : "text-gray-500";
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<"all" | "under_review" | "public" | "private">("all");
+  const [rows, setRows] = useState<
+    Array<{
+      id: string;
+      title: string;
+      category: string;
+      is_private: boolean | null;
+      is_under_review: boolean | null;
+      thumbnail_url: string | null;
+      thumbnail_status: string | null;
+      created_at: string;
+      creator: { username: string } | null;
+    }>
+  >([]);
+
+  const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
+  const textClass = darkMode ? "text-white" : "text-gray-800";
+  const mutedClass = darkMode ? "text-gray-400" : "text-gray-500";
+  const inputClass = darkMode
+    ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+    : "bg-white border-gray-300 text-gray-800";
+
+  const fetchGames = async () => {
+    setLoading(true);
+    let query = supabase
+      .from("forum_games")
+      .select(
+        "id,title,category,is_private,is_under_review,thumbnail_url,thumbnail_status,created_at,creator:creator_id(username)"
+      )
+      .order("created_at", { ascending: false });
+
+    if (filter === "under_review") query = query.eq("is_under_review", true);
+    if (filter === "public") query = query.eq("is_private", false).eq("is_under_review", false);
+    if (filter === "private") query = query.eq("is_private", true);
+
+    const { data, error } = await query;
+    if (error) {
+      toast({ title: "Failed to load games", description: error.message, variant: "destructive" });
+      setRows([]);
+    } else {
+      setRows((data as any) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void fetchGames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter((r) => {
+      const creator = r.creator?.username?.toLowerCase() || "";
+      return r.title.toLowerCase().includes(needle) || creator.includes(needle);
+    });
+  }, [rows, q]);
+
+  const setReview = async (id: string, next: boolean) => {
+    const { error } = await supabase.from("forum_games").update({ is_under_review: next }).eq("id", id);
+    if (error) {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: next ? "Marked under review" : "Review cleared" });
+    void fetchGames();
+  };
+
+  const setPrivate = async (id: string, next: boolean) => {
+    const { error } = await supabase.from("forum_games").update({ is_private: next }).eq("id", id);
+    if (error) {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: next ? "Game set to private" : "Game set to public" });
+    void fetchGames();
+  };
+
   return (
-    <div className={`${container} border rounded-xl p-6`}>
-      <h2 className={`text-lg font-semibold ${text}`}>Games Management</h2>
-      <p className={`mt-2 text-sm ${muted}`}>Coming soon.</p>
+    <div className="space-y-6">
+      <div className={`${cardClass} border rounded-xl p-6`}
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 className={`text-lg font-semibold ${textClass}`}>Games Management</h2>
+            <p className={`text-sm ${mutedClass}`}>Flag games for review, or make them public/private.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative">
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${mutedClass}`} />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search title or creator…"
+                className={`pl-10 pr-3 py-2 border rounded-lg outline-none ${inputClass}`}
+              />
+            </div>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as any)}
+              className={`px-3 py-2 border rounded-lg outline-none ${inputClass}`}
+            >
+              <option value="all">All</option>
+              <option value="under_review">Under review</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+            <Button variant="outline" size="sm" onClick={fetchGames}>
+              <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className={darkMode ? "text-gray-300" : "text-gray-600"}>
+                <th className="text-left py-2">Game</th>
+                <th className="text-left py-2">Creator</th>
+                <th className="text-left py-2">Thumb</th>
+                <th className="text-left py-2">Status</th>
+                <th className="text-left py-2">Visibility</th>
+                <th className="text-right py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className={`py-10 text-center ${mutedClass}`}>
+                    <Loader2 className="w-5 h-5 animate-spin inline-block mr-2" /> Loading…
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className={`py-10 text-center ${mutedClass}`}>No games found.</td>
+                </tr>
+              ) : (
+                filtered.map((g) => (
+                  <tr key={g.id} className={darkMode ? "border-t border-gray-700" : "border-t border-gray-200"}>
+                    <td className={`py-3 ${textClass}`}>
+                      <a href={`/game/${g.id}`} className="hover:underline">{g.title}</a>
+                      <div className={`text-xs ${mutedClass}`}>{g.category}</div>
+                    </td>
+                    <td className={`py-3 ${textClass}`}>{g.creator?.username || "Unknown"}</td>
+                    <td className="py-3">
+                      <div className="w-20 h-12 rounded-lg overflow-hidden bg-gray-200/20 flex items-center justify-center">
+                        <Image className={`w-5 h-5 ${mutedClass}`} />
+                        {g.thumbnail_url && (
+                          <img
+                            src={g.thumbnail_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                    </td>
+                    <td className={`py-3 ${textClass}`}>
+                      {g.is_under_review ? (
+                        <span className="inline-flex items-center gap-1 text-yellow-600">
+                          <Clock className="w-4 h-4" /> Under review
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-green-600">
+                          <Check className="w-4 h-4" /> OK
+                        </span>
+                      )}
+                      {g.thumbnail_status && (
+                        <div className={`text-xs ${mutedClass}`}>Thumb: {g.thumbnail_status}</div>
+                      )}
+                    </td>
+                    <td className={`py-3 ${textClass}`}>
+                      {g.is_private ? (
+                        <span className="inline-flex items-center gap-1">
+                          <EyeOff className="w-4 h-4" /> Private
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Eye className="w-4 h-4" /> Public
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="inline-flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={g.is_under_review ? "default" : "outline"}
+                          onClick={() => setReview(g.id, !g.is_under_review)}
+                        >
+                          {g.is_under_review ? "Clear review" : "Under review"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPrivate(g.id, !g.is_private)}
+                        >
+                          {g.is_private ? "Make public" : "Make private"}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
