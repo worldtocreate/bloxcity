@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
+import { createLovableAuth } from '@lovable.dev/cloud-auth-js';
 import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
+
+const lovableAuth = createLovableAuth({});
 interface DisabledAccountInfo {
   is_self_disabled: boolean;
   self_disabled_reason: string | null;
@@ -574,12 +576,18 @@ export default function ForumLogin() {
                 setLoading(true);
                 setError('');
                 try {
-                  const { error } = await lovable.auth.signInWithOAuth('google', {
+                  const result = await lovableAuth.signInWithOAuth('google', {
                     redirect_uri: window.location.origin,
                   });
-                  if (error) {
-                    setError(error.message || 'Google sign in failed');
+                  if (result.redirected) {
+                    return;
                   }
+                  if (result.error) {
+                    setError(result.error.message || 'Google sign in failed');
+                    setLoading(false);
+                    return;
+                  }
+                  await supabase.auth.setSession(result.tokens);
                 } catch (err: any) {
                   setError(err.message || 'Google sign in failed');
                 }
