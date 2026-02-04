@@ -1111,6 +1111,44 @@ export type Database = {
           },
         ]
       }
+      forum_game_servers: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          is_active: boolean
+          max_players: number
+          name: string
+          player_count: number
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          is_active?: boolean
+          max_players?: number
+          name?: string
+          player_count?: number
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          is_active?: boolean
+          max_players?: number
+          name?: string
+          player_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_game_servers_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "forum_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_games: {
         Row: {
           category: string
@@ -1123,6 +1161,7 @@ export type Database = {
           is_under_review: boolean | null
           max_players: number | null
           play_count: number | null
+          thumbnail_denial_reason: string | null
           thumbnail_status: string | null
           thumbnail_url: string | null
           title: string
@@ -1139,6 +1178,7 @@ export type Database = {
           is_under_review?: boolean | null
           max_players?: number | null
           play_count?: number | null
+          thumbnail_denial_reason?: string | null
           thumbnail_status?: string | null
           thumbnail_url?: string | null
           title: string
@@ -1155,6 +1195,7 @@ export type Database = {
           is_under_review?: boolean | null
           max_players?: number | null
           play_count?: number | null
+          thumbnail_denial_reason?: string | null
           thumbnail_status?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -2954,6 +2995,10 @@ export type Database = {
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
+      check_friend_request_rate_limit: {
+        Args: { sender_forum_user_id: string }
+        Returns: boolean
+      }
       claim_coin_compensation: {
         Args: { p_amount: number; p_compensation_id: string }
         Returns: number
@@ -2991,6 +3036,17 @@ export type Database = {
       save_maintenance_settings: {
         Args: { p_enabled: boolean; p_message: string; p_password: string }
         Returns: boolean
+      }
+      submit_ad_with_cost: {
+        Args: {
+          p_ad_type?: string
+          p_description: string
+          p_destination_url: string
+          p_forum_user_id: string
+          p_image_url: string
+          p_title: string
+        }
+        Returns: Json
       }
       update_forum_user_safe: {
         Args: {

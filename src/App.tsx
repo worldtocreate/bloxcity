@@ -43,7 +43,7 @@ import Games from "./pages/forum/Games";
 import Market from "./pages/forum/Market";
 import Character from "./pages/forum/Character";
 import Trading from "./pages/forum/Trading";
-import Players from "./pages/forum/Players";
+// Players page removed - using ForumUsers at /players instead
 import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
 import GroupSettings from "./pages/forum/GroupSettings";
@@ -716,8 +716,7 @@ const App = () => (
               <Route path="settings" element={<ForumSettings />} />
               <Route path="user/:username" element={<ForumUserProfile />} />
               <Route path="messages" element={<ForumMessages />} />
-              <Route path="users" element={<ForumUsers />} />
-              <Route path="players" element={<Players />} />
+              <Route path="players" element={<ForumUsers />} />
               <Route path="groups" element={<Groups />} />
               <Route path="group/:slug" element={<GroupDetail />} />
               <Route path="group/:slug/settings" element={<GroupSettings />} />

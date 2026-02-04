@@ -105,22 +105,27 @@ export default function AdSubmissionForm({ forumUserId }: AdSubmissionFormProps)
         throw new Error('Please provide an image');
       }
 
-      const { error } = await supabase
-        .from('forum_ads')
-        .insert({
-          forum_user_id: forumUserId,
-          title: formData.title,
-          description: formData.description,
-          destination_url: formData.destination_url,
-          image_url: imageUrl,
-          status: 'pending'
-        });
+      // Use the new function that deducts 10 coins
+      const { data, error } = await supabase.rpc('submit_ad_with_cost', {
+        p_forum_user_id: forumUserId,
+        p_title: formData.title,
+        p_description: formData.description || null,
+        p_destination_url: formData.destination_url,
+        p_image_url: imageUrl,
+        p_ad_type: 'banner'
+      });
 
       if (error) throw error;
 
+      const result = data as { success: boolean; error?: string; ad_id?: string };
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit ad');
+      }
+
       toast({
         title: "Ad Submitted!",
-        description: "Your ad is pending review. You'll be notified when it's approved."
+        description: "Your ad is pending review. 10 coins have been deducted."
       });
 
       setFormData({ title: '', description: '', destination_url: '', image_url: '' });
@@ -152,6 +157,7 @@ export default function AdSubmissionForm({ forumUserId }: AdSubmissionFormProps)
           <div className="text-sm text-[hsl(var(--bc-text-muted))]">
             <p className="font-medium text-[hsl(var(--bc-text))] mb-1">Ad Guidelines:</p>
             <ul className="list-disc list-inside space-y-1">
+              <li><strong>Cost: 10 coins per ad</strong></li>
               <li>You can submit one ad every 24 hours</li>
               <li>Earn 5 coins per unique click on your ad</li>
               <li>No adult, gambling, or illegal content</li>

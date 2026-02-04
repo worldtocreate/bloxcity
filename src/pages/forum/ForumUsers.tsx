@@ -20,6 +20,7 @@ interface UserListItem {
   post_count: number;
   created_at: string;
   user_id: string;
+  bio: string | null;
   is_admin?: boolean;
   is_moderator?: boolean;
 }
@@ -36,7 +37,7 @@ export default function ForumUsers() {
   const page = parseInt(searchParams.get('page') || '1');
 
   useEffect(() => {
-    document.title = 'Members - BLOX City';
+    document.title = 'Players - BLOX City';
     fetchUsers();
   }, [page, searchParams.get('q')]);
 
@@ -60,7 +61,7 @@ export default function ForumUsers() {
     // Fetch users for current page
     let usersQuery = supabase
       .from('forum_users')
-      .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp, post_count, created_at')
+      .select('id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp, post_count, created_at, bio')
       .eq('is_suspended', false)
       .order('created_at', { ascending: false })
       .range((page - 1) * USERS_PER_PAGE, page * USERS_PER_PAGE - 1);
@@ -106,8 +107,8 @@ export default function ForumUsers() {
             <Users className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Members</h1>
-            <p className="text-[hsl(var(--bc-text-muted))]">{totalCount.toLocaleString()} registered users</p>
+            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Players</h1>
+            <p className="text-[hsl(var(--bc-text-muted))]">{totalCount.toLocaleString()} registered players</p>
           </div>
         </div>
 
@@ -173,8 +174,10 @@ export default function ForumUsers() {
                   <div className="flex items-center gap-3 mt-1 text-sm text-[hsl(var(--bc-text-muted))]">
                     {user.membership_tier && <MembershipBadge tier={user.membership_tier as any} size="sm" />}
                     <UserLevelBadge level={user.level} xp={user.xp} size="sm" />
-                    <span>{user.post_count} posts</span>
                   </div>
+                  {user.bio && (
+                    <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-1">{user.bio}</p>
+                  )}
                 </div>
                 <div className="text-sm text-[hsl(var(--bc-text-muted))] hidden sm:block">
                   Joined {new Date(user.created_at).toLocaleDateString()}

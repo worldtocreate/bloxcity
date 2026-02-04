@@ -24,8 +24,16 @@ export default function UserAdBanner({ type = 'banner' }: UserAdBannerProps) {
   const [clicking, setClicking] = useState(false);
 
   useEffect(() => {
+    // Fetch a random ad on mount and when type changes
     fetchRandomAd();
   }, [type]);
+
+  // Key to force re-render on page navigation/refresh
+  useEffect(() => {
+    // Reset dismissed state on every page change (component remount)
+    setDismissed(false);
+    fetchRandomAd();
+  }, []);
 
   const fetchRandomAd = async () => {
     const { data } = await supabase

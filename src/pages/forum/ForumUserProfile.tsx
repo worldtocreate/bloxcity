@@ -447,6 +447,7 @@ interface ProfileData {
   wall_is_private: boolean;
   follower_count: number;
   following_count: number;
+  bio: string | null;
 }
 
 interface ThreadData {
@@ -885,6 +886,17 @@ export default function ForumUserProfile() {
           )}
         </div>
       </div>
+
+      {/* Bio Section */}
+      {profile.bio && (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2 flex items-center gap-2">
+            <User className="w-5 h-5" />
+            About
+          </h2>
+          <p className="text-[hsl(var(--bc-text-muted))] whitespace-pre-wrap">{profile.bio}</p>
+        </div>
+      )}
 
       {/* Activity Info & Social Links */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 space-y-3">

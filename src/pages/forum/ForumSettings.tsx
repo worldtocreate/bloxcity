@@ -2100,7 +2100,7 @@ export default function ForumSettings() {
       {/* Privacy Settings */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
         <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-          {hideThreads ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          {wallIsPrivate ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
           Privacy Settings
         </h2>
         
@@ -2115,19 +2115,6 @@ export default function ForumSettings() {
               className={`w-12 h-6 rounded-full transition ${allowDms ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
             >
               <div className={`w-5 h-5 rounded-full bg-white transform transition ${allowDms ? 'translate-x-6' : 'translate-x-0.5'}`} />
-            </button>
-          </label>
-
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
-              <div className="text-[hsl(var(--bc-text))] font-medium">Hide Threads from Profile</div>
-              <div className="text-sm text-[hsl(var(--bc-text-muted))]">Others won't see your threads on your profile</div>
-            </div>
-            <button
-              onClick={() => setHideThreads(!hideThreads)}
-              className={`w-12 h-6 rounded-full transition ${hideThreads ? 'bg-[hsl(var(--bc-primary))]' : 'bg-[hsl(var(--bc-text-muted))]'}`}
-            >
-              <div className={`w-5 h-5 rounded-full bg-white transform transition ${hideThreads ? 'translate-x-6' : 'translate-x-0.5'}`} />
             </button>
           </label>
 
