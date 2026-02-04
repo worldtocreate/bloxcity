@@ -1,5 +1,6 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useEffect } from "react";
+import { Search, ArrowLeft, Home } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
@@ -10,24 +11,39 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
       <div className="w-full max-w-lg">
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-[hsla(var(--bc-primary),0.1)] flex items-center justify-center">
-            <span className="text-4xl">🔍</span>
+        <div className="bc-card">
+          <div className="bc-card-body text-center py-12">
+            <div className="bc-section-icon mx-auto mb-6" style={{ width: '5rem', height: '5rem' }}>
+              <Search className="w-10 h-10" />
+            </div>
+            <h1 className="text-3xl font-bold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>
+              Error 404
+            </h1>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: 'hsl(var(--bc-text))' }}>
+              Page Not Found
+            </h2>
+            <p className="mb-8" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+              The page you're looking for doesn't exist or has been moved.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => navigate(-1)}
+                className="bc-btn bc-btn-secondary"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Go back
+              </button>
+              <Link
+                to="/"
+                className="bc-btn bc-btn-info"
+              >
+                <Home className="w-4 h-4" />
+                Home
+              </Link>
+            </div>
           </div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">
-            Error 404: Page Not Found
-          </h1>
-          <p className="text-[hsl(var(--bc-text-muted))] mb-6">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
-          <button
-            onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white rounded-lg transition font-medium"
-          >
-            ← Go back
-          </button>
         </div>
       </div>
     </div>
