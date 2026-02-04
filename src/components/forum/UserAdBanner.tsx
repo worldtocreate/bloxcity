@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ExternalLink, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,39 +16,48 @@ interface Ad {
 
 interface UserAdBannerProps {
   type?: 'banner' | 'skyscraper';
+  rotationInterval?: number; // in seconds, default 30
 }
 
-export default function UserAdBanner({ type = 'banner' }: UserAdBannerProps) {
-  const [ad, setAd] = useState<Ad | null>(null);
+export default function UserAdBanner({ type = 'banner', rotationInterval = 30 }: UserAdBannerProps) {
+  const [ads, setAds] = useState<Ad[]>([]);
+  const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [clicking, setClicking] = useState(false);
 
-  useEffect(() => {
-    // Fetch a random ad on mount and when type changes
-    fetchRandomAd();
-  }, [type]);
-
-  // Key to force re-render on page navigation/refresh
-  useEffect(() => {
-    // Reset dismissed state on every page change (component remount)
-    setDismissed(false);
-    fetchRandomAd();
-  }, []);
-
-  const fetchRandomAd = async () => {
+  const fetchAds = useCallback(async () => {
     const { data } = await supabase
       .from('forum_ads')
       .select('id, image_url, destination_url, title, ad_type, forum_user_id, forum_user:forum_user_id(username)')
       .eq('status', 'approved')
       .eq('ad_type', type)
-      .limit(10);
+      .limit(20);
 
     if (data && data.length > 0) {
-      // Pick a random ad
-      const randomAd = data[Math.floor(Math.random() * data.length)];
-      setAd(randomAd as unknown as Ad);
+      // Shuffle ads
+      const shuffled = [...data].sort(() => Math.random() - 0.5);
+      setAds(shuffled as unknown as Ad[]);
+      setCurrentAdIndex(0);
     }
-  };
+  }, [type]);
+
+  useEffect(() => {
+    setDismissed(false);
+    fetchAds();
+  }, [type, fetchAds]);
+
+  // Ad rotation interval
+  useEffect(() => {
+    if (ads.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentAdIndex((prev) => (prev + 1) % ads.length);
+    }, rotationInterval * 1000);
+
+    return () => clearInterval(interval);
+  }, [ads.length, rotationInterval]);
+
+  const ad = ads[currentAdIndex];
 
   const handleClick = async () => {
     if (!ad || clicking) return;
