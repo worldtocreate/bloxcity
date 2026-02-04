@@ -1371,10 +1371,20 @@ function MarketItem() {
   const [comment, setComment] = useState("");
   const [isFavorited, setIsFavorited] = useState(false);
 
+  const CATEGORY_NAMES: Record<string, string> = {
+    'hats': 'Hat',
+    'faces': 'Face',
+    'shirts': 'Shirt',
+    't-shirts': 'T-Shirt',
+    'pants': 'Pants',
+    'bundles': 'Bundle',
+  };
+
   const item = {
     id: itemId || "1",
     name: "Sparkle Time Fedora",
     description: "A classic fedora with a sparkling twist. Limited edition item.",
+    category: "hats",
     price: 15000,
     isLimited: true,
     limitedStock: 50,
@@ -1419,7 +1429,10 @@ function MarketItem() {
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      {item.isLimited && <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500 text-white text-xs mb-2">Limited</span>}
+                      <div className="flex items-center gap-2 mb-2">
+                        {item.isLimited && <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500 text-white text-xs">Limited</span>}
+                        <span className="inline-flex items-center px-2 py-1 rounded bg-[hsl(var(--bc-primary))]/10 text-[hsl(var(--bc-primary))] text-xs">{CATEGORY_NAMES[item.category] || item.category}</span>
+                      </div>
                       <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{item.name}</h1>
                       <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <Link to={`/user/${item.creatorId}`} className="text-[hsl(var(--bc-primary))] hover:underline">{item.creator}</Link></p>
                     </div>
@@ -1429,6 +1442,7 @@ function MarketItem() {
                   </div>
                   <p className="text-[hsl(var(--bc-text-muted))] mt-4">{item.description}</p>
                   <div className="flex flex-wrap gap-6 mt-6 text-sm">
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Type</span><p className="font-semibold text-[hsl(var(--bc-text))]">{CATEGORY_NAMES[item.category] || item.category}</p></div>
                     <div><span className="text-[hsl(var(--bc-text-muted))]">Price</span><p className="font-bold text-xl text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-5 h-5 text-yellow-500" />{formatPrice(item.price)}</p></div>
                     <div><span className="text-[hsl(var(--bc-text-muted))]">Favorites</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.favorites)}</p></div>
                     <div><span className="text-[hsl(var(--bc-text-muted))]">Sales</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales)}</p></div>
