@@ -86,7 +86,6 @@ export default function ForumRegister() {
 
     const normalizedUsername = parsedUsername.data.toLowerCase();
 
-    // If the user is already signed in, we're just creating the missing forum profile
     if (!existingAuthUser) {
       if (password.length < 8) {
         setError('Password must be at least 8 characters');
@@ -98,7 +97,6 @@ export default function ForumRegister() {
         return;
       }
 
-      // Validate DOB
       const dayNum = parseInt(dobDay);
       const monthNum = parseInt(dobMonth);
       const yearNum = parseInt(dobYear);
@@ -145,7 +143,6 @@ export default function ForumRegister() {
 
       const userIdToUse = existingAuthUser?.id;
 
-      // If not signed in, create auth account first
       if (!userIdToUse) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
@@ -167,7 +164,6 @@ export default function ForumRegister() {
           return;
         }
 
-        // Create forum profile for newly created auth user with DOB
         const dobString = `${parseInt(dobYear)}-${String(parseInt(dobMonth)).padStart(2, '0')}-${String(parseInt(dobDay)).padStart(2, '0')}`;
         
         const { error: profileError } = await supabase.from('forum_users').insert({
@@ -189,7 +185,6 @@ export default function ForumRegister() {
         return;
       }
 
-      // Signed in already: create missing forum profile
       const { error: profileError } = await supabase.from('forum_users').insert({
         user_id: userIdToUse,
         username: normalizedUsername
@@ -211,171 +206,177 @@ export default function ForumRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">
+            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>
               {existingAuthUser ? 'Create Forum Profile' : 'Create Account'}
             </h1>
-            <p className="text-[hsl(var(--bc-text-muted))]">
+            <p style={{ color: 'hsl(var(--bc-text-muted))' }}>
               {existingAuthUser ? 'Pick a username to start posting' : 'Join the BLOX City community'}
             </p>
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <span className="text-red-600 text-sm">{error}</span>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Username</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Choose a username"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-              />
-            </div>
-            <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">3-20 characters, letters, numbers, underscores only</p>
-          </div>
-
-          {!existingAuthUser && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                    required
-                  />
-                </div>
+        <form onSubmit={handleSubmit} className="bc-card">
+          <div className="bc-card-body space-y-4">
+            {error && (
+              <div className="bc-alert bc-alert-danger flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a password"
-                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                    required
-                    minLength={8}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">
-                  <span className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    Date of Birth
-                  </span>
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <input
-                      type="number"
-                      min="1"
-                      max="12"
-                      value={dobMonth}
-                      onChange={(e) => setDobMonth(e.target.value)}
-                      placeholder="MM"
-                      className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-3 text-[hsl(var(--bc-text))] text-center placeholder-[hsl(var(--bc-text-muted))]"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      min="1"
-                      max="31"
-                      value={dobDay}
-                      onChange={(e) => setDobDay(e.target.value)}
-                      placeholder="DD"
-                      className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-3 text-[hsl(var(--bc-text))] text-center placeholder-[hsl(var(--bc-text-muted))]"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="number"
-                      min="1900"
-                      max={new Date().getFullYear()}
-                      value={dobYear}
-                      onChange={(e) => setDobYear(e.target.value)}
-                      placeholder="YYYY"
-                      className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-3 text-[hsl(var(--bc-text))] text-center placeholder-[hsl(var(--bc-text-muted))]"
-                      required
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">You must be at least 13 years old</p>
-              </div>
-            </>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              existingAuthUser ? 'Create Forum Profile' : 'Create Account'
             )}
-          </button>
 
-          {!existingAuthUser && (
-            <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
-              Already have an account?{' '}
-              <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline">
-                Login here
-              </Link>
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Username</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Choose a username"
+                  className="bc-input"
+                  style={{ paddingLeft: '42px' }}
+                  required
+                />
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--bc-text-muted))' }}>3-20 characters, letters, numbers, underscores only</p>
+            </div>
+
+            {!existingAuthUser && (
+              <>
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="bc-input"
+                      style={{ paddingLeft: '42px' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a password"
+                      className="bc-input"
+                      style={{ paddingLeft: '42px' }}
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="bc-input"
+                      style={{ paddingLeft: '42px' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>
+                    <span className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Date of Birth
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <input
+                        type="number"
+                        min="1"
+                        max="12"
+                        value={dobMonth}
+                        onChange={(e) => setDobMonth(e.target.value)}
+                        placeholder="MM"
+                        className="bc-input text-center"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={dobDay}
+                        onChange={(e) => setDobDay(e.target.value)}
+                        placeholder="DD"
+                        className="bc-input text-center"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear()}
+                        value={dobYear}
+                        onChange={(e) => setDobYear(e.target.value)}
+                        placeholder="YYYY"
+                        className="bc-input text-center"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--bc-text-muted))' }}>You must be at least 13 years old</p>
+                </div>
+              </>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="bc-btn bc-btn-info bc-btn-block"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                existingAuthUser ? 'Create Forum Profile' : 'Create Account'
+              )}
+            </button>
+
+            {!existingAuthUser && (
+              <p className="text-center text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+                Already have an account?{' '}
+                <Link to="/login" className="text-info hover:underline">
+                  Login here
+                </Link>
+              </p>
+            )}
+
+            <p className="text-xs text-center" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+              This site is protected by reCAPTCHA and the Google{' '}
+              <a href="https://policies.google.com/privacy" className="hover:underline" style={{ color: 'hsl(var(--bc-text))' }}>Privacy Policy</a> and{' '}
+              <a href="https://policies.google.com/terms" className="hover:underline" style={{ color: 'hsl(var(--bc-text))' }}>Terms of Service</a> apply.
             </p>
-          )}
-
-          <p className="text-xs text-[hsl(var(--bc-text-muted))] text-center">
-            This site is protected by reCAPTCHA and the Google{' '}
-            <a href="https://policies.google.com/privacy" className="text-[hsl(var(--bc-text))] hover:underline">Privacy Policy</a> and{' '}
-            <a href="https://policies.google.com/terms" className="text-[hsl(var(--bc-text))] hover:underline">Terms of Service</a> apply.
-          </p>
+          </div>
         </form>
       </div>
     </div>

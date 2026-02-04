@@ -66,7 +66,6 @@ export default function ForumLogin() {
       });
       
       if (error || !data?.trusted) {
-        // Clear invalid token
         clearTrustedDeviceToken(userEmail);
         return false;
       }
@@ -131,20 +130,16 @@ export default function ForumLogin() {
     setEmailNotConfirmed(false);
     setLoading(true);
 
-    // First check if 2FA is enabled for this user
     const twoFAStatus = await check2FA(email);
     
     if (twoFAStatus.requires2FA && twoFAStatus.method !== 'none') {
-      // Check if device is trusted (remember me was used before)
       const isTrusted = await checkTrustedDevice(email);
       
       if (isTrusted) {
-        // Device is trusted, skip 2FA
         await performLogin(email, password);
         return;
       }
       
-      // Store credentials and show 2FA screen
       setPendingAuth({ email, password });
       setTwoFAMethod(twoFAStatus.method as 'totp' | 'email');
       setRequires2FA(true);
@@ -152,7 +147,6 @@ export default function ForumLogin() {
       return;
     }
 
-    // No 2FA, proceed with normal login
     await performLogin(email, password);
   };
 
@@ -165,7 +159,6 @@ export default function ForumLogin() {
 
     if (authError) {
       const msg = authError.message || 'Login failed';
-      // When email confirmations are enabled, password grant returns this error.
       if (msg.toLowerCase().includes('email not confirmed')) {
         setEmailNotConfirmed(true);
       }
@@ -174,7 +167,6 @@ export default function ForumLogin() {
       return;
     }
 
-    // Check if account is self-disabled
     const disabledInfo = await checkSelfDisabled();
     if (disabledInfo) {
       setDisabledAccountInfo(disabledInfo);
@@ -300,60 +292,60 @@ export default function ForumLogin() {
   // Show reactivation modal
   if (showReactivateModal && disabledAccountInfo) {
     return (
-      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
             </Link>
           </div>
 
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4 text-center">Welcome Back!</h2>
-            
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-6">
-              <p className="text-yellow-700 dark:text-yellow-300 text-sm">
-                Your account was disabled on your request.
-              </p>
-              <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-2">
-                Reason: {getReasonText(disabledAccountInfo.self_disabled_reason)}
-              </p>
-              {disabledAccountInfo.self_disabled_until && (
-                <p className="text-yellow-600 dark:text-yellow-400 text-xs mt-1">
-                  Scheduled until: {new Date(disabledAccountInfo.self_disabled_until).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-
-            <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-6 text-center">
-              Would you like to reactivate your account and continue using the forum?
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleReactivateAccount}
-                disabled={reactivating}
-                className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
-              >
-                {reactivating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Reactivating...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-5 h-5" />
-                    Reactivate My Account
-                  </>
-                )}
-              </button>
+          <div className="bc-card">
+            <div className="bc-card-body">
+              <h2 className="text-xl font-bold mb-4 text-center" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back!</h2>
               
-              <button
-                onClick={handleCancelReactivation}
-                className="w-full border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] font-medium py-3 rounded-lg transition hover:bg-[hsl(var(--bc-bg-light))]"
-              >
-                Not Now
-              </button>
+              <div className="bc-alert bc-alert-warning mb-6">
+                <p className="text-sm">Your account was disabled on your request.</p>
+                <p className="text-xs mt-2 opacity-80">
+                  Reason: {getReasonText(disabledAccountInfo.self_disabled_reason)}
+                </p>
+                {disabledAccountInfo.self_disabled_until && (
+                  <p className="text-xs mt-1 opacity-80">
+                    Scheduled until: {new Date(disabledAccountInfo.self_disabled_until).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+
+              <p className="text-sm mb-6 text-center" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+                Would you like to reactivate your account and continue using the forum?
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleReactivateAccount}
+                  disabled={reactivating}
+                  className="bc-btn bc-btn-info bc-btn-block"
+                >
+                  {reactivating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Reactivating...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-5 h-5" />
+                      Reactivate My Account
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleCancelReactivation}
+                  className="bc-btn bc-btn-gray bc-btn-block"
+                >
+                  Not Now
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -364,66 +356,69 @@ export default function ForumLogin() {
   // Show forgot username form
   if (showForgotUsername) {
     return (
-      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
             </Link>
           </div>
 
-          <form onSubmit={handleForgotUsername} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 space-y-4">
-            <div className="text-center mb-2">
-              <div className="w-12 h-12 bg-[hsl(var(--bc-primary))]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                <User className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+          <form onSubmit={handleForgotUsername} className="bc-card">
+            <div className="bc-card-body space-y-4">
+              <div className="text-center mb-2">
+                <div className="bc-section-icon mx-auto mb-3">
+                  <User className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Forgot Username?</h2>
+                <p className="text-sm mt-1" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+                  Enter your email and we'll send you the username(s) associated with it.
+                </p>
               </div>
-              <h2 className="text-xl font-bold text-[hsl(var(--bc-text))]">Forgot Username?</h2>
-              <p className="text-[hsl(var(--bc-text-muted))] text-sm mt-1">
-                Enter your email and we'll send you the username(s) associated with it.
-              </p>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-                <input
-                  type="email"
-                  value={forgotUsernameEmail}
-                  onChange={(e) => setForgotUsernameEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                  required
-                  autoFocus
-                />
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                  <input
+                    type="email"
+                    value={forgotUsernameEmail}
+                    onChange={(e) => setForgotUsernameEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="bc-input"
+                    style={{ paddingLeft: '42px' }}
+                    required
+                    autoFocus
+                  />
+                </div>
               </div>
+
+              <button
+                type="submit"
+                disabled={sendingUsernameRecovery}
+                className="bc-btn bc-btn-info bc-btn-block"
+              >
+                {sendingUsernameRecovery ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Username Recovery Email'
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotUsername(false);
+                  setForgotUsernameEmail('');
+                }}
+                className="bc-btn bc-btn-gray bc-btn-block"
+              >
+                Back to Login
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={sendingUsernameRecovery}
-              className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
-            >
-              {sendingUsernameRecovery ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                'Send Username Recovery Email'
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowForgotUsername(false);
-                setForgotUsernameEmail('');
-              }}
-              className="w-full border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] font-medium py-3 rounded-lg transition hover:bg-[hsl(var(--bc-bg-light))]"
-            >
-              Back to Login
-            </button>
           </form>
         </div>
       </div>
@@ -433,11 +428,11 @@ export default function ForumLogin() {
   // Show 2FA verification screen
   if (requires2FA && pendingAuth) {
     return (
-      <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link to="/" className="inline-block">
-              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
             </Link>
           </div>
           
@@ -453,116 +448,120 @@ export default function ForumLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg-light))] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
-            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 rounded-xl mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Welcome Back</h1>
-            <p className="text-[hsl(var(--bc-text-muted))]">Login to BLOX City</p>
+            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back</h1>
+            <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Login to BLOX City</p>
           </Link>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <span className="text-red-600 text-sm">{error}</span>
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="bc-card">
+          <div className="bc-card-body space-y-4">
+            {error && (
+              <div className="bc-alert bc-alert-danger flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
 
-          {emailNotConfirmed && (
-            <div className="bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 space-y-2">
-              <p className="text-sm text-[hsl(var(--bc-text))]">
-                Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={resendingVerification || loading}
-                  className="inline-flex items-center gap-2 rounded-md bg-[hsl(var(--bc-primary))] text-white px-3 py-2 text-sm font-medium disabled:opacity-50"
-                >
-                  {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  Resend verification
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendLoginLink}
-                  disabled={sendingLoginLink || loading}
-                  className="inline-flex items-center gap-2 rounded-md border border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text))] px-3 py-2 text-sm font-medium disabled:opacity-50"
-                >
-                  {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  Send login link
-                </button>
+            {emailNotConfirmed && (
+              <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bc-input-bg))', border: '1px solid hsl(var(--bc-section-border))', borderRadius: 'var(--bc-rounded-lg)' }}>
+                <p className="text-sm" style={{ color: 'hsl(var(--bc-text))' }}>
+                  Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification || loading}
+                    className="bc-btn bc-btn-info bc-btn-xs"
+                  >
+                    {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    Resend verification
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendLoginLink}
+                    disabled={sendingLoginLink || loading}
+                    className="bc-btn bc-btn-gray bc-btn-xs"
+                  >
+                    {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    Send login link
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="bc-input"
+                  style={{ paddingLeft: '42px' }}
+                  required
+                />
               </div>
             </div>
-          )}
 
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-              />
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="bc-input"
+                  style={{ paddingLeft: '42px' }}
+                  required
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[hsl(var(--bc-text))] mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--bc-text-muted))]" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg pl-10 pr-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
-                required
-              />
+            <div className="flex justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => setShowForgotUsername(true)}
+                className="text-info hover:underline"
+              >
+                Forgot username?
+              </button>
+              <Link to="/forgot-password" className="text-info hover:underline">
+                Forgot password?
+              </Link>
             </div>
-          </div>
 
-          <div className="flex justify-between text-sm">
             <button
-              type="button"
-              onClick={() => setShowForgotUsername(true)}
-              className="text-[hsl(var(--bc-primary))] hover:underline"
+              type="submit"
+              disabled={loading}
+              className="bc-btn bc-btn-info bc-btn-block"
             >
-              Forgot username?
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                'Login'
+              )}
             </button>
-            <Link to="/forgot-password" className="text-[hsl(var(--bc-primary))] hover:underline">
-              Forgot password?
-            </Link>
+
+            <p className="text-center text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+              Don't have an account?{' '}
+              <Link to="/register" className="text-info hover:underline">
+                Create one
+              </Link>
+            </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] disabled:bg-[hsl(var(--bc-text-muted))] text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Logging in...
-              </>
-            ) : (
-              'Login'
-            )}
-          </button>
-
-          <p className="text-center text-[hsl(var(--bc-text-muted))] text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-[hsl(var(--bc-primary))] hover:underline">
-              Create one
-            </Link>
-          </p>
         </form>
       </div>
     </div>
