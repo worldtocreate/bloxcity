@@ -6,15 +6,17 @@ import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import { VerificationBadge } from './VerifiedBadge';
 import UnreadBadge from './UnreadBadge';
+import NotificationBell from './NotificationBell';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 
 interface ForumHeaderProps {
   user: any;
   forumUser: ForumUser | null;
   isAdmin: boolean;
+  isModerator?: boolean;
 }
 
-export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderProps) {
+export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: ForumHeaderProps) {
   const navigate = useNavigate();
   const [cash, setCash] = useState(0);
 
@@ -82,14 +84,19 @@ export default function ForumHeader({ user, forumUser, isAdmin }: ForumHeaderPro
           {user ? (
             <>
               {forumUser && (
-                <UnreadBadge forumUserId={forumUser.id} />
+                <>
+                  <NotificationBell forumUserId={forumUser.id} />
+                  <UnreadBadge forumUserId={forumUser.id} />
+                </>
               )}
               
-              {isAdmin && (
+              {(isAdmin || isModerator) && (
                 <Link 
                   to="/admin"
-                  className="flex items-center gap-2 text-[hsl(var(--bc-accent))] hover:opacity-80 transition p-2"
-                  title="Admin Panel"
+                  className={`flex items-center gap-2 hover:opacity-80 transition p-2 ${
+                    isAdmin ? 'text-[hsl(var(--bc-accent))]' : 'text-blue-500'
+                  }`}
+                  title={isAdmin ? "Admin Panel" : "Moderator Panel"}
                 >
                   <Shield className="w-5 h-5" />
                 </Link>

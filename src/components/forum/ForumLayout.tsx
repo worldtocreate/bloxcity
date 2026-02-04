@@ -135,7 +135,7 @@ interface MaintenanceSettings {
 }
 
 export default function ForumLayout() {
-  const { user, forumUser, isAdmin, loading, emailVerified, refreshEmailVerification } = useForumAuth();
+  const { user, forumUser, isAdmin, isModerator, loading, emailVerified, refreshEmailVerification } = useForumAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [announcement, setAnnouncement] = useState<ForumAnnouncement | null>(null);
@@ -421,7 +421,7 @@ export default function ForumLayout() {
         <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
         
         <div className="flex-1 flex flex-col min-w-0">
-          <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} />
+          <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} isModerator={isModerator} />
           
           {/* Email Verification Banner */}
           {showEmailVerificationBanner && (
