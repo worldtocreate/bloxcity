@@ -41,35 +41,102 @@
   }
 
   .dark {
-    --background: 220 15% 10%;
-    --foreground: 220 15% 90%;
-    --card: 220 15% 13%;
-    --card-foreground: 220 15% 90%;
-    --popover: 220 15% 13%;
-    --popover-foreground: 220 15% 90%;
-    --primary: 199 95% 46%;
+    /* Core Tailwind/shadcn variables - Dark Theme */
+    --background: 0 0% 9%;
+    --foreground: 0 0% 85%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 85%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 0 0% 85%;
+    --primary: 199 97% 46%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 220 15% 90%;
-    --muted: 220 15% 18%;
-    --muted-foreground: 220 10% 60%;
-    --accent: 220 15% 18%;
-    --accent-foreground: 220 15% 90%;
-    --destructive: 0 62% 50%;
+    --secondary: 0 0% 23%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 23%;
+    --muted-foreground: 0 0% 76%;
+    --accent: 0 0% 23%;
+    --accent-foreground: 0 0% 85%;
+    --destructive: 4 84% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 25%;
-    --input: 220 15% 25%;
-    --ring: 199 95% 46%;
+    --border: 0 0% 28%;
+    --input: 0 0% 23%;
+    --ring: 199 97% 46%;
     
     /* Sidebar variables - dark mode */
-    --sidebar-background: 220 15% 13%;
-    --sidebar-foreground: 220 15% 90%;
-    --sidebar-primary: 199 95% 46%;
+    --sidebar-background: 0 0% 15%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 199 97% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 18%;
-    --sidebar-accent-foreground: 220 15% 90%;
-    --sidebar-border: 220 15% 25%;
-    --sidebar-ring: 199 95% 46%;
+    --sidebar-accent: 0 0% 23%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 28%;
+    --sidebar-ring: 199 97% 46%;
+    
+    /* BLOX City Custom Variables - Dark Theme */
+    /* Primary Info Blue */
+    --bc-info: 199 97% 46%;
+    --bc-info-light: 198 95% 42%;
+    --bc-info-dark: 200 98% 37%;
+    
+    /* Status Colors */
+    --bc-success: 122 39% 45%;
+    --bc-success-light: 123 39% 49%;
+    --bc-danger: 4 84% 55%;
+    --bc-danger-light: 5 90% 64%;
+    --bc-warning: 36 99% 58%;
+    --bc-warning-dark: 35 99% 55%;
+    
+    /* Premium/Upgrade Purple */
+    --bc-upgrade: 291 47% 51%;
+    --bc-upgrade-light: 295 51% 55%;
+    
+    /* Love/Heart Pink */
+    --bc-love: 340 82% 52%;
+    
+    /* Grays (Dark Theme) */
+    --bc-gray-100: 0 0% 96%;
+    --bc-gray-200: 0 0% 93%;
+    --bc-gray-300: 0 0% 88%;
+    --bc-gray-400: 0 0% 74%;
+    --bc-gray-500: 0 0% 62%;
+    --bc-gray-600: 0 0% 51%;
+    --bc-gray-700: 0 0% 26%;
+    --bc-gray-800: 0 0% 26%;
+    
+    /* Background & Surface */
+    --bc-body-bg: 0 0% 9%;
+    --bc-section-bg: 0 0% 15%;
+    --bc-section-border: 0 0% 28%;
+    --bc-input-bg: 0 0% 23%;
+    --bc-input-border: 0 0% 39%;
+    
+    /* Text */
+    --bc-text: 0 0% 85%;
+    --bc-text-muted: 0 0% 76%;
+    
+    /* Sidebar Active State */
+    --bc-sidebar-active-bg: 199 97% 46%;
+    --bc-sidebar-active-text: 0 0% 100%;
+    
+    /* Legacy variables for compatibility */
+    --bc-red: 4 84% 55%;
+    --bc-yellow: 36 99% 58%;
+    --bc-green: 122 39% 45%;
+    --bc-blue: 199 97% 46%;
+    --bc-primary: 199 97% 46%;
+    --bc-primary-dark: 200 98% 37%;
+    --bc-secondary: 4 84% 55%;
+    --bc-accent: 36 99% 58%;
+    --bc-bg: 0 0% 9%;
+    --bc-bg-light: 0 0% 23%;
+    --bc-bg-card: 0 0% 15%;
+    --bc-border: 0 0% 28%;
+    --bc-glow: 199 97% 46%;
+    
+    /* Shadows for dark mode */
+    --bc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --bc-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --bc-shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 }
 
