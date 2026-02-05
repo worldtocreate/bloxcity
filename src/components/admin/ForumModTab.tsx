@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon, Star } from 'lucide-react';
+import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon, Star, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ForumUserData {
@@ -83,6 +83,9 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
   const [showMembershipModal, setShowMembershipModal] = useState<string | null>(null);
   const [selectedMembership, setSelectedMembership] = useState<string>('');
   const [savingMembership, setSavingMembership] = useState(false);
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState<string | null>(null);
+  const [sendPasswordEmail, setSendPasswordEmail] = useState(true);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   useEffect(() => {
     fetchForumUsers();
@@ -420,6 +423,26 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
     setSavingMembership(false);
   };
 
+  const handleResetPassword = async (userId: string) => {
+    setResettingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: { forumUserId: userId, sendEmail: sendPasswordEmail }
+      });
+ 
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+ 
+      toast.success(data?.message || 'Password reset successfully');
+      setShowPasswordResetModal(null);
+      setSendPasswordEmail(true);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+ 
   const getMembershipBadge = (tier: string | null) => {
     if (!tier) return null;
     const colors: Record<string, string> = {
@@ -673,6 +696,14 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
                                 Unverify
                               </button>
                             )}
+                            <button
+                              onClick={() => setShowPasswordResetModal(user.id)}
+                              className="flex items-center gap-1 px-2 py-1 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs rounded transition"
+                              title="Reset password"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                              Reset PW
+                            </button>
                             {user.is_suspended ? (
                               <button
                                 onClick={() => handleUnsuspend(user.id)}
@@ -1177,6 +1208,59 @@ export default function ForumModTab({ darkMode }: ForumModTabProps) {
               >
                 <Star className="w-4 h-4" />
                 {savingMembership ? 'Saving...' : 'Save Membership'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Reset Modal */}
+      {showPasswordResetModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${cardClass}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <KeyRound className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className={`text-lg font-semibold ${textClass}`}>Reset User Password</h3>
+            </div>
+            
+            <p className={`text-sm mb-4 ${mutedClass}`}>
+              This will generate a new secure password for this user. The admin will NOT see the new password.
+            </p>
+
+            <label className="flex items-center gap-3 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendPasswordEmail}
+                onChange={(e) => setSendPasswordEmail(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className={`text-sm ${textClass}`}>Send new password to user via email</span>
+            </label>
+
+            {!sendPasswordEmail && (
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  ⚠️ Without email notification, the user will be locked out until you manually provide them with a new password via another channel.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowPasswordResetModal(null); setSendPasswordEmail(true); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleResetPassword(showPasswordResetModal)}
+                disabled={resettingPassword}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <KeyRound className="w-4 h-4" />
+                {resettingPassword ? 'Resetting...' : 'Reset Password'}
               </button>
             </div>
           </div>
