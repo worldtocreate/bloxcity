@@ -9,6 +9,12 @@ import UserAvatar from '@/components/forum/UserAvatar';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import { getRelativeTime } from '@/lib/timeUtils';
 
+// Character limits
+const CHAR_LIMITS = {
+  reply: 10000,
+  quote: 500
+};
+
 interface Post {
   id: string;
   content: string;
@@ -69,6 +75,9 @@ export default function ForumThread() {
   const [deletingPost, setDeletingPost] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
+
+  const replyRemaining = CHAR_LIMITS.reply - replyContent.length;
+  const isReplyOverLimit = replyRemaining < 0;
 
   useEffect(() => {
     if (threadId) {
@@ -191,6 +200,18 @@ export default function ForumThread() {
   const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyContent.trim() || !forumUser || thread?.is_locked) return;
+    
+    // Client-side validation
+    if (replyContent.length > CHAR_LIMITS.reply) {
+      toast.error(`Reply exceeds ${CHAR_LIMITS.reply} character limit`);
+      return;
+    }
+    
+    // Validate quote length
+    if (quotedPost && quotedPost.content.length > CHAR_LIMITS.quote) {
+      toast.error(`Quoted content exceeds ${CHAR_LIMITS.quote} character limit. Please select a shorter quote.`);
+      return;
+    }
 
     setSubmitting(true);
    
@@ -207,8 +228,18 @@ export default function ForumThread() {
    }
     
     const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
-      body: { content: replyContent }
+      body: { 
+        content: replyContent,
+        contentType: 'reply',
+        quoteContent: quotedPost?.content || null
+      }
     });
+
+    if (profanityCheck.data?.limitExceeded) {
+      toast.error(profanityCheck.data.message);
+      setSubmitting(false);
+      return;
+    }
 
     if (profanityCheck.data?.hasProfanity) {
       toast.error('Your post contains inappropriate content. Please revise.');
@@ -609,14 +640,20 @@ export default function ForumThread() {
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
               placeholder="Write your reply..."
-              className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+              className={`w-full bg-[hsl(var(--bc-bg-light))] border rounded-lg p-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent ${
+                isReplyOverLimit ? 'border-red-500' : 'border-[hsl(var(--bc-border))]'
+              }`}
               rows={4}
               required
+              maxLength={CHAR_LIMITS.reply}
             />
+            <div className={`text-xs mt-1 text-right ${isReplyOverLimit ? 'text-red-500 font-medium' : 'text-[hsl(var(--bc-text-muted))]'}`}>
+              {replyContent.length}/{CHAR_LIMITS.reply}
+            </div>
             <div className="flex justify-end mt-3">
               <button
                 type="submit"
-                disabled={submitting || !replyContent.trim()}
+                disabled={submitting || !replyContent.trim() || isReplyOverLimit}
                 className="flex items-center gap-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 disabled:bg-[hsl(var(--bc-text-muted))] text-white px-4 py-2 rounded-lg transition font-medium"
               >
                 <Send className="w-4 h-4" />

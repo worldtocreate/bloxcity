@@ -6,6 +6,13 @@ import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import UserAvatar from '@/components/forum/UserAvatar';
 
+// Character limits
+const CHAR_LIMITS = {
+  title: 200,
+  content: 10000,
+  quote: 500
+};
+
 interface Category {
   id: string;
   name: string;
@@ -37,6 +44,11 @@ export default function ForumNewThread() {
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [quote, setQuote] = useState<QuoteData | null>(null);
+
+  const titleRemaining = CHAR_LIMITS.title - title.length;
+  const contentRemaining = CHAR_LIMITS.content - content.length;
+  const isTitleOverLimit = titleRemaining < 0;
+  const isContentOverLimit = contentRemaining < 0;
 
   useEffect(() => {
     fetchCategory();
@@ -88,6 +100,16 @@ export default function ForumNewThread() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim() || !forumUser || !category) return;
+    
+    // Client-side validation
+    if (title.length > CHAR_LIMITS.title) {
+      toast.error(`Title exceeds ${CHAR_LIMITS.title} character limit`);
+      return;
+    }
+    if (content.length > CHAR_LIMITS.content) {
+      toast.error(`Content exceeds ${CHAR_LIMITS.content} character limit`);
+      return;
+    }
 
     setSubmitting(true);
 
@@ -104,8 +126,18 @@ export default function ForumNewThread() {
    }
 
     const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
-      body: { content: title + ' ' + content }
+      body: { 
+        content: title + ' ' + content,
+        contentType: 'thread_content',
+        quoteContent: quote?.content || null
+      }
     });
+
+    if (profanityCheck.data?.limitExceeded) {
+      toast.error(profanityCheck.data.message);
+      setSubmitting(false);
+      return;
+    }
 
     if (profanityCheck.data?.hasProfanity) {
       toast.error('Your post contains inappropriate content. Please revise.');
@@ -224,10 +256,15 @@ export default function ForumNewThread() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Title"
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                className={`w-full bg-[hsl(var(--bc-bg-light))] border rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent ${
+                  isTitleOverLimit ? 'border-red-500' : 'border-[hsl(var(--bc-border))]'
+                }`}
                 required
-                maxLength={200}
+                maxLength={CHAR_LIMITS.title}
               />
+              <div className={`text-xs mt-1 text-right ${isTitleOverLimit ? 'text-red-500 font-medium' : 'text-[hsl(var(--bc-text-muted))]'}`}>
+                {title.length}/{CHAR_LIMITS.title}
+              </div>
             </div>
 
             <div>
@@ -238,15 +275,21 @@ export default function ForumNewThread() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your post here..."
-                className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent"
+                className={`w-full bg-[hsl(var(--bc-bg-light))] border rounded-lg px-4 py-3 text-[hsl(var(--bc-text))] placeholder-[hsl(var(--bc-text-muted))] resize-none focus:ring-2 focus:ring-[hsl(var(--bc-primary))] focus:border-transparent ${
+                  isContentOverLimit ? 'border-red-500' : 'border-[hsl(var(--bc-border))]'
+                }`}
                 rows={5}
                 required
+                maxLength={CHAR_LIMITS.content}
               />
+              <div className={`text-xs mt-1 text-right ${isContentOverLimit ? 'text-red-500 font-medium' : 'text-[hsl(var(--bc-text-muted))]'}`}>
+                {content.length}/{CHAR_LIMITS.content}
+              </div>
             </div>
 
             <button
               type="submit"
-              disabled={submitting || !title.trim() || !content.trim()}
+              disabled={submitting || !title.trim() || !content.trim() || isTitleOverLimit || isContentOverLimit}
               className="w-full flex items-center justify-center gap-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 disabled:bg-[hsl(var(--bc-text-muted))] text-white px-6 py-3 rounded-lg transition font-medium"
             >
               <Send className="w-4 h-4" />
