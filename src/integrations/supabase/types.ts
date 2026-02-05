@@ -2051,6 +2051,45 @@ export type Database = {
           },
         ]
       }
+      forum_referrals: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          referred_id: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          referred_id: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          referred_id?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_reports: {
         Row: {
           action_taken: string | null
@@ -2533,6 +2572,7 @@ export type Database = {
           is_suspended: boolean | null
           is_verified: boolean | null
           last_coin_claim: string | null
+          last_daily_login_xp: string | null
           last_friend_request_at: string | null
           last_post_at: string | null
           last_seen_at: string | null
@@ -2543,6 +2583,9 @@ export type Database = {
           locked_reason: string | null
           membership_tier: string | null
           post_count: number | null
+          referral_code: string | null
+          referral_count: number | null
+          referred_by: string | null
           self_disabled_at: string | null
           self_disabled_reason: string | null
           self_disabled_until: string | null
@@ -2592,6 +2635,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_coin_claim?: string | null
+          last_daily_login_xp?: string | null
           last_friend_request_at?: string | null
           last_post_at?: string | null
           last_seen_at?: string | null
@@ -2602,6 +2646,9 @@ export type Database = {
           locked_reason?: string | null
           membership_tier?: string | null
           post_count?: number | null
+          referral_code?: string | null
+          referral_count?: number | null
+          referred_by?: string | null
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
@@ -2651,6 +2698,7 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           last_coin_claim?: string | null
+          last_daily_login_xp?: string | null
           last_friend_request_at?: string | null
           last_post_at?: string | null
           last_seen_at?: string | null
@@ -2661,6 +2709,9 @@ export type Database = {
           locked_reason?: string | null
           membership_tier?: string | null
           post_count?: number | null
+          referral_code?: string | null
+          referral_count?: number | null
+          referred_by?: string | null
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
@@ -2684,7 +2735,15 @@ export type Database = {
           warning_moderator_note?: string | null
           xp?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "forum_users_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       forum_verification_requests: {
         Row: {
@@ -3218,6 +3277,8 @@ export type Database = {
         Returns: number
       }
       claim_daily_coins: { Args: never; Returns: number }
+      claim_daily_login_xp: { Args: never; Returns: number }
+      claim_random_reward: { Args: never; Returns: Json }
       click_ad: {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
@@ -3246,6 +3307,14 @@ export type Database = {
         Returns: boolean
       }
       is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
+      process_referral: {
+        Args: {
+          p_ip_address?: string
+          p_referral_code: string
+          p_referred_user_id: string
+        }
+        Returns: Json
+      }
       redeem_membership: { Args: { tier_name: string }; Returns: undefined }
       save_maintenance_settings: {
         Args: { p_enabled: boolean; p_message: string; p_password: string }
