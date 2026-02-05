@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, AlertCircle, ScrollText, ShieldCheck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,6 +23,9 @@ const STEPS = [
 
 export default function ForumRegister() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const referralCode = searchParams.get('ref') || '';
+  
   const [currentStep, setCurrentStep] = useState(0);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -175,7 +178,7 @@ export default function ForumRegister() {
     setError('');
 
     try {
-     const trimmedUsername = username.trim();
+      const trimmedUsername = username.trim();
 
       let recaptchaToken = '';
       if (recaptchaLoaded && window.grecaptcha && siteKey) {
@@ -185,7 +188,7 @@ export default function ForumRegister() {
       const verifyResponse = await supabase.functions.invoke('forum-register', {
         body: { 
           action: 'verify',
-         username: trimmedUsername,
+          username: trimmedUsername,
           email: email.trim(),
           recaptchaToken
         }
@@ -222,17 +225,31 @@ export default function ForumRegister() {
 
         const dobString = `${parseInt(dobYear)}-${String(parseInt(dobMonth)).padStart(2, '0')}-${String(parseInt(dobDay)).padStart(2, '0')}`;
         
-        const { error: profileError } = await supabase.from('forum_users').insert({
+        const { data: forumUserData, error: profileError } = await supabase.from('forum_users').insert({
           user_id: authData.user.id,
-         username: trimmedUsername,
+          username: trimmedUsername,
           date_of_birth: dobString,
           dob_updated_at: new Date().toISOString()
-        });
+        }).select('id').single();
 
         if (profileError) {
           setError('Username may already be taken');
           setLoading(false);
           return;
+        }
+
+        // Process referral if provided
+        if (referralCode && forumUserData?.id) {
+          try {
+            await supabase.rpc('process_referral', {
+              p_referral_code: referralCode,
+              p_referred_user_id: forumUserData.id,
+              p_ip_address: null // IP tracking handled server-side for security
+            });
+          } catch (refErr) {
+            // Silently fail referral - don't block registration
+            console.log('Referral processing failed:', refErr);
+          }
         }
 
         toast.success('Account created! Welcome to BloxCity.');
@@ -241,15 +258,28 @@ export default function ForumRegister() {
         return;
       }
 
-      const { error: profileError } = await supabase.from('forum_users').insert({
+      const { data: forumUserData, error: profileError } = await supabase.from('forum_users').insert({
         user_id: userIdToUse,
-       username: trimmedUsername
-      });
+        username: trimmedUsername
+      }).select('id').single();
 
       if (profileError) {
         setError('Username may already be taken');
         setLoading(false);
         return;
+      }
+
+      // Process referral if provided
+      if (referralCode && forumUserData?.id) {
+        try {
+          await supabase.rpc('process_referral', {
+            p_referral_code: referralCode,
+            p_referred_user_id: forumUserData.id,
+            p_ip_address: null
+          });
+        } catch (refErr) {
+          console.log('Referral processing failed:', refErr);
+        }
       }
 
       toast.success('Forum profile created!');
