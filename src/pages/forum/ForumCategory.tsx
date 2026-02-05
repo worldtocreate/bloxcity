@@ -72,6 +72,7 @@ export default function ForumCategory() {
       .from('forum_threads')
       .select('*')
       .eq('category_id', cat.id)
+     .eq('is_deleted', false)
       .order('is_pinned', { ascending: false })
       .order('last_post_at', { ascending: false });
 

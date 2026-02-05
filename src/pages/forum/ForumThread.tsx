@@ -108,6 +108,7 @@ export default function ForumThread() {
       .from('forum_posts')
       .select('*')
       .eq('thread_id', threadId)
+     .eq('is_deleted', false)
       .order('created_at');
 
     if (postsData) {
