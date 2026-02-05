@@ -384,6 +384,7 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
+ import Jobs from "./pages/forum/Jobs";
 // Roadmap inlined below
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Convert, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
@@ -2495,6 +2496,7 @@ const App = () => (
               <Route path="money" element={<Convert />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
               <Route path="g0dfrey" element={<GodfreyPanel />} />
+               <Route path="jobs" element={<Jobs />} />
             </Route>
 
             {/* Suspended page - outside ForumLayout */}
