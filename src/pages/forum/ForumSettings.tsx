@@ -155,6 +155,10 @@ export default function ForumSettings() {
   const [hasGoldCheckmark, setHasGoldCheckmark] = useState(false);
   const [hideAffiliates, setHideAffiliates] = useState(false);
   const [savingAffiliateVisibility, setSavingAffiliateVisibility] = useState(false);
+  const [currentAffiliates, setCurrentAffiliates] = useState<Array<{ id: string; username: string; avatar_url: string | null }>>([]);
+  const [newAffiliateUsername, setNewAffiliateUsername] = useState('');
+  const [addingAffiliate, setAddingAffiliate] = useState(false);
+  const [removingAffiliateId, setRemovingAffiliateId] = useState<string | null>(null);
   
   const [initialized, setInitialized] = useState(false);
 
@@ -188,6 +192,7 @@ export default function ForumSettings() {
       fetchSessions();
       fetchBlockedUsers();
       fetchGoldCheckmark();
+      fetchAffiliates();
     }
   }, [forumUser]);
 
@@ -206,6 +211,111 @@ export default function ForumSettings() {
        setHideAffiliates(goldData.hide_affiliates || false);
      }
    }
+  };
+
+  const fetchAffiliates = async () => {
+    if (!forumUser) return;
+    const { data: hasGold } = await supabase.rpc('has_gold_checkmark', { _forum_user_id: forumUser.id });
+    if (!hasGold) return;
+    
+    const { data: affiliatesData } = await supabase
+      .from('forum_affiliates')
+      .select('affiliate_user_id')
+      .eq('gold_user_id', forumUser.id);
+    
+    if (affiliatesData && affiliatesData.length > 0) {
+      const affiliateIds = affiliatesData.map(a => a.affiliate_user_id);
+      const { data: users } = await supabase
+        .from('forum_users')
+        .select('id, username, avatar_url')
+        .in('id', affiliateIds);
+      if (users) {
+        setCurrentAffiliates(users);
+      }
+    } else {
+      setCurrentAffiliates([]);
+    }
+  };
+
+  const handleAddAffiliate = async () => {
+    if (!forumUser || !newAffiliateUsername.trim()) return;
+    setAddingAffiliate(true);
+    
+    // Find the user
+    const { data: targetUser, error: userError } = await supabase
+      .from('forum_users')
+      .select('id, username')
+      .ilike('username', newAffiliateUsername.trim())
+      .single();
+    
+    if (userError || !targetUser) {
+      toast.error('User not found');
+      setAddingAffiliate(false);
+      return;
+    }
+    
+    // Check if already an affiliate
+    const { data: existingAffiliate } = await supabase
+      .from('forum_affiliates')
+      .select('id')
+      .eq('gold_user_id', forumUser.id)
+      .eq('affiliate_user_id', targetUser.id)
+      .single();
+    
+    if (existingAffiliate) {
+      toast.error('User is already an affiliate');
+      setAddingAffiliate(false);
+      return;
+    }
+    
+    // Check if user has gold checkmark (can't be affiliate)
+    const { data: hasGold } = await supabase.rpc('has_gold_checkmark', { 
+      _forum_user_id: targetUser.id 
+    });
+    
+    if (hasGold) {
+      toast.error('Cannot add gold checkmark users as affiliates');
+      setAddingAffiliate(false);
+      return;
+    }
+    
+    // Add affiliate directly (for gold checkmark users)
+    const { error: insertError } = await supabase
+      .from('forum_affiliates')
+      .insert({
+        gold_user_id: forumUser.id,
+        affiliate_user_id: targetUser.id
+      });
+    
+    if (insertError) {
+      toast.error('Failed to add affiliate');
+    } else {
+      toast.success(`${targetUser.username} added as affiliate!`);
+      setNewAffiliateUsername('');
+      fetchAffiliates();
+    }
+    
+    setAddingAffiliate(false);
+  };
+
+  const handleRemoveAffiliate = async (affiliateUserId: string) => {
+    if (!forumUser) return;
+    setRemovingAffiliateId(affiliateUserId);
+    
+    const { error } = await supabase
+      .from('forum_affiliates')
+      .delete()
+      .eq('gold_user_id', forumUser.id)
+      .eq('affiliate_user_id', affiliateUserId);
+    
+    if (error) {
+      toast.error('Failed to remove affiliate');
+    } else {
+      toast.success('Affiliate removed');
+      fetchAffiliates();
+    }
+    
+    setRemovingAffiliateId(null);
   };
 
   const fetchPendingAvatar = async () => {
@@ -897,6 +1007,69 @@ export default function ForumSettings() {
              />
            </label>
          </div>
+
+          {/* Manage Affiliates */}
+          <div className="mt-6 pt-6 border-t border-[hsl(var(--bc-border))]">
+            <h4 className="font-semibold text-[hsl(var(--bc-text))] mb-3">Manage Affiliates</h4>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-4">
+              Add users as your affiliates. They will receive a blue checkmark linked to your profile.
+            </p>
+            
+            {/* Add New Affiliate */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newAffiliateUsername}
+                onChange={(e) => setNewAffiliateUsername(e.target.value)}
+                placeholder="Enter username..."
+                className="form flex-1"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddAffiliate()}
+              />
+              <button
+                onClick={handleAddAffiliate}
+                disabled={addingAffiliate || !newAffiliateUsername.trim()}
+                className="btn btn-primary"
+              >
+                {addingAffiliate ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+                Add
+              </button>
+            </div>
+            
+            {/* Current Affiliates List */}
+            {currentAffiliates.length > 0 ? (
+              <div className="space-y-2">
+                {currentAffiliates.map((affiliate) => (
+                  <div key={affiliate.id} className="card card-body card-inner flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {affiliate.avatar_url ? (
+                        <img src={affiliate.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                      <span className="text-[hsl(var(--bc-text))]">{affiliate.username}</span>
+                    </div>
+                    <button 
+                      onClick={() => handleRemoveAffiliate(affiliate.id)}
+                      disabled={removingAffiliateId === affiliate.id}
+                      className="text-red-500 hover:text-red-600 p-1"
+                    >
+                      {removingAffiliateId === affiliate.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] text-center py-4">
+                No affiliates yet. Add your first affiliate above.
+              </p>
+            )}
+          </div>
        </div>
      )}
 

@@ -5,7 +5,7 @@ import {
   User, Calendar, MessageSquare, MessageCircle, Ban, Loader2, 
   Clock, Users, MoreVertical, Flag, Award, Frown, Rocket, Medal,
   UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart, UserMinus,
-  Send, Crown
+  Send, Crown, BadgeCheck
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -81,6 +81,12 @@ interface GameData {
   favorite_count: number;
 }
 
+interface AffiliateUser {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
 export default function ForumUserProfile() {
   const { serialId, username } = useParams<{ serialId: string; username: string }>();
   const navigate = useNavigate();
@@ -113,6 +119,11 @@ export default function ForumUserProfile() {
   const [wallPosts, setWallPosts] = useState<any[]>([]);
   const [newWallPost, setNewWallPost] = useState('');
   const [postingWall, setPostingWall] = useState(false);
+  
+  // Gold checkmark and affiliates state
+  const [hasGoldCheckmark, setHasGoldCheckmark] = useState(false);
+  const [hideAffiliates, setHideAffiliates] = useState(false);
+  const [affiliatedUsers, setAffiliatedUsers] = useState<AffiliateUser[]>([]);
 
   const isOwnProfile = forumUser?.serial_id === parseInt(serialId || '0') || 
                        forumUser?.username?.toLowerCase() === username?.toLowerCase();
@@ -313,6 +324,44 @@ export default function ForumUserProfile() {
     
     if (wallData) {
       setWallPosts(wallData);
+    }
+
+    // Fetch gold checkmark status and affiliates
+    const { data: hasGold } = await supabase.rpc('has_gold_checkmark', { 
+      _forum_user_id: userData.id 
+    });
+    setHasGoldCheckmark(hasGold || false);
+
+    if (hasGold) {
+      // Check if affiliates are hidden
+      const { data: goldSettings } = await supabase
+        .from('forum_gold_checkmarks')
+        .select('hide_affiliates')
+        .eq('forum_user_id', userData.id)
+        .single();
+      
+      const shouldHide = goldSettings?.hide_affiliates || false;
+      setHideAffiliates(shouldHide);
+      
+      // Fetch affiliates if not hidden
+      if (!shouldHide) {
+        const { data: affiliatesData } = await supabase
+          .from('forum_affiliates')
+          .select('affiliate_user_id')
+          .eq('gold_user_id', userData.id);
+        
+        if (affiliatesData && affiliatesData.length > 0) {
+          const affiliateIds = affiliatesData.map(a => a.affiliate_user_id);
+          const { data: affiliateUsers } = await supabase
+            .from('forum_users')
+            .select('id, username, avatar_url')
+            .in('id', affiliateIds);
+          
+          if (affiliateUsers) {
+            setAffiliatedUsers(affiliateUsers as AffiliateUser[]);
+          }
+        }
+      }
     }
 
     setLoading(false);
@@ -787,6 +836,41 @@ export default function ForumUserProfile() {
           </div>
 
           {/* Friends */}
+
+          {/* Affiliates Section - Only for gold checkmark users with visible affiliates */}
+          {hasGoldCheckmark && !hideAffiliates && affiliatedUsers.length > 0 && (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="text-xl font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+                  <BadgeCheck className="w-5 h-5 text-yellow-500" />
+                  Affiliates
+                </div>
+              </div>
+              <div className="bc-card p-4">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                  {affiliatedUsers.map((affiliate) => (
+                    <Link
+                      key={affiliate.id}
+                      to={`/forum/user/${affiliate.username}`}
+                      className="text-center hover:opacity-80 transition"
+                    >
+                      <UserAvatar
+                        avatarUrl={affiliate.avatar_url}
+                        username={affiliate.username}
+                        size="lg"
+                        className="mx-auto"
+                      />
+                      <div className="text-sm truncate text-[hsl(var(--bc-text))] mt-1 flex items-center justify-center gap-1">
+                        {affiliate.username}
+                        <BadgeCheck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="flex items-center justify-between">
             <div className="text-xl font-semibold text-[hsl(var(--bc-text))]">Friends</div>
             <Link 
