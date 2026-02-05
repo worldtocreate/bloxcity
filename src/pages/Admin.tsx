@@ -583,6 +583,221 @@ const GamesManagementTab = ({ darkMode }: { darkMode: boolean }) => {
   );
 };
 
+// Game Thumbnails Tab - for approving/declining pending thumbnails
+const GameThumbnailsTab = ({ darkMode }: { darkMode: boolean }) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [thumbnails, setThumbnails] = useState<Array<{
+    id: string;
+    title: string;
+    thumbnail_url: string | null;
+    thumbnail_status: string | null;
+    created_at: string;
+    creator: { username: string } | null;
+  }>>([]);
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [denialReason, setDenialReason] = useState('');
+  const [showDenyModal, setShowDenyModal] = useState<string | null>(null);
+
+  const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
+  const textClass = darkMode ? "text-white" : "text-gray-800";
+  const mutedClass = darkMode ? "text-gray-400" : "text-gray-500";
+
+  const fetchPendingThumbnails = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("forum_games")
+      .select("id, title, thumbnail_url, thumbnail_status, created_at, creator:creator_id(username)")
+      .eq("thumbnail_status", "pending")
+      .not("thumbnail_url", "is", null)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Failed to load thumbnails", description: error.message, variant: "destructive" });
+      setThumbnails([]);
+    } else {
+      setThumbnails((data as any) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void fetchPendingThumbnails();
+  }, []);
+
+  const approveThumbnail = async (gameId: string) => {
+    setProcessing(gameId);
+    const { error } = await supabase
+      .from("forum_games")
+      .update({ thumbnail_status: "approved", thumbnail_denial_reason: null })
+      .eq("id", gameId);
+
+    if (error) {
+      toast({ title: "Failed to approve", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Thumbnail approved!" });
+      void fetchPendingThumbnails();
+    }
+    setProcessing(null);
+  };
+
+  const denyThumbnail = async (gameId: string) => {
+    setProcessing(gameId);
+    const { error } = await supabase
+      .from("forum_games")
+      .update({ 
+        thumbnail_status: "denied", 
+        thumbnail_denial_reason: denialReason.trim() || "Thumbnail did not meet guidelines",
+        thumbnail_url: null 
+      })
+      .eq("id", gameId);
+
+    if (error) {
+      toast({ title: "Failed to deny", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Thumbnail denied" });
+      setShowDenyModal(null);
+      setDenialReason('');
+      void fetchPendingThumbnails();
+    }
+    setProcessing(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className={`${cardClass} border rounded-xl p-6`}>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className={`text-lg font-semibold ${textClass}`}>Pending Game Thumbnails</h2>
+            <p className={`text-sm ${mutedClass}`}>Review and approve or decline user-submitted game thumbnails</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={fetchPendingThumbnails}>
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          </div>
+        ) : thumbnails.length === 0 ? (
+          <div className={`text-center py-12 ${mutedClass}`}>
+            <Image className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p>No pending thumbnails to review</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {thumbnails.map((game) => (
+              <div
+                key={game.id}
+                className={`border rounded-xl overflow-hidden ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}
+              >
+                {/* Thumbnail Preview */}
+                <div className="aspect-video bg-gray-900 relative">
+                  {game.thumbnail_url ? (
+                    <img
+                      src={game.thumbnail_url}
+                      alt={game.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <Image className="w-10 h-10 text-gray-600" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="p-4">
+                  <h3 className={`font-semibold truncate ${textClass}`}>{game.title}</h3>
+                  <p className={`text-sm ${mutedClass}`}>
+                    By {game.creator?.username || "Unknown"}
+                  </p>
+                  <p className={`text-xs ${mutedClass} mt-1`}>
+                    {new Date(game.created_at).toLocaleDateString()}
+                  </p>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-4">
+                    <Button
+                      size="sm"
+                      onClick={() => approveThumbnail(game.id)}
+                      disabled={processing === game.id}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      {processing === game.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-1" /> Approve
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowDenyModal(game.id)}
+                      disabled={processing === game.id}
+                      className="flex-1"
+                    >
+                      <X className="w-4 h-4 mr-1" /> Deny
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Deny Modal */}
+      {showDenyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${cardClass} border rounded-xl p-6 max-w-md w-full`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Thumbnail</h3>
+            <p className={`text-sm mb-4 ${mutedClass}`}>
+              Optionally provide a reason for denying this thumbnail.
+            </p>
+            <textarea
+              value={denialReason}
+              onChange={(e) => setDenialReason(e.target.value)}
+              placeholder="Reason for denial (optional)"
+              className={`w-full p-3 border rounded-lg resize-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+              rows={3}
+            />
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDenyModal(null);
+                  setDenialReason('');
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => denyThumbnail(showDenyModal)}
+                disabled={processing === showDenyModal}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                {processing === showDenyModal ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Deny Thumbnail"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Full AdminPinGate implementation with PIN setup and verification
 import { Lock, Eye, EyeOff, Shield, KeyRound } from "lucide-react";
 
@@ -2649,6 +2864,9 @@ const Admin = () => {
 
         {/* Games Management Tab */}
         {activeTab === "games" && <GamesManagementTab darkMode={darkMode} />}
+        
+        {/* Game Thumbnails Tab */}
+        {activeTab === "game-thumbnails" && <GameThumbnailsTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (
