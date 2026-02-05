@@ -23,6 +23,7 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+ import JobsTab from "@/components/admin/JobsTab";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1789,6 +1790,9 @@ const Admin = () => {
         {/* Verification Requests Tab */}
         {activeTab === "verification-requests" && <VerificationRequestsTab darkMode={darkMode} />}
 
+         {/* Jobs Tab */}
+         {activeTab === "jobs" && <JobsTab />}
+ 
         {/* Reservations Tab */}
         {activeTab === "reservations" && (
           <>

@@ -2850,6 +2850,145 @@ export type Database = {
           },
         ]
       }
+      job_applications: {
+        Row: {
+          additional_info: string | null
+          age: number
+          created_at: string | null
+          discord_username: string
+          forum_user_id: string
+          id: string
+          job_id: string
+          reason: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["application_status"]
+        }
+        Insert: {
+          additional_info?: string | null
+          age: number
+          created_at?: string | null
+          discord_username: string
+          forum_user_id: string
+          id?: string
+          job_id: string
+          reason: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+        }
+        Update: {
+          additional_info?: string | null
+          age?: number
+          created_at?: string | null
+          discord_username?: string
+          forum_user_id?: string
+          id?: string
+          job_id?: string
+          reason?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["application_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          requirements: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          title: string
+          updated_at: string | null
+          work_type: Database["public"]["Enums"]["job_work_type"]
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          requirements?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title: string
+          updated_at?: string | null
+          work_type?: Database["public"]["Enums"]["job_work_type"]
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          requirements?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title?: string
+          updated_at?: string | null
+          work_type?: Database["public"]["Enums"]["job_work_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "job_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           email: string
@@ -3138,6 +3277,9 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      application_status: "pending" | "accepted" | "declined"
+      job_status: "open" | "closed" | "filled"
+      job_work_type: "remote" | "hybrid" | "on_site"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3266,6 +3408,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      application_status: ["pending", "accepted", "declined"],
+      job_status: ["open", "closed", "filled"],
+      job_work_type: ["remote", "hybrid", "on_site"],
     },
   },
 } as const

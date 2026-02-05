@@ -19,6 +19,7 @@ import {
   HelpCircle,
   Shield,
   Map,
+   Briefcase,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -50,6 +51,7 @@ const mainNavItems = [
   { title: 'Games', url: '/games', icon: Gamepad2 },
   { title: 'Achievements', url: '/achievements', icon: Award },
   { title: 'Roadmap', url: '/roadmap', icon: Map },
+   { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
 ];
 
 const comingSoonItems = [

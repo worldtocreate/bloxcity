@@ -96,4 +96,5 @@ export type AdminTab =
   | "support-tickets"
   | "game-thumbnails"
   | "maintenance"
+   | "jobs"
   | "settings";

@@ -2,7 +2,7 @@ import {
   BarChart3, Users, Mail, Ban, Shield, Activity, 
   Globe, Settings, MessageSquare, FileText, Wrench, UserCog, 
   Megaphone, Flag, Award, UsersRound, BadgeCheck, Crown, 
-  Headphones, Gamepad2, ChevronLeft, Menu
+   Headphones, Gamepad2, ChevronLeft, Menu, Briefcase
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { AdminTab } from "./types";
@@ -37,6 +37,7 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "groups", label: "Groups", icon: UsersRound, category: "Content" },
   { id: "achievements", label: "Achievements", icon: Award, category: "Content" },
   { id: "updates", label: "Updates", icon: Megaphone, category: "Content" },
+   { id: "jobs", label: "Jobs", icon: Briefcase, category: "Content" },
   
   // Moderation
   { id: "banned", label: "Banned Words", icon: Ban, category: "Moderation" },
