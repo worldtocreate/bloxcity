@@ -153,6 +153,8 @@ export default function ForumSettings() {
   
   // Gold checkmark
   const [hasGoldCheckmark, setHasGoldCheckmark] = useState(false);
+  const [hideAffiliates, setHideAffiliates] = useState(false);
+  const [savingAffiliateVisibility, setSavingAffiliateVisibility] = useState(false);
   
   const [initialized, setInitialized] = useState(false);
 
@@ -191,8 +193,19 @@ export default function ForumSettings() {
 
   const fetchGoldCheckmark = async () => {
     if (!forumUser) return;
-    const { data } = await supabase.rpc('has_gold_checkmark', { _forum_user_id: forumUser.id });
-    setHasGoldCheckmark(data || false);
+   const { data: hasGold } = await supabase.rpc('has_gold_checkmark', { _forum_user_id: forumUser.id });
+   setHasGoldCheckmark(hasGold || false);
+   
+   if (hasGold) {
+     const { data: goldData } = await supabase
+       .from('forum_gold_checkmarks')
+       .select('hide_affiliates')
+       .eq('forum_user_id', forumUser.id)
+       .single();
+     if (goldData) {
+       setHideAffiliates(goldData.hide_affiliates || false);
+     }
+   }
   };
 
   const fetchPendingAvatar = async () => {
@@ -845,6 +858,47 @@ export default function ForumSettings() {
           {savingPrivacy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
         </button>
       </div>
+
+     {/* Gold Checkmark Settings */}
+     {hasGoldCheckmark && (
+       <div className="card card-body">
+         <div className="flex items-center gap-2 mb-4">
+           <GoldBadge size="md" />
+           <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))]">Gold Checkmark Settings</h3>
+         </div>
+         
+         <div className="space-y-4">
+           <label className="flex items-center justify-between py-2 cursor-pointer">
+             <div>
+               <div className="font-medium text-[hsl(var(--bc-text))]">Hide Affiliates</div>
+               <div className="text-sm text-[hsl(var(--bc-text-muted))]">Hide your affiliates from being displayed on your profile</div>
+             </div>
+             <input
+               type="checkbox"
+               checked={hideAffiliates}
+               onChange={async (e) => {
+                 const newValue = e.target.checked;
+                 setHideAffiliates(newValue);
+                 setSavingAffiliateVisibility(true);
+                 const { error } = await supabase
+                   .from('forum_gold_checkmarks')
+                   .update({ hide_affiliates: newValue })
+                   .eq('forum_user_id', forumUser.id);
+                 if (error) {
+                   toast.error('Failed to update setting');
+                   setHideAffiliates(!newValue);
+                 } else {
+                   toast.success('Setting updated');
+                 }
+                 setSavingAffiliateVisibility(false);
+               }}
+               disabled={savingAffiliateVisibility}
+               className="form-check-input"
+             />
+           </label>
+         </div>
+       </div>
+     )}
 
       {/* Active Sessions */}
       <div className="card card-body">
