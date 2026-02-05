@@ -23,7 +23,6 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
- import JobsTab from "@/components/admin/JobsTab";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +30,332 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+ // Inline JobsTab component
+ interface JobCategory {
+   id: string;
+   name: string;
+   created_at: string;
+ }
+ 
+ interface JobListingAdmin {
+   id: string;
+   title: string;
+   description: string;
+  category_id: string;
+   work_type: 'remote' | 'hybrid' | 'on-site';
+   status: 'open' | 'closed' | 'filled';
+   created_at: string;
+  job_categories?: { name: string };
+ }
+ 
+ interface JobApplicationAdmin {
+   id: string;
+   job_id: string;
+   forum_user_id: string;
+   discord_username: string;
+   age: number;
+   reason: string;
+   status: 'pending' | 'accepted' | 'declined';
+   created_at: string;
+   forum_users?: { username: string; avatar_url: string | null };
+   jobs?: { title: string };
+ }
+ 
+ const JobsTab = () => {
+   const { toast } = useToast();
+   const [jobs, setJobs] = useState<JobListingAdmin[]>([]);
+   const [categories, setCategories] = useState<JobCategory[]>([]);
+   const [applications, setApplications] = useState<JobApplicationAdmin[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [showCreateModal, setShowCreateModal] = useState(false);
+   const [showCategoryModal, setShowCategoryModal] = useState(false);
+   const [processing, setProcessing] = useState<string | null>(null);
+ 
+   // New job form state
+   const [newTitle, setNewTitle] = useState('');
+   const [newDescription, setNewDescription] = useState('');
+   const [newCategory, setNewCategory] = useState('');
+   const [newWorkType, setNewWorkType] = useState<'remote' | 'hybrid' | 'on-site'>('remote');
+   const [newCategoryName, setNewCategoryName] = useState('');
+ 
+   useEffect(() => {
+     fetchAll();
+   }, []);
+ 
+   const fetchAll = async () => {
+     setLoading(true);
+     const [jobsRes, catsRes, appsRes] = await Promise.all([
+      supabase.from('jobs').select('*, job_categories(name)').order('created_at', { ascending: false }),
+       supabase.from('job_categories').select('*').order('name'),
+      supabase.from('job_applications').select('*, forum_users!job_applications_forum_user_id_fkey(username, avatar_url), jobs(title)').order('created_at', { ascending: false })
+     ]);
+     setJobs((jobsRes.data as JobListingAdmin[]) || []);
+     setCategories((catsRes.data as JobCategory[]) || []);
+     setApplications((appsRes.data as JobApplicationAdmin[]) || []);
+     setLoading(false);
+   };
+ 
+   const createJob = async () => {
+     if (!newTitle.trim() || !newCategory) {
+       toast({ title: 'Please fill all fields', variant: 'destructive' });
+       return;
+     }
+     const { error } = await supabase.from('jobs').insert({
+       title: newTitle.trim(),
+       description: newDescription.trim(),
+      category_id: newCategory,
+       work_type: newWorkType,
+      status: 'open' as const
+    } as any);
+     if (error) {
+       toast({ title: 'Error creating job', description: error.message, variant: 'destructive' });
+     } else {
+       toast({ title: 'Job created successfully' });
+       setShowCreateModal(false);
+       setNewTitle('');
+       setNewDescription('');
+       setNewCategory('');
+       fetchAll();
+     }
+   };
+ 
+   const createCategory = async () => {
+     if (!newCategoryName.trim()) return;
+     const { error } = await supabase.from('job_categories').insert({ name: newCategoryName.trim() });
+     if (error) {
+       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+     } else {
+       toast({ title: 'Category added' });
+       setNewCategoryName('');
+       setShowCategoryModal(false);
+       fetchAll();
+     }
+   };
+ 
+   const updateJobStatus = async (id: string, status: 'open' | 'closed' | 'filled') => {
+     const { error } = await supabase.from('jobs').update({ status }).eq('id', id);
+     if (error) {
+       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+     } else {
+       toast({ title: `Job ${status}` });
+       fetchAll();
+     }
+   };
+ 
+   const handleApplicationDecision = async (id: string, status: 'accepted' | 'declined') => {
+     setProcessing(id);
+     const { error } = await supabase.from('job_applications').update({ status }).eq('id', id);
+     if (error) {
+       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+     } else {
+       toast({ title: `Application ${status}` });
+       fetchAll();
+     }
+     setProcessing(null);
+   };
+ 
+   if (loading) {
+     return (
+       <div className="flex justify-center py-12">
+         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+       </div>
+     );
+   }
+ 
+   const pendingApps = applications.filter(a => a.status === 'pending');
+ 
+   return (
+     <div className="space-y-6">
+       {/* Actions */}
+       <div className="flex gap-3">
+         <Button onClick={() => setShowCreateModal(true)}>
+           <Plus className="w-4 h-4 mr-2" /> Create Job
+         </Button>
+         <Button variant="outline" onClick={() => setShowCategoryModal(true)}>
+           <Plus className="w-4 h-4 mr-2" /> Add Category
+         </Button>
+       </div>
+ 
+       {/* Jobs List */}
+       <Card>
+         <CardHeader>
+           <CardTitle>Job Listings ({jobs.length})</CardTitle>
+         </CardHeader>
+         <CardContent>
+           <Table>
+             <TableHeader>
+               <TableRow>
+                 <TableHead>Title</TableHead>
+                 <TableHead>Category</TableHead>
+                 <TableHead>Type</TableHead>
+                 <TableHead>Status</TableHead>
+                 <TableHead>Actions</TableHead>
+               </TableRow>
+             </TableHeader>
+             <TableBody>
+               {jobs.map((job) => (
+                 <TableRow key={job.id}>
+                   <TableCell className="font-medium">{job.title}</TableCell>
+                  <TableCell>{job.job_categories?.name || '-'}</TableCell>
+                   <TableCell className="capitalize">{job.work_type}</TableCell>
+                   <TableCell>
+                     <span className={`px-2 py-1 rounded text-xs font-medium ${
+                       job.status === 'open' ? 'bg-green-500/20 text-green-500' :
+                       job.status === 'filled' ? 'bg-blue-500/20 text-blue-500' :
+                       'bg-gray-500/20 text-gray-500'
+                     }`}>
+                       {job.status}
+                     </span>
+                   </TableCell>
+                   <TableCell>
+                     {job.status === 'open' ? (
+                       <div className="flex gap-2">
+                         <Button size="sm" variant="outline" onClick={() => updateJobStatus(job.id, 'filled')}>
+                           Mark Filled
+                         </Button>
+                         <Button size="sm" variant="outline" onClick={() => updateJobStatus(job.id, 'closed')}>
+                           Close
+                         </Button>
+                       </div>
+                     ) : (
+                       <Button size="sm" variant="outline" onClick={() => updateJobStatus(job.id, 'open')}>
+                         Reopen
+                       </Button>
+                     )}
+                   </TableCell>
+                 </TableRow>
+               ))}
+             </TableBody>
+           </Table>
+         </CardContent>
+       </Card>
+ 
+       {/* Applications */}
+       <Card>
+         <CardHeader>
+           <CardTitle>Pending Applications ({pendingApps.length})</CardTitle>
+         </CardHeader>
+         <CardContent>
+           {pendingApps.length === 0 ? (
+             <p className="text-gray-500 text-center py-4">No pending applications</p>
+           ) : (
+             <div className="space-y-4">
+               {pendingApps.map((app) => (
+                 <div key={app.id} className="border rounded-lg p-4">
+                   <div className="flex items-start justify-between">
+                     <div>
+                       <div className="flex items-center gap-2 mb-1">
+                         <span className="font-medium">{app.forum_users?.username || 'Unknown'}</span>
+                         <span className="text-sm text-gray-500">for</span>
+                         <span className="font-medium text-blue-500">{app.jobs?.title || 'Unknown Job'}</span>
+                       </div>
+                       <div className="text-sm text-gray-500 mb-2">
+                         Discord: {app.discord_username} | Age: {app.age}
+                       </div>
+                       <p className="text-sm">{app.reason}</p>
+                     </div>
+                     <div className="flex gap-2">
+                       <Button
+                         size="sm"
+                         onClick={() => handleApplicationDecision(app.id, 'accepted')}
+                         disabled={processing === app.id}
+                         className="bg-green-600 hover:bg-green-700"
+                       >
+                         Accept
+                       </Button>
+                       <Button
+                         size="sm"
+                         variant="outline"
+                         onClick={() => handleApplicationDecision(app.id, 'declined')}
+                         disabled={processing === app.id}
+                       >
+                         Decline
+                       </Button>
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
+         </CardContent>
+       </Card>
+ 
+       {/* Create Job Modal */}
+       {showCreateModal && (
+         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full">
+             <h2 className="text-xl font-bold mb-4">Create New Job</h2>
+             <div className="space-y-4">
+               <div>
+                 <label className="block text-sm font-medium mb-1">Title</label>
+                 <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Job title" />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium mb-1">Description</label>
+                 <textarea
+                   value={newDescription}
+                   onChange={(e) => setNewDescription(e.target.value)}
+                   placeholder="Job description"
+                   className="w-full p-2 border rounded-lg resize-none h-24"
+                 />
+               </div>
+               <div>
+                 <label className="block text-sm font-medium mb-1">Category</label>
+                 <select
+                   value={newCategory}
+                   onChange={(e) => setNewCategory(e.target.value)}
+                   className="w-full p-2 border rounded-lg"
+                 >
+                   <option value="">Select category</option>
+                   {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                   ))}
+                 </select>
+               </div>
+               <div>
+                 <label className="block text-sm font-medium mb-1">Work Type</label>
+                 <select
+                   value={newWorkType}
+                   onChange={(e) => setNewWorkType(e.target.value as any)}
+                   className="w-full p-2 border rounded-lg"
+                 >
+                   <option value="remote">Remote</option>
+                   <option value="hybrid">Hybrid</option>
+                   <option value="on-site">On-Site</option>
+                 </select>
+               </div>
+               <div className="flex gap-3 pt-2">
+                 <Button variant="outline" onClick={() => setShowCreateModal(false)} className="flex-1">Cancel</Button>
+                 <Button onClick={createJob} className="flex-1">Create Job</Button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+ 
+       {/* Add Category Modal */}
+       {showCategoryModal && (
+         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-sm w-full">
+             <h2 className="text-xl font-bold mb-4">Add Category</h2>
+             <div className="space-y-4">
+               <Input
+                 value={newCategoryName}
+                 onChange={(e) => setNewCategoryName(e.target.value)}
+                 placeholder="Category name"
+               />
+               <div className="flex gap-3">
+                 <Button variant="outline" onClick={() => setShowCategoryModal(false)} className="flex-1">Cancel</Button>
+                 <Button onClick={createCategory} className="flex-1">Add</Button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ };
+ 
 // NOTE: Inlined to avoid production module resolution issues.
 const GamesManagementTab = ({ darkMode }: { darkMode: boolean }) => {
   const { toast } = useToast();

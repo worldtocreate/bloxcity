@@ -384,11 +384,274 @@ import GroupSettings from "./pages/forum/GroupSettings";
 import Friends from "./pages/forum/Friends";
 import Achievements from "./pages/forum/Achievements";
 import Create from "./pages/forum/Create";
- import Jobs from "./pages/forum/Jobs";
 // Roadmap inlined below
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Convert, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
 
+ // Inline Jobs component
+ import { Briefcase, MapPin, Clock, Building2, Send } from "lucide-react";
+ 
+ interface JobListing {
+   id: string;
+   title: string;
+   description: string;
+  category_id: string;
+   work_type: 'remote' | 'hybrid' | 'on-site';
+   status: 'open' | 'closed' | 'filled';
+   created_at: string;
+  job_categories?: { name: string };
+ }
+ 
+ interface JobApplication {
+   id: string;
+   job_id: string;
+   forum_user_id: string;
+   discord_username: string;
+   age: number;
+   reason: string;
+   status: 'pending' | 'accepted' | 'declined';
+   created_at: string;
+ }
+ 
+ function Jobs() {
+   const { forumUser, loading: authLoading } = useForumAuth();
+   const { toast } = useToast();
+   const [jobs, setJobs] = useState<JobListing[]>([]);
+   const [myApplications, setMyApplications] = useState<JobApplication[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [selectedJob, setSelectedJob] = useState<JobListing | null>(null);
+   const [showApplyModal, setShowApplyModal] = useState(false);
+   const [submitting, setSubmitting] = useState(false);
+   
+   // Application form state
+   const [discordUsername, setDiscordUsername] = useState('');
+   const [age, setAge] = useState('');
+   const [reason, setReason] = useState('');
+ 
+   useEffect(() => {
+     fetchJobs();
+   }, []);
+ 
+   useEffect(() => {
+     if (forumUser) {
+       fetchMyApplications();
+     }
+   }, [forumUser]);
+ 
+   const fetchJobs = async () => {
+     setLoading(true);
+     const { data, error } = await supabase
+       .from('jobs')
+      .select('*, job_categories(name)')
+       .eq('status', 'open')
+       .order('created_at', { ascending: false });
+     
+     if (error) {
+       toast({ title: 'Error loading jobs', description: error.message, variant: 'destructive' });
+     } else {
+       setJobs((data as JobListing[]) || []);
+     }
+     setLoading(false);
+   };
+ 
+   const fetchMyApplications = async () => {
+     if (!forumUser) return;
+     const { data } = await supabase
+       .from('job_applications')
+       .select('*')
+       .eq('forum_user_id', forumUser.id);
+     setMyApplications((data as JobApplication[]) || []);
+   };
+ 
+   const hasApplied = (jobId: string) => {
+     return myApplications.some(app => app.job_id === jobId);
+   };
+ 
+   const getApplicationStatus = (jobId: string) => {
+     const app = myApplications.find(app => app.job_id === jobId);
+     return app?.status;
+   };
+ 
+   const handleApply = async () => {
+     if (!forumUser || !selectedJob) return;
+     
+     const ageNum = parseInt(age);
+     if (!discordUsername.trim() || isNaN(ageNum) || ageNum < 13 || !reason.trim()) {
+       toast({ title: 'Please fill all fields correctly', description: 'Age must be at least 13', variant: 'destructive' });
+       return;
+     }
+ 
+     setSubmitting(true);
+     const { error } = await supabase.from('job_applications').insert({
+       job_id: selectedJob.id,
+       forum_user_id: forumUser.id,
+       discord_username: discordUsername.trim(),
+       age: ageNum,
+       reason: reason.trim(),
+       status: 'pending'
+     });
+ 
+     if (error) {
+       toast({ title: 'Application failed', description: error.message, variant: 'destructive' });
+     } else {
+       toast({ title: 'Application submitted!', description: 'We will review your application soon.' });
+       setShowApplyModal(false);
+       setDiscordUsername('');
+       setAge('');
+       setReason('');
+       fetchMyApplications();
+     }
+     setSubmitting(false);
+   };
+ 
+   const workTypeLabels: Record<string, { label: string; icon: React.ReactNode }> = {
+     remote: { label: 'Remote', icon: <MapPin className="w-4 h-4" /> },
+     hybrid: { label: 'Hybrid', icon: <Building2 className="w-4 h-4" /> },
+     'on-site': { label: 'On-Site', icon: <Building2 className="w-4 h-4" /> },
+   };
+ 
+   if (authLoading || loading) {
+     return (
+       <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+         <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+       </div>
+     );
+   }
+ 
+   return (
+     <div className="space-y-6">
+       <div className="flex items-center gap-3">
+         <Briefcase className="w-8 h-8 text-[hsl(var(--bc-primary))]" />
+         <div>
+           <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Work for BLOX City</h1>
+           <p className="text-[hsl(var(--bc-text-muted))]">Join our team and help build something amazing</p>
+         </div>
+       </div>
+ 
+       {jobs.length === 0 ? (
+         <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+           <Briefcase className="w-12 h-12 mx-auto mb-3 text-[hsl(var(--bc-text-muted))]" />
+           <p className="text-[hsl(var(--bc-text-muted))]">No open positions at the moment. Check back soon!</p>
+         </div>
+       ) : (
+         <div className="grid gap-4">
+           {jobs.map((job) => {
+             const applied = hasApplied(job.id);
+             const status = getApplicationStatus(job.id);
+             const workType = workTypeLabels[job.work_type] || workTypeLabels.remote;
+ 
+             return (
+               <div key={job.id} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                   <div className="flex-1">
+                     <div className="flex items-center gap-2 mb-2">
+                       <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">{job.title}</h3>
+                      {job.job_categories?.name && (
+                        <span className="px-2 py-0.5 text-xs rounded bg-[hsl(var(--bc-primary))]/10 text-[hsl(var(--bc-primary))]">
+                          {job.job_categories.name}
+                        </span>
+                      )}
+                     </div>
+                     <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3">{job.description}</p>
+                     <div className="flex flex-wrap gap-3 text-sm text-[hsl(var(--bc-text-muted))]">
+                       <span className="flex items-center gap-1">
+                         {workType.icon} {workType.label}
+                       </span>
+                       <span className="flex items-center gap-1">
+                         <Clock className="w-4 h-4" /> Posted {new Date(job.created_at).toLocaleDateString()}
+                       </span>
+                     </div>
+                   </div>
+                   <div className="flex-shrink-0">
+                     {applied ? (
+                       <div className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                         status === 'accepted' ? 'bg-green-500/10 text-green-500' :
+                         status === 'declined' ? 'bg-red-500/10 text-red-500' :
+                         'bg-yellow-500/10 text-yellow-500'
+                       }`}>
+                         {status === 'accepted' ? '✓ Accepted' :
+                          status === 'declined' ? '✗ Declined' :
+                          '⏳ Pending Review'}
+                       </div>
+                     ) : forumUser ? (
+                       <Button
+                         onClick={() => { setSelectedJob(job); setShowApplyModal(true); }}
+                         className="flex items-center gap-2"
+                       >
+                         <Send className="w-4 h-4" /> Apply Now
+                       </Button>
+                     ) : (
+                       <Link to="/login" className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-primary))] text-white rounded-lg text-sm font-medium">
+                         Login to Apply
+                       </Link>
+                     )}
+                   </div>
+                 </div>
+               </div>
+             );
+           })}
+         </div>
+       )}
+ 
+       {/* Apply Modal */}
+       {showApplyModal && selectedJob && (
+         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+           <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 max-w-md w-full">
+             <h2 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-4">Apply for {selectedJob.title}</h2>
+             <div className="space-y-4">
+               <div>
+                 <Label className="text-[hsl(var(--bc-text))]">Discord Username</Label>
+                 <Input
+                   value={discordUsername}
+                   onChange={(e) => setDiscordUsername(e.target.value)}
+                   placeholder="yourname#1234 or @yourname"
+                   className="mt-1"
+                 />
+               </div>
+               <div>
+                 <Label className="text-[hsl(var(--bc-text))]">Your Age</Label>
+                 <Input
+                   type="number"
+                   min={13}
+                   value={age}
+                   onChange={(e) => setAge(e.target.value)}
+                   placeholder="Must be 13+"
+                   className="mt-1"
+                 />
+               </div>
+               <div>
+                 <Label className="text-[hsl(var(--bc-text))]">Why do you want to work for BLOX City?</Label>
+                 <Textarea
+                   value={reason}
+                   onChange={(e) => setReason(e.target.value)}
+                   placeholder="Tell us about yourself and why you'd be a great fit..."
+                   className="mt-1 min-h-[120px]"
+                 />
+               </div>
+               <div className="flex gap-3 pt-2">
+                 <Button
+                   variant="outline"
+                   onClick={() => setShowApplyModal(false)}
+                   className="flex-1"
+                 >
+                   Cancel
+                 </Button>
+                 <Button
+                   onClick={handleApply}
+                   disabled={submitting}
+                   className="flex-1"
+                 >
+                   {submitting ? 'Submitting...' : 'Submit Application'}
+                 </Button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ }
+ 
 // Need useParams for GameDetail
 function useGameParams() {
   const params = window.location.pathname.match(/\/game\/([^\/]+)/);
