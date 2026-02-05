@@ -192,6 +192,18 @@ export default function ForumThread() {
     if (!replyContent.trim() || !forumUser || thread?.is_locked) return;
 
     setSubmitting(true);
+   
+   // Check rate limit
+   const { data: canPost } = await supabase.rpc('check_content_rate_limit', {
+     p_forum_user_id: forumUser.id,
+     p_content_type: 'post'
+   });
+   
+   if (!canPost) {
+     toast.error('Please wait 30 seconds between posts.');
+     setSubmitting(false);
+     return;
+   }
     
     const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
       body: { content: replyContent }

@@ -91,6 +91,18 @@ export default function ForumNewThread() {
 
     setSubmitting(true);
 
+   // Check rate limit
+   const { data: canPost } = await supabase.rpc('check_content_rate_limit', {
+     p_forum_user_id: forumUser.id,
+     p_content_type: 'thread'
+   });
+   
+   if (!canPost) {
+     toast.error('Please wait 60 seconds between creating threads.');
+     setSubmitting(false);
+     return;
+   }
+
     const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
       body: { content: title + ' ' + content }
     });
