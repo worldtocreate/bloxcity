@@ -502,7 +502,7 @@ const GamesManagementTab = ({ darkMode }: { darkMode: boolean }) => {
                 filtered.map((g) => (
                   <tr key={g.id} className={darkMode ? "border-t border-gray-700" : "border-t border-gray-200"}>
                     <td className={`py-3 ${textClass}`}>
-                      <a href={`/game/${g.id}`} className="hover:underline">{g.title}</a>
+                      <span className="font-medium">{g.title}</span>
                       <div className={`text-xs ${mutedClass}`}>{g.category}</div>
                     </td>
                     <td className={`py-3 ${textClass}`}>{g.creator?.username || "Unknown"}</td>
