@@ -454,9 +454,9 @@ export default function ForumSettings() {
 
   const handleChangeUsername = async () => {
     if (!forumUser || !newUsername.trim()) return;
-    const usernameRegex = /^[a-z0-9_]{3,20}$/;
-    if (!usernameRegex.test(newUsername.toLowerCase())) {
-      toast.error('Username must be 3-20 characters, lowercase letters, numbers, and underscores only');
+   const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+   if (!usernameRegex.test(newUsername)) {
+     toast.error('Username must be 3-20 characters, letters, numbers, and underscores only');
       return;
     }
     if (!canChangeUsername()) {
@@ -475,17 +475,17 @@ export default function ForumSettings() {
       setChangingUsername(false);
       return;
     }
-    const { data: profanityCheck } = await supabase.functions.invoke('forum-check-profanity', {
-      body: { text: newUsername }
+   const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
+     body: { content: newUsername }
     });
-    if (profanityCheck?.hasProfanity) {
+   if (profanityCheck.data?.hasProfanity) {
       toast.error('Username contains inappropriate words');
       setChangingUsername(false);
       return;
     }
     const { error } = await supabase
       .from('forum_users')
-      .update({ username: newUsername.toLowerCase(), last_username_change_at: new Date().toISOString() })
+     .update({ username: newUsername.trim(), last_username_change_at: new Date().toISOString() })
       .eq('id', forumUser.id);
     if (error) {
       toast.error('Failed to change username');

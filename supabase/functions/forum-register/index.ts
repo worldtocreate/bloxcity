@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
         const { data: existingUser } = await supabaseAdmin
           .from('forum_users')
           .select('id')
-          .eq('username', username.toLowerCase())
+         .ilike('username', username)
           .single();
 
         if (existingUser) {

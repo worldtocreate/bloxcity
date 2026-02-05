@@ -175,7 +175,7 @@ export default function ForumRegister() {
     setError('');
 
     try {
-      const normalizedUsername = username.trim().toLowerCase();
+     const trimmedUsername = username.trim();
 
       let recaptchaToken = '';
       if (recaptchaLoaded && window.grecaptcha && siteKey) {
@@ -185,7 +185,7 @@ export default function ForumRegister() {
       const verifyResponse = await supabase.functions.invoke('forum-register', {
         body: { 
           action: 'verify',
-          username: normalizedUsername,
+         username: trimmedUsername,
           email: email.trim(),
           recaptchaToken
         }
@@ -224,7 +224,7 @@ export default function ForumRegister() {
         
         const { error: profileError } = await supabase.from('forum_users').insert({
           user_id: authData.user.id,
-          username: normalizedUsername,
+         username: trimmedUsername,
           date_of_birth: dobString,
           dob_updated_at: new Date().toISOString()
         });
@@ -243,7 +243,7 @@ export default function ForumRegister() {
 
       const { error: profileError } = await supabase.from('forum_users').insert({
         user_id: userIdToUse,
-        username: normalizedUsername
+       username: trimmedUsername
       });
 
       if (profileError) {

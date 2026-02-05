@@ -3205,6 +3205,10 @@ export type Database = {
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
+      check_content_rate_limit: {
+        Args: { p_content_type: string; p_forum_user_id: string }
+        Returns: boolean
+      }
       check_friend_request_rate_limit: {
         Args: { sender_forum_user_id: string }
         Returns: boolean
