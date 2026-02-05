@@ -73,7 +73,7 @@ export default function ForumHome() {
   return (
     <div className="flex gap-6">
       {/* Sidebar - Leaderboard */}
-      <div className="hidden lg:block w-64 flex-shrink-0">
+      <div className="hidden md:block w-64 flex-shrink-0">
         <LeaderboardSidebar />
       </div>
 
