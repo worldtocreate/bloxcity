@@ -552,7 +552,7 @@ import Create from "./pages/forum/Create";
                         </span>
                       )}
                      </div>
-                     <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3">{job.description}</p>
+                      <p className="text-[hsl(var(--bc-text-muted))] text-sm mb-3 whitespace-pre-wrap">{job.description}</p>
                      <div className="flex flex-wrap gap-3 text-sm text-[hsl(var(--bc-text-muted))]">
                        <span className="flex items-center gap-1">
                          {workType.icon} {workType.label}
