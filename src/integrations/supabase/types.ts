@@ -2557,6 +2557,7 @@ export type Database = {
           cover_url: string | null
           created_at: string | null
           date_of_birth: string | null
+          display_name: string | null
           dm_encryption_pin_hash: string | null
           dm_pin: string | null
           dob_updated_at: string | null
@@ -2620,6 +2621,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          display_name?: string | null
           dm_encryption_pin_hash?: string | null
           dm_pin?: string | null
           dob_updated_at?: string | null
@@ -2683,6 +2685,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string | null
           date_of_birth?: string | null
+          display_name?: string | null
           dm_encryption_pin_hash?: string | null
           dm_pin?: string | null
           dob_updated_at?: string | null

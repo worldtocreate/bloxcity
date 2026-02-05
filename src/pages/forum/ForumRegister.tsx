@@ -7,6 +7,25 @@ import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import { z } from 'zod';
 import { Progress } from '@/components/ui/progress';
 
+// Lovable Cloud OAuth helper
+const signInWithGoogle = async (redirectUri: string): Promise<{ error: Error | null }> => {
+  try {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (!projectId) {
+      throw new Error("Missing project configuration");
+    }
+    const params = new URLSearchParams({
+      provider: 'google',
+      project_id: projectId,
+      redirect_uri: redirectUri,
+    });
+    window.location.href = `https://cloud.lovable.app/api/v1/auth/oauth?${params.toString()}`;
+    return { error: null };
+  } catch (error) {
+    return { error: error as Error };
+  }
+};
+
 declare global {
   interface Window {
     grecaptcha: any;
@@ -15,10 +34,11 @@ declare global {
 
 const STEPS = [
   { id: 1, title: 'Email', progress: 10 },
-  { id: 2, title: 'Username', progress: 30 },
-  { id: 3, title: 'Password', progress: 60 },
-  { id: 4, title: 'Age Verification', progress: 80 },
-  { id: 5, title: 'Terms', progress: 100 },
+  { id: 2, title: 'Username', progress: 25 },
+  { id: 3, title: 'Display Name', progress: 45 },
+  { id: 4, title: 'Password', progress: 65 },
+  { id: 5, title: 'Age Verification', progress: 85 },
+  { id: 6, title: 'Terms', progress: 100 },
 ];
 
 export default function ForumRegister() {
@@ -29,6 +49,7 @@ export default function ForumRegister() {
   const [currentStep, setCurrentStep] = useState(0);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [dobMonth, setDobMonth] = useState('');
@@ -111,7 +132,16 @@ export default function ForumRegister() {
         }
         return true;
 
-      case 2: // Password
+      case 2: // Display Name (optional but validated if provided)
+        if (displayName.trim()) {
+          if (displayName.trim().length > 30) {
+            setError('Display name must be 30 characters or less');
+            return false;
+          }
+        }
+        return true;
+
+      case 3: // Password
         if (!existingAuthUser) {
           if (password.length < 8) {
             setError('Password must be at least 8 characters');
@@ -124,7 +154,7 @@ export default function ForumRegister() {
         }
         return true;
 
-      case 3: // Date of Birth
+      case 4: // Date of Birth
         if (!existingAuthUser) {
           const dayNum = parseInt(dobDay);
           const monthNum = parseInt(dobMonth);
@@ -148,7 +178,7 @@ export default function ForumRegister() {
         }
         return true;
 
-      case 4: // Terms - always valid, just informational
+      case 5: // Terms - always valid, just informational
         return true;
 
       default:
@@ -179,10 +209,23 @@ export default function ForumRegister() {
 
     try {
       const trimmedUsername = username.trim();
+      const trimmedDisplayName = displayName.trim() || null;
 
       let recaptchaToken = '';
       if (recaptchaLoaded && window.grecaptcha && siteKey) {
         recaptchaToken = await window.grecaptcha.execute(siteKey, { action: 'register' });
+      }
+
+      // Check profanity for display name if provided
+      if (trimmedDisplayName) {
+        const profanityCheck = await supabase.functions.invoke('forum-check-profanity', {
+          body: { content: trimmedDisplayName }
+        });
+        if (profanityCheck.data?.hasProfanity) {
+          setError('Display name contains inappropriate content');
+          setLoading(false);
+          return;
+        }
       }
 
       const verifyResponse = await supabase.functions.invoke('forum-register', {
@@ -228,6 +271,7 @@ export default function ForumRegister() {
         const { data: forumUserData, error: profileError } = await supabase.from('forum_users').insert({
           user_id: authData.user.id,
           username: trimmedUsername,
+          display_name: trimmedDisplayName,
           date_of_birth: dobString,
           dob_updated_at: new Date().toISOString()
         }).select('id').single();
@@ -260,7 +304,8 @@ export default function ForumRegister() {
 
       const { data: forumUserData, error: profileError } = await supabase.from('forum_users').insert({
         user_id: userIdToUse,
-        username: trimmedUsername
+        username: trimmedUsername,
+        display_name: trimmedDisplayName
       }).select('id').single();
 
       if (profileError) {
@@ -332,7 +377,7 @@ export default function ForumRegister() {
                   Please verify you're not a robot before proceeding to the next step
                 </p>
                 {recaptchaLoaded && (
-                  <p className="text-xs text-green-600 mt-2">✓ reCAPTCHA ready</p>
+                  <p className="text-xs text-[hsl(var(--bc-success))] mt-2">✓ reCAPTCHA ready</p>
                 )}
               </div>
             </div>
@@ -370,6 +415,42 @@ export default function ForumRegister() {
         );
 
       case 2:
+        return (
+          <div className="grid md:grid-cols-12 gap-6">
+            <div className="md:col-span-3 flex justify-center">
+              <img src={bloxcityLogo} alt="BloxCity" className="w-32 h-32 md:w-full md:h-auto max-w-[180px] rounded-xl" />
+            </div>
+            <div className="md:col-span-9 space-y-4">
+              <h2 className="text-2xl font-semibold text-[hsl(var(--bc-text))]">
+                Want a display name?
+              </h2>
+              <div className="space-y-2">
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] font-medium">
+                  Your display name is shown instead of your username across the site. This is optional - you can skip this step or change it later in settings.
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                  Display Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your display name..."
+                  className="bc-input"
+                  maxLength={30}
+                />
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                  Up to 30 characters. Leave empty to use your username.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
         return (
           <div className="grid md:grid-cols-12 gap-6">
             <div className="md:col-span-3 flex justify-center">
@@ -417,7 +498,7 @@ export default function ForumRegister() {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="grid md:grid-cols-12 gap-6">
             <div className="md:col-span-3 flex justify-center">
@@ -480,7 +561,7 @@ export default function ForumRegister() {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="grid md:grid-cols-12 gap-6">
             <div className="md:col-span-3 flex justify-center">
