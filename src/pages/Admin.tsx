@@ -23,13 +23,147 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
-import AdminAccountsTab from "@/components/admin/AdminAccountsTab";
+// AdminAccountsTab inlined below to avoid module resolution issues
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+// Inline AdminAccountsTab component
+interface AdminAccountData {
+  id: string;
+  email: string;
+  display_name: string | null;
+  is_active: boolean;
+  is_first_admin: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  permissions: string[];
+}
+
+const AdminAccountsTabInline = ({ darkMode, isFirstAdmin }: { darkMode: boolean; isFirstAdmin: boolean }) => {
+  const { toast } = useToast();
+  const [admins, setAdmins] = useState<AdminAccountData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+
+  const PERMS = [
+    { id: "reservations", label: "Reservations" },
+    { id: "newsletter", label: "Newsletter" },
+    { id: "banned_words", label: "Banned Words" },
+    { id: "ip_blocking", label: "IP Blocking" },
+    { id: "forum_mod", label: "Forum Mod" },
+    { id: "content_mod", label: "Content Mod" },
+    { id: "user_mgmt", label: "User Mgmt" },
+    { id: "maintenance", label: "Maintenance" },
+    { id: "games", label: "Games" },
+    { id: "gold_checkmarks", label: "Gold Checkmarks" },
+  ];
+
+  const cardClass = darkMode ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200";
+  const textClass = darkMode ? "text-white" : "text-gray-800";
+  const mutedClass = darkMode ? "text-gray-400" : "text-gray-500";
+  const inputClass = darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300";
+
+  const fetchAdmins = async () => {
+    setLoading(true);
+    const sessionToken = localStorage.getItem("bloxcity_admin_session");
+    const { data } = await supabase.functions.invoke("admin-manage-users", { body: { action: "list_admin_accounts", sessionToken } });
+    if (data?.admins) setAdmins(data.admins);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAdmins(); }, []);
+
+  const generatePassword = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
+    let p = "";
+    for (let i = 0; i < 12; i++) p += chars.charAt(Math.floor(Math.random() * chars.length));
+    setNewPassword(p);
+    setShowPassword(true);
+  };
+
+  const handleCreate = async () => {
+    if (!newEmail.trim() || !newPassword.trim()) { toast({ title: "Email and password required", variant: "destructive" }); return; }
+    setCreating(true);
+    const sessionToken = localStorage.getItem("bloxcity_admin_session");
+    const { data, error } = await supabase.functions.invoke("admin-manage-users", { body: { action: "create_admin_account", sessionToken, email: newEmail.trim(), displayName: newDisplayName.trim() || null, tempPassword: newPassword, permissions: selectedPermissions } });
+    if (error || data?.error) toast({ title: error?.message || data?.error, variant: "destructive" });
+    else { toast({ title: "Admin created and email sent!" }); setShowCreateModal(false); setNewEmail(""); setNewDisplayName(""); setNewPassword(""); setSelectedPermissions([]); fetchAdmins(); }
+    setCreating(false);
+  };
+
+  const handleDelete = async (adminId: string) => {
+    if (!confirm("Delete this admin?")) return;
+    setDeleting(adminId);
+    const sessionToken = localStorage.getItem("bloxcity_admin_session");
+    await supabase.functions.invoke("admin-manage-users", { body: { action: "delete_admin_account", sessionToken, adminId } });
+    fetchAdmins();
+    setDeleting(null);
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className={`text-xl font-semibold ${textClass}`}>Admin Accounts</h2>
+        <div className="flex gap-2">
+          {isFirstAdmin && <Button onClick={() => setShowCreateModal(true)}><UserPlus className="w-4 h-4 mr-2" />Create Admin</Button>}
+          <Button variant="outline" onClick={fetchAdmins}><RefreshCw className="w-4 h-4" /></Button>
+        </div>
+      </div>
+      <Card className={cardClass}>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Crown className="w-5 h-5" />Admin Accounts ({admins.length})</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead className={mutedClass}>Email</TableHead>
+              <TableHead className={mutedClass}>Name</TableHead>
+              <TableHead className={mutedClass}>Status</TableHead>
+              <TableHead className={mutedClass}>Last Login</TableHead>
+              {isFirstAdmin && <TableHead className={`text-right ${mutedClass}`}>Actions</TableHead>}
+            </TableRow></TableHeader>
+            <TableBody>
+              {admins.map((admin) => (
+                <TableRow key={admin.id}>
+                  <TableCell className={textClass}><div className="flex items-center gap-2">{admin.is_first_admin && <Crown className="w-4 h-4 text-yellow-500" />}{admin.email}</div></TableCell>
+                  <TableCell className={mutedClass}>{admin.display_name || "-"}</TableCell>
+                  <TableCell><span className={`px-2 py-1 rounded text-xs font-medium ${admin.is_active ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"}`}>{admin.is_active ? "Active" : "Inactive"}</span></TableCell>
+                  <TableCell className={mutedClass}>{admin.last_login_at ? new Date(admin.last_login_at).toLocaleString() : "Never"}</TableCell>
+                  {isFirstAdmin && <TableCell className="text-right">{!admin.is_first_admin && <Button size="sm" variant="destructive" onClick={() => handleDelete(admin.id)} disabled={deleting === admin.id}>{deleting === admin.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}</Button>}</TableCell>}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${cardClass} border rounded-xl p-6 max-w-lg w-full`}>
+            <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Create Admin Account</h2>
+            <div className="space-y-4">
+              <div><label className={`text-sm ${mutedClass}`}>Email *</label><Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="admin@example.com" className={inputClass} /></div>
+              <div><label className={`text-sm ${mutedClass}`}>Display Name</label><Input value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} placeholder="John Doe" className={inputClass} /></div>
+              <div><label className={`text-sm ${mutedClass}`}>Password *</label><div className="flex gap-2"><Input type={showPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={`flex-1 ${inputClass}`} /><Button variant="outline" onClick={generatePassword}>Generate</Button></div></div>
+              <div><label className={`text-sm ${mutedClass}`}>Permissions</label><div className="grid grid-cols-2 gap-2 border rounded-lg p-3 max-h-40 overflow-y-auto">{PERMS.map((perm) => (<label key={perm.id} className={`flex items-center gap-2 text-sm cursor-pointer ${textClass}`}><input type="checkbox" checked={selectedPermissions.includes(perm.id)} onChange={() => setSelectedPermissions(prev => prev.includes(perm.id) ? prev.filter(p => p !== perm.id) : [...prev, perm.id])} />{perm.label}</label>))}</div></div>
+              <div className="flex gap-3 pt-4"><Button variant="outline" onClick={() => setShowCreateModal(false)} className="flex-1">Cancel</Button><Button onClick={handleCreate} disabled={creating} className="flex-1">{creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : <>Create & Email</>}</Button></div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
  // Inline JobsTab component
  interface JobCategory {
@@ -2875,7 +3009,7 @@ const Admin = () => {
         {activeTab === "game-thumbnails" && <GameThumbnailsTab darkMode={darkMode} />}
 
         {/* Admin Accounts Tab (new admin panel system) */}
-        {activeTab === "admin-accounts" && <AdminAccountsTab darkMode={darkMode} isFirstAdmin={isFirstAdmin} />}
+        {activeTab === "admin-accounts" && <AdminAccountsTabInline darkMode={darkMode} isFirstAdmin={isFirstAdmin} />}
         
         {/* Admin Users Tab (legacy - site admins via user_roles) */}
         {activeTab === "admins" && (
