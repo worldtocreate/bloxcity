@@ -36,7 +36,6 @@ export default function ForumRegister() {
   const [dobMonth, setDobMonth] = useState('');
   const [dobDay, setDobDay] = useState('');
   const [dobYear, setDobYear] = useState('');
-  const [acceptTos, setAcceptTos] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
@@ -99,13 +98,6 @@ export default function ForumRegister() {
       const trimmedUsername = username.trim();
       const trimmedDisplayName = displayName.trim() || null;
       const trimmedEmail = email.trim();
-
-      // Check TOS acceptance
-      if (!existingAuthUser && !acceptTos) {
-        setError('You must agree to the terms of service');
-        setLoading(false);
-        return;
-      }
 
       // Validate email format
       if (!existingAuthUser) {
@@ -344,242 +336,207 @@ export default function ForumRegister() {
   ];
   const days = Array.from({ length: 31 }, (_, i) => i + 1);
 
-  const inputStyle = {
-    background: '#fff',
-    color: '#333',
-    border: '1px solid #ccc',
-    borderRadius: '2px',
-    padding: '6px 12px',
-    marginBottom: '15px',
-    width: '100%',
-    height: '35px',
-    boxSizing: 'border-box' as const
-  };
-
-  const selectStyle = {
-    ...inputStyle,
-    WebkitAppearance: 'menulist' as const,
-    MozAppearance: 'menulist' as const,
-    appearance: 'menulist' as const
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#ededed' }}>
-      <div className="auth-container" style={{ width: '400px' }}>
-        <div className="container" style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '2px', padding: '25px' }}>
-          <h5 className="mb-25" style={{ fontSize: '1.64rem', lineHeight: '110%', marginBottom: '25px' }}>Register</h5>
-          
-          {existingAuthUser && (
-            <div className="alert alert-warning" style={{ background: '#fa7b00', color: '#fff', fontSize: '14px', padding: '10px', marginBottom: '15px', borderRadius: '5px' }}>
-              <p style={{ fontWeight: 500 }}>
-                You're currently signed in as {existingAuthUser.email || 'your account'}.
-              </p>
-              <p style={{ fontSize: '12px', marginTop: '4px', opacity: 0.9 }}>
-                The email field is locked while signed in. Sign out to register a new email.
-              </p>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="button button-gray"
-                  style={{ 
-                    background: 'rgba(255,255,255,0.2)', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '6px 12px', 
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Sign out
-                </button>
-                <Link
-                  to="/login"
-                  className="button button-blue"
-                  style={{ 
-                    background: '#2196f3', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '6px 12px', 
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    textDecoration: 'none'
-                  }}
-                >
-                  Go to login
-                </Link>
+    <div className="min-h-screen bg-[hsl(var(--bc-background))] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <Link to="/">
+            <img src={bloxcityLogo} alt="BloxCity" className="w-24 h-24 mx-auto rounded-xl" />
+          </Link>
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mt-4">Create Account</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] text-sm mt-1">Join the BloxCity community</p>
+        </div>
+
+        <div className="bc-card">
+          <div className="bc-card-body">
+            {existingAuthUser && (
+              <div className="p-3 mb-4 bg-[hsl(var(--bc-warning)/0.10)] border border-[hsl(var(--bc-warning)/0.35)] rounded-lg">
+                <p className="text-sm text-[hsl(var(--bc-text))] font-medium">
+                  You're currently signed in as <span className="font-bold">{existingAuthUser.email || 'your account'}</span>.
+                </p>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                  The email field is locked while signed in. Sign out to register a new email.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button type="button" onClick={handleSignOut} className="bc-btn bc-btn-gray">
+                    Sign out
+                  </button>
+                  <Link to="/login" className="bc-btn bc-btn-primary">
+                    Go to login
+                  </Link>
+                </div>
               </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ background: '#ed3737', color: '#fff', fontSize: '14px', padding: '10px', marginBottom: '15px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            {/* Email */}
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email Address"
-              className="form-input"
-              style={inputStyle}
-              disabled={!!existingAuthUser}
-              required
-            />
-
-            {/* Username */}
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
-              className="form-input"
-              style={inputStyle}
-              required
-            />
-
-            {/* Display Name */}
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Display Name (optional)"
-              className="form-input"
-              style={inputStyle}
-              maxLength={30}
-            />
-
-            {/* Password - only for new users */}
-            {!existingAuthUser && (
-              <>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="form-input"
-                  style={inputStyle}
-                  required
-                />
-
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Password (again)"
-                  className="form-input"
-                  style={inputStyle}
-                  required
-                />
-
-                {/* Date of Birth */}
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', color: '#666', fontSize: '14px', marginBottom: '5px' }}>Date of Birth</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                    <select
-                      value={dobMonth}
-                      onChange={(e) => setDobMonth(e.target.value)}
-                      className="form-input"
-                      style={selectStyle}
-                      required
-                    >
-                      <option value="">Month</option>
-                      {months.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={dobDay}
-                      onChange={(e) => setDobDay(e.target.value)}
-                      className="form-input"
-                      style={selectStyle}
-                      required
-                    >
-                      <option value="">Day</option>
-                      {days.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={dobYear}
-                      onChange={(e) => setDobYear(e.target.value)}
-                      className="form-input"
-                      style={selectStyle}
-                      required
-                    >
-                      <option value="">Year</option>
-                      {years.map((y) => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <p style={{ color: '#666', fontSize: '12px', marginTop: '5px' }}>You must be at least 13 years old to register</p>
-                </div>
-
-                {/* Terms checkbox */}
-                <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                  <input
-                    type="checkbox"
-                    checked={acceptTos}
-                    onChange={(e) => setAcceptTos(e.target.checked)}
-                    className="form-checkbox"
-                    style={{
-                      appearance: 'none',
-                      outline: 'none',
-                      border: '2px solid #5a5a5a',
-                      borderRadius: '1px',
-                      width: '18px',
-                      height: '18px',
-                      marginTop: '2px',
-                      cursor: 'pointer',
-                      flexShrink: 0
-                    }}
-                  />
-                  <label className="form-label" style={{ color: '#626262', fontSize: '14px' }}>
-                    I agree to follow the <a href="/terms" style={{ color: '#039be5', textDecoration: 'none' }}>terms of service</a>
-                  </label>
-                </div>
-
-                <div style={{ height: '15px' }}></div>
-              </>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="button button-blue"
-              style={{ 
-                background: '#2196f3', 
-                color: '#fff', 
-                fontWeight: 500, 
-                border: 0, 
-                borderRadius: '2px', 
-                padding: '8px 16px', 
-                cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.8 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Register
-            </button>
-          </form>
+            {error && (
+              <div className="flex items-center gap-2 p-3 mb-4 bg-[hsl(var(--bc-danger)/0.1)] border border-[hsl(var(--bc-danger)/0.3)] rounded-lg text-[hsl(var(--bc-danger))]">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
 
-          <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign: 'center' }}>
-            <span style={{ color: '#666', fontSize: '14px' }}>
-              Already have an account? <Link to="/login" style={{ color: '#039be5', textDecoration: 'none' }}>Log in</Link>
-            </span>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email Address..."
+                  className="bc-input"
+                  disabled={!!existingAuthUser}
+                  required
+                />
+              </div>
+
+              {/* Username */}
+              <div>
+                <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Username..."
+                  className="bc-input"
+                  required
+                />
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                  3-20 characters, letters, numbers, and underscores only
+                </p>
+              </div>
+
+              {/* Display Name */}
+              <div>
+                <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                  Display Name <span className="font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Display Name..."
+                  className="bc-input"
+                  maxLength={30}
+                />
+              </div>
+
+              {/* Password - only for new users */}
+              {!existingAuthUser && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Password..."
+                      className="bc-input"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm Password..."
+                      className="bc-input"
+                      required
+                    />
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-1">
+                      Date of Birth
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <select
+                        value={dobMonth}
+                        onChange={(e) => setDobMonth(e.target.value)}
+                        className="bc-input"
+                        required
+                      >
+                        <option value="">Month</option>
+                        {months.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={dobDay}
+                        onChange={(e) => setDobDay(e.target.value)}
+                        className="bc-input"
+                        required
+                      >
+                        <option value="">Day</option>
+                        {days.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={dobYear}
+                        onChange={(e) => setDobYear(e.target.value)}
+                        className="bc-input"
+                        required
+                      >
+                        <option value="">Year</option>
+                        {years.map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                      You must be at least 13 years old to register
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Terms notice */}
+              <div className="text-xs text-[hsl(var(--bc-text-muted))] text-center">
+                By signing up, you agree to our{' '}
+                <Link to="/terms" className="text-[hsl(var(--bc-primary))] hover:underline">Terms of Service</Link>
+                {' '}and{' '}
+                <Link to="/privacy" className="text-[hsl(var(--bc-primary))] hover:underline">Privacy Policy</Link>
+              </div>
+
+              {recaptchaLoaded && (
+                <p className="text-xs text-[hsl(var(--bc-success))] text-center">✓ reCAPTCHA ready</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="bc-btn bc-btn-primary w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Creating Account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-4 text-center text-sm text-[hsl(var(--bc-text-muted))]">
+              Already have an account?{' '}
+              <Link to="/login" className="text-[hsl(var(--bc-primary))] hover:underline font-medium">
+                Sign in
+              </Link>
+            </div>
           </div>
         </div>
       </div>

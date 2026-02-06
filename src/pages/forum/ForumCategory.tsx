@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Plus, Pin, Lock, MessageSquare, ChevronRight, User, Shield } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
+import UserAvatar from '@/components/forum/UserAvatar';
 import { getRelativeTime } from '@/lib/timeUtils';
 
 interface Thread {
@@ -14,10 +16,17 @@ interface Thread {
   reply_count: number;
   created_at: string;
   last_post_at: string;
-  author_username: string;
-  author_id: string;
-  last_poster_username: string | null;
-  last_poster_id: string | null;
+  author: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+    is_verified: boolean;
+    is_staff?: boolean;
+  };
+  last_poster?: {
+    username: string;
+    is_staff?: boolean;
+  };
 }
 
 interface Category {
@@ -31,17 +40,15 @@ interface Category {
 export default function ForumCategory() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user, forumUser, isAdmin } = useOutletContext<{
-    user: any;
+  const { user, forumUser, isAdmin } = useOutletContext<{ 
+    user: any; 
     forumUser: ForumUser | null;
     isAdmin: boolean;
   }>();
-
+  
   const [category, setCategory] = useState<Category | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const isLoggedIn = !!forumUser;
 
   useEffect(() => {
     if (slug) fetchCategory();
@@ -55,7 +62,7 @@ export default function ForumCategory() {
       .single();
 
     if (!cat) {
-      navigate('/forum');
+      navigate('/');
       return;
     }
 
@@ -65,7 +72,7 @@ export default function ForumCategory() {
       .from('forum_threads')
       .select('*')
       .eq('category_id', cat.id)
-      .eq('is_deleted', false)
+     .eq('is_deleted', false)
       .order('is_pinned', { ascending: false })
       .order('last_post_at', { ascending: false });
 
@@ -74,28 +81,35 @@ export default function ForumCategory() {
         threadData.map(async (thread) => {
           const { data: author } = await supabase
             .from('forum_users')
-            .select('id, username')
+            .select('id, username, avatar_url, is_verified, user_id')
             .eq('id', thread.author_id)
             .single();
+          
+          // Check if author is staff via secure RPC
+          let isStaff = false;
+          if (author?.user_id) {
+            const { data: role } = await supabase.rpc('get_staff_role', { _user_id: author.user_id });
+            isStaff = !!role;
+          }
 
-          const { data: lastPoster } = thread.last_post_by
-            ? await supabase
-                .from('forum_users')
-                .select('id, username')
-                .eq('id', thread.last_post_by)
-                .single()
+          const { data: lastPoster } = thread.last_post_by 
+            ? await supabase.from('forum_users').select('id, username, user_id').eq('id', thread.last_post_by).single()
             : { data: null };
 
-          return {
-            ...thread,
-            author_username: author?.username || 'Unknown',
-            author_id: author?.id || '',
-            last_poster_username: lastPoster?.username || null,
-            last_poster_id: lastPoster?.id || null,
+          let lastPosterIsStaff = false;
+          if (lastPoster?.user_id) {
+            const { data: role } = await supabase.rpc('get_staff_role', { _user_id: lastPoster.user_id });
+            lastPosterIsStaff = !!role;
+          }
+
+          return { 
+            ...thread, 
+            author: { ...author, is_staff: isStaff }, 
+            last_poster: lastPoster ? { ...lastPoster, is_staff: lastPosterIsStaff } : null 
           };
         })
       );
-      setThreads(threadsWithAuthors as Thread[]);
+      setThreads(threadsWithAuthors as unknown as Thread[]);
     }
     setLoading(false);
   };
@@ -105,135 +119,145 @@ export default function ForumCategory() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-white border border-[#ccc] rounded w-1/3" />
+        <div className="h-8 bg-[hsl(var(--bc-bg-card))] rounded w-1/3 border border-[hsl(var(--bc-border))]" />
+        <div className="h-4 bg-[hsl(var(--bc-bg-card))] rounded w-1/2 border border-[hsl(var(--bc-border))]" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-20 bg-white border border-[#ccc] rounded" />
+          <div key={i} className="h-20 bg-[hsl(var(--bc-bg-card))] rounded-xl border border-[hsl(var(--bc-border))]" />
         ))}
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Mobile Buttons */}
-      {isLoggedIn && (
-        <div className="show-for-small-only text-center mb-4">
-          <Link to="/forum/my-threads" className="button button-blue">My Threads</Link>
-          <Link to="/forum/search" className="button button-red">Search Forum</Link>
-          {canCreateThread && (
-            <Link to={`/category/${slug}/new`} className="button button-green">Create</Link>
-          )}
-        </div>
-      )}
+    <div className="space-y-4">
+      {/* Header */}
+      <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))]">Forum</h1>
+      
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-sm">
+        <Link to="/" className="text-[hsl(var(--bc-primary))] hover:underline">Forum</Link>
+        <ChevronRight className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+        <span className="text-[hsl(var(--bc-text))]">{category?.name}</span>
+      </nav>
 
-      {/* Navigation Row */}
-      <div className="grid-x grid-margin-x mb-4">
-        <div className="cell small-9 medium-6">
-          <div className="forum-navigation">
-            <div className="forum-navigation-item">
-              <Link to="/forum">Forum</Link>
-            </div>
-            <div className="forum-navigation-item">
-              <Link to="/forum">BLOX City</Link>
-            </div>
-            <div className="forum-navigation-item">
-              <Link to={`/category/${slug}`}>{category?.name}</Link>
-            </div>
-          </div>
-        </div>
-        {isLoggedIn && (
-          <div className="cell medium-6 text-right hide-for-small-only">
-            <div className="forum-auth-navigation">
-              <div className="forum-auth-navigation-item">
-                <Link to="/forum/my-threads">My Threads</Link>
-              </div>
-              <div className="forum-auth-navigation-item">
-                <Link to="/forum/search">Search Forum</Link>
-              </div>
-              {canCreateThread && (
-                <div className="forum-auth-navigation-item">
-                  <Link to={`/category/${slug}/new`}>Create Thread</Link>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+      {/* New Thread Button */}
+      <div className="flex justify-end">
+        {canCreateThread ? (
+          <Link
+            to={`/category/${slug}/new`}
+            className="flex items-center gap-2 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 text-white px-4 py-2 rounded-lg transition font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            New Thread
+          </Link>
+        ) : user ? (
+          <Link
+            to="/register"
+            className="flex items-center gap-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary-dark))] text-white px-4 py-2 rounded-lg transition font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Create forum profile
+          </Link>
+        ) : null}
       </div>
 
-      {/* Thread List Header */}
-      <div className="forum-header forum-post-header">
-        <div className="grid-x grid-margin-x">
-          <div className="cell medium-8">Post</div>
-          <div className="cell medium-1 text-center hide-for-small-only">Replies</div>
-          <div className="cell medium-1 text-center hide-for-small-only">Views</div>
-          <div className="cell medium-2 text-right hide-for-small-only">Last Post</div>
+      {/* Threads Table */}
+      {threads.length === 0 ? (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-12 text-center">
+          <MessageSquare className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
+          <p className="text-[hsl(var(--bc-text-muted))]">
+            There are no threads in this topic. Maybe{' '}
+            <Link to={`/category/${slug}/new`} className="text-[hsl(var(--bc-primary))] hover:underline">
+              create one?
+            </Link>
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
+          {/* Table Header */}
+          <div className="bg-[hsl(var(--bc-primary))] text-white px-4 py-3 hidden md:grid md:grid-cols-12 gap-4 text-sm font-medium">
+            <div className="col-span-8">Post</div>
+            <div className="col-span-2 text-center">Replies</div>
+            <div className="col-span-2 text-center">Last Reply</div>
+          </div>
 
-      {/* Thread List */}
-      <div className="forum-container forum-topic-container">
-        {threads.length === 0 ? (
-          <div className="cell" style={{ padding: 15 }}>There are no threads in this topic.</div>
-        ) : (
-          threads.map((thread) => (
-            <div key={thread.id} className="forum-thread-item">
-              <div>
-                {/* Badges */}
-                {(thread.is_pinned || thread.is_locked) && (
-                  <div className="forum-thread-badges">
-                    {thread.is_pinned && (
-                      <span className="forum-thread-badge forum-thread-badge-pinned">Pinned</span>
-                    )}
-                    {thread.is_locked && (
-                      <span className="forum-thread-badge forum-thread-badge-locked">Locked</span>
+          {/* Threads */}
+          <div className="divide-y divide-[hsl(var(--bc-border))]">
+            {threads.map((thread) => (
+              <Link
+                key={thread.id}
+                to={`/thread/${thread.id}`}
+                className={`block px-4 py-4 hover:bg-[hsl(var(--bc-bg-light))] transition ${thread.is_deleted ? 'opacity-50' : ''}`}
+              >
+                <div className="grid md:grid-cols-12 gap-4 items-center">
+                  {/* Post Info */}
+                  <div className="md:col-span-8 flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <UserAvatar 
+                        avatarUrl={thread.author?.avatar_url} 
+                        username={thread.author?.username || ''} 
+                        size="md" 
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {thread.is_pinned && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-[hsl(var(--bc-accent))] text-white rounded">
+                            <Pin className="w-3 h-3" /> Pinned
+                          </span>
+                        )}
+                        {thread.is_locked && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-black text-white rounded">
+                            <Lock className="w-3 h-3" /> Locked
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition truncate text-lg">
+                        {thread.title}
+                      </h3>
+                      <div className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">
+                        <span className="hidden sm:inline">Posted by </span>
+                        <span className={thread.author?.is_staff ? 'text-[hsl(var(--bc-accent))]' : ''}>
+                          {thread.author?.username}
+                        </span>
+                        <span> - {getRelativeTime(thread.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Replies */}
+                  <div className="md:col-span-2 text-center hidden md:block">
+                    <span className="text-[hsl(var(--bc-text))]">{thread.reply_count.toLocaleString()}</span>
+                  </div>
+
+                  {/* Last Reply */}
+                  <div className="md:col-span-2 text-center hidden md:block">
+                    {thread.last_poster ? (
+                      <div>
+                        <span className={thread.last_poster.is_staff ? 'text-[hsl(var(--bc-accent))]' : 'text-[hsl(var(--bc-text))]'}>
+                          {thread.last_poster.username}
+                        </span>
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          {getRelativeTime(thread.last_post_at)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className={thread.author?.is_staff ? 'text-[hsl(var(--bc-accent))]' : 'text-[hsl(var(--bc-text))]'}>
+                          {thread.author?.username}
+                        </span>
+                        <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          {getRelativeTime(thread.created_at)}
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-                <Link to={`/thread/${thread.id}`} className="forum-thread-title">
-                  {thread.title}
-                </Link>
-                <div className="forum-thread-meta">
-                  by <Link to={`/user/${thread.author_username}`}>{thread.author_username}</Link>,{' '}
-                  {getRelativeTime(thread.created_at)}
                 </div>
-              </div>
-              <div className="text-center hide-for-small-only">
-                <span className="forum-container-stat">{thread.reply_count}</span>
-              </div>
-              <div className="text-center hide-for-small-only">
-                <span className="forum-container-stat">{thread.view_count}</span>
-              </div>
-              <div className="text-right hide-for-small-only">
-                {thread.last_poster_username ? (
-                  <>
-                    <Link
-                      to={`/user/${thread.last_poster_username}`}
-                      className="forum-container-stat forum-container-stat-last-post"
-                    >
-                      {thread.last_poster_username}
-                    </Link>
-                    <div className="forum-container-stat-last-poster">
-                      {getRelativeTime(thread.last_post_at)}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to={`/user/${thread.author_username}`}
-                      className="forum-container-stat forum-container-stat-last-post"
-                    >
-                      {thread.author_username}
-                    </Link>
-                    <div className="forum-container-stat-last-poster">
-                      {getRelativeTime(thread.created_at)}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

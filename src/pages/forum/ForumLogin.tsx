@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertCircle, RefreshCw, User, Mail } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
@@ -303,74 +303,59 @@ export default function ForumLogin() {
   if (showReactivateModal && disabledAccountInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
-        <div className="auth-container">
-          <div className="container" style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '2px', padding: '25px' }}>
-            <h5 className="mb-25" style={{ fontSize: '1.64rem', lineHeight: '110%', marginBottom: '25px' }}>Welcome Back!</h5>
-            
-            <div className="alert alert-warning" style={{ background: '#fa7b00', color: '#fff', fontSize: '16px', padding: '10px', marginBottom: '25px', borderRadius: '5px' }}>
-              <p>Your account was disabled on your request.</p>
-              <p style={{ fontSize: '14px', marginTop: '8px', opacity: 0.9 }}>
-                Reason: {getReasonText(disabledAccountInfo.self_disabled_reason)}
-              </p>
-              {disabledAccountInfo.self_disabled_until && (
-                <p style={{ fontSize: '14px', marginTop: '4px', opacity: 0.9 }}>
-                  Scheduled until: {new Date(disabledAccountInfo.self_disabled_until).toLocaleDateString()}
-                </p>
-              )}
-            </div>
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+            </Link>
+          </div>
 
-            <p style={{ color: '#666', marginBottom: '25px', textAlign: 'center' }}>
-              Would you like to reactivate your account and continue using the forum?
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                onClick={handleReactivateAccount}
-                disabled={reactivating}
-                className="button button-blue"
-                style={{ 
-                  background: '#2196f3', 
-                  color: '#fff', 
-                  fontWeight: 500, 
-                  border: 0, 
-                  borderRadius: '2px', 
-                  padding: '8px', 
-                  cursor: reactivating ? 'not-allowed' : 'pointer',
-                  opacity: reactivating ? 0.8 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                {reactivating ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Reactivating...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-5 h-5" />
-                    Reactivate My Account
-                  </>
-                )}
-              </button>
+          <div className="bc-card">
+            <div className="bc-card-body">
+              <h2 className="text-xl font-bold mb-4 text-center" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back!</h2>
               
-              <button
-                onClick={handleCancelReactivation}
-                className="button button-gray"
-                style={{ 
-                  background: '#5b6069', 
-                  color: '#fff', 
-                  fontWeight: 500, 
-                  border: 0, 
-                  borderRadius: '2px', 
-                  padding: '8px', 
-                  cursor: 'pointer'
-                }}
-              >
-                Not Now
-              </button>
+              <div className="bc-alert bc-alert-warning mb-6">
+                <p className="text-sm">Your account was disabled on your request.</p>
+                <p className="text-xs mt-2 opacity-80">
+                  Reason: {getReasonText(disabledAccountInfo.self_disabled_reason)}
+                </p>
+                {disabledAccountInfo.self_disabled_until && (
+                  <p className="text-xs mt-1 opacity-80">
+                    Scheduled until: {new Date(disabledAccountInfo.self_disabled_until).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+
+              <p className="text-sm mb-6 text-center" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+                Would you like to reactivate your account and continue using the forum?
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleReactivateAccount}
+                  disabled={reactivating}
+                  className="bc-btn bc-btn-info bc-btn-block"
+                >
+                  {reactivating ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Reactivating...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-5 h-5" />
+                      Reactivate My Account
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleCancelReactivation}
+                  className="bc-btn bc-btn-gray bc-btn-block"
+                >
+                  Not Now
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -381,89 +366,70 @@ export default function ForumLogin() {
   // Show forgot username form
   if (showForgotUsername) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#ededed' }}>
-        <div className="auth-container" style={{ width: '400px' }}>
-          <div className="container" style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '2px', padding: '25px' }}>
-            <h5 className="mb-25" style={{ fontSize: '1.64rem', lineHeight: '110%', marginBottom: '25px' }}>Forgot Username?</h5>
-            <p style={{ color: '#666', marginBottom: '15px', fontSize: '14px' }}>
-              Enter your email and we'll send you the username(s) associated with it.
-            </p>
-            
-            <form onSubmit={handleForgotUsername}>
-              <input
-                type="email"
-                value={forgotUsernameEmail}
-                onChange={(e) => setForgotUsernameEmail(e.target.value)}
-                placeholder="Email Address"
-                className="form-input"
-                style={{
-                  background: '#fff',
-                  color: '#333',
-                  border: '1px solid #ccc',
-                  borderRadius: '2px',
-                  padding: '6px 12px',
-                  marginBottom: '15px',
-                  width: '100%',
-                  height: '35px',
-                  boxSizing: 'border-box'
-                }}
-                required
-                autoFocus
-              />
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="submit"
-                  disabled={sendingUsernameRecovery}
-                  className="button button-blue"
-                  style={{ 
-                    background: '#2196f3', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '8px', 
-                    cursor: sendingUsernameRecovery ? 'not-allowed' : 'pointer',
-                    opacity: sendingUsernameRecovery ? 0.8 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    flex: 1
-                  }}
-                >
-                  {sendingUsernameRecovery ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    'Send Email'
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotUsername(false);
-                    setForgotUsernameEmail('');
-                  }}
-                  className="button button-gray"
-                  style={{ 
-                    background: '#5b6069', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '8px', 
-                    cursor: 'pointer'
-                  }}
-                >
-                  Back
-                </button>
-              </div>
-            </form>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+            </Link>
           </div>
+
+          <form onSubmit={handleForgotUsername} className="bc-card">
+            <div className="bc-card-body space-y-4">
+              <div className="text-center mb-2">
+                <div className="bc-section-icon mx-auto mb-3">
+                  <User className="w-6 h-6" />
+                </div>
+                <h2 className="text-xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Forgot Username?</h2>
+                <p className="text-sm mt-1" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+                  Enter your email and we'll send you the username(s) associated with it.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                  <input
+                    type="email"
+                    value={forgotUsernameEmail}
+                    onChange={(e) => setForgotUsernameEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="bc-input"
+                    style={{ paddingLeft: '42px' }}
+                    required
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={sendingUsernameRecovery}
+                className="bc-btn bc-btn-info bc-btn-block"
+              >
+                {sendingUsernameRecovery ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Username Recovery Email'
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotUsername(false);
+                  setForgotUsernameEmail('');
+                }}
+                className="bc-btn bc-btn-gray bc-btn-block"
+              >
+                Back to Login
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -472,8 +438,14 @@ export default function ForumLogin() {
   // Show 2FA verification screen
   if (requires2FA && pendingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#ededed' }}>
-        <div className="auth-container" style={{ width: '400px' }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-block">
+              <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+            </Link>
+          </div>
+          
           <TwoFactorVerify
             email={pendingAuth.email}
             method={twoFAMethod}
@@ -486,220 +458,152 @@ export default function ForumLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#ededed' }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
       {/* Welcome Dialog popup */}
       <WelcomeDialog isLoggedIn={false} />
       
-      <div className="auth-container" style={{ width: '400px' }}>
-        <div className="container" style={{ background: '#fff', border: '1px solid #ccc', borderRadius: '2px', padding: '25px' }}>
-          <h5 className="mb-25" style={{ fontSize: '1.64rem', lineHeight: '110%', marginBottom: '25px' }}>Log in</h5>
-          
-          {hasExistingSession && (
-            <div className="alert alert-warning" style={{ background: '#fa7b00', color: '#fff', fontSize: '14px', padding: '10px', marginBottom: '15px', borderRadius: '5px' }}>
-              <p style={{ fontWeight: 500 }}>You're already signed in.</p>
-              <p style={{ fontSize: '12px', marginTop: '4px', opacity: 0.9 }}>If you meant to use a different account, sign out first.</p>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="button button-blue"
-                  style={{ 
-                    background: '#2196f3', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '6px 12px', 
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Continue
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    setHasExistingSession(false);
-                    toast.success('Signed out');
-                  }}
-                  className="button button-gray"
-                  style={{ 
-                    background: '#5b6069', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '6px 12px', 
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Sign out
-                </button>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="alert alert-error" style={{ background: '#ed3737', color: '#fff', fontSize: '14px', padding: '10px', marginBottom: '15px', borderRadius: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {emailNotConfirmed && (
-            <div style={{ background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '2px', padding: '10px', marginBottom: '15px' }}>
-              <p style={{ color: '#333', fontSize: '14px', marginBottom: '10px' }}>
-                Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
-              </p>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={handleResendVerification}
-                  disabled={resendingVerification || loading}
-                  className="button button-blue"
-                  style={{ 
-                    background: '#2196f3', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '6px 12px', 
-                    cursor: (resendingVerification || loading) ? 'not-allowed' : 'pointer',
-                    opacity: (resendingVerification || loading) ? 0.8 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '12px'
-                  }}
-                >
-                  {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  Resend verification
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSendLoginLink}
-                  disabled={sendingLoginLink || loading}
-                  className="button button-gray"
-                  style={{ 
-                    background: '#5b6069', 
-                    color: '#fff', 
-                    fontWeight: 500, 
-                    border: 0, 
-                    borderRadius: '2px', 
-                    padding: '6px 12px', 
-                    cursor: (sendingLoginLink || loading) ? 'not-allowed' : 'pointer',
-                    opacity: (sendingLoginLink || loading) ? 0.8 : 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    fontSize: '12px'
-                  }}
-                >
-                  {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  Send login link
-                </button>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Username"
-              className="form-input"
-              style={{
-                background: '#fff',
-                color: '#333',
-                border: '1px solid #ccc',
-                borderRadius: '2px',
-                padding: '6px 12px',
-                marginBottom: '15px',
-                width: '100%',
-                height: '35px',
-                boxSizing: 'border-box'
-              }}
-              required
-              disabled={loading}
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="form-input"
-              style={{
-                background: '#fff',
-                color: '#333',
-                border: '1px solid #ccc',
-                borderRadius: '2px',
-                padding: '6px 12px',
-                marginBottom: '15px',
-                width: '100%',
-                height: '35px',
-                boxSizing: 'border-box'
-              }}
-              required
-              disabled={loading}
-            />
-            
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <button
-                type="submit"
-                disabled={loading}
-                className="button button-blue"
-                style={{ 
-                  background: '#2196f3', 
-                  color: '#fff', 
-                  fontWeight: 500, 
-                  border: 0, 
-                  borderRadius: '2px', 
-                  padding: '8px 16px', 
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.8 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                Log in
-              </button>
-              <a 
-                href="/forgot-password" 
-                style={{ color: '#039be5', textDecoration: 'none', fontSize: '14px' }}
-              >
-                Forgot password?
-              </a>
-            </div>
-          </form>
-
-          <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign: 'center' }}>
-            <span style={{ color: '#666', fontSize: '14px' }}>
-              Don't have an account? <Link to="/register" style={{ color: '#039be5', textDecoration: 'none' }}>Register</Link>
-            </span>
-          </div>
-
-          <div style={{ marginTop: '10px', textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setShowForgotUsername(true)}
-              style={{ 
-                color: '#757575', 
-                background: 'none', 
-                border: 'none', 
-                cursor: 'pointer',
-                fontSize: '14px',
-                textDecoration: 'underline'
-              }}
-            >
-              Forgot username?
-            </button>
-          </div>
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-block">
+            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back</h1>
+            <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Login to BLOX City</p>
+          </Link>
         </div>
+        {hasExistingSession && (
+          <div className="bc-alert bc-alert-warning mb-4">
+            <p className="text-sm font-medium">You’re already signed in.</p>
+            <p className="text-xs mt-1 opacity-80">If you meant to use a different account, sign out first.</p>
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="bc-btn bc-btn-info px-4"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setHasExistingSession(false);
+                  toast.success('Signed out');
+                }}
+                className="bc-btn bc-btn-gray px-4"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="bc-card">
+          <div className="bc-card-body space-y-4">
+            {error && (
+              <div className="bc-alert bc-alert-danger flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm">{error}</span>
+              </div>
+            )}
+
+            {emailNotConfirmed && (
+              <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bc-input-bg))', border: '1px solid hsl(var(--bc-section-border))', borderRadius: 'var(--bc-rounded-lg)' }}>
+                <p className="text-sm" style={{ color: 'hsl(var(--bc-text))' }}>
+                  Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification || loading}
+                    className="bc-btn bc-btn-info bc-btn-xs"
+                  >
+                    {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    Resend verification
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendLoginLink}
+                    disabled={sendingLoginLink || loading}
+                    className="bc-btn bc-btn-gray bc-btn-xs"
+                  >
+                    {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    Send login link
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="bc-input"
+                  style={{ paddingLeft: '42px' }}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="bc-input"
+                  style={{ paddingLeft: '42px' }}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => setShowForgotUsername(true)}
+                className="text-info hover:underline"
+              >
+                Forgot username?
+              </button>
+              <Link to="/forgot-password" className="text-info hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="bc-btn bc-btn-info bc-btn-block"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                'Login'
+              )}
+            </button>
+
+
+            <p className="text-center text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+              Don't have an account?{' '}
+              <Link to="/register" className="text-info hover:underline">
+                Create one
+              </Link>
+            </p>
+          </div>
+        </form>
       </div>
     </div>
   );

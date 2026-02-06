@@ -1,171 +1,275 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Gamepad2, Store, MessageSquare, Search, ShoppingBasket, Plus, PenLine, Shield } from 'lucide-react';
-import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
-import { ForumUser } from '@/hooks/useForumAuth';
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  Home,
+  MessageSquare,
+  Gamepad2,
+  Store,
+  User,
+  ArrowLeftRight,
+  Users,
+  UsersRound,
+  Settings,
+  Mail,
+  ChevronLeft,
+  Heart,
+  Award,
+  Plus,
+  BadgeCheck,
+  Sparkles,
+  HelpCircle,
+  Shield,
+  Map,
+   Briefcase,
+} from 'lucide-react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from '@/components/ui/sidebar';
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 
 interface AppSidebarProps {
-  forumUser?: ForumUser | null;
+  forumUser?: {
+    username: string;
+  } | null;
   isLoggedIn: boolean;
-  isAdmin?: boolean;
-  isModerator?: boolean;
 }
 
-export default function AppSidebar({ forumUser, isLoggedIn, isAdmin, isModerator }: AppSidebarProps) {
+const mainNavItems = [
+  { title: 'Dashboard', url: '/', icon: Home },
+  { title: 'Forum', url: '/forum', icon: MessageSquare },
+  { title: 'Players', url: '/players', icon: Users },
+  { title: 'Groups', url: '/groups', icon: UsersRound },
+  { title: 'Games', url: '/games', icon: Gamepad2 },
+  { title: 'Achievements', url: '/achievements', icon: Award },
+  { title: 'Roadmap', url: '/roadmap', icon: Map },
+   { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
+];
+
+const comingSoonItems = [
+  { title: 'Market', url: '/market', icon: Store },
+  { title: 'Character', url: '/character', icon: User },
+  { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
+];
+
+export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
   const location = useLocation();
-  const { openMobile, setOpenMobile, isMobile } = useSidebar();
-  const [cash, setCash] = useState(0);
-  const [friendRequests, setFriendRequests] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
+  const { state, setOpenMobile, isMobile, toggleSidebar } = useSidebar();
+  const collapsed = state === 'collapsed';
 
-  useEffect(() => {
-    if (forumUser) {
-      fetchData();
-    }
-  }, [forumUser]);
-
-  const fetchData = async () => {
-    if (!forumUser) return;
-    
-    // Fetch cash
-    const { data: userData } = await supabase
-      .from('forum_users')
-      .select('cash')
-      .eq('id', forumUser.id)
-      .single();
-    if (userData) setCash((userData as any).cash || 0);
-
-    // Fetch friend requests
-    const { count: friendCount } = await supabase
-      .from('forum_friend_requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('receiver_id', forumUser.id)
-      .eq('status', 'pending');
-    setFriendRequests(friendCount || 0);
-
-    // Fetch unread messages
-    const { count: msgCount } = await supabase
-      .from('forum_direct_messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('recipient_id', forumUser.id)
-      .eq('is_read', false);
-    setUnreadMessages(msgCount || 0);
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
   };
 
   const handleLinkClick = () => {
-    setOpenMobile(false);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
   };
 
-  // MOBILE ONLY - sidebar is exclusively for mobile users
-  // Desktop users get all features in the topbar
-  if (!isMobile || !openMobile) return null;
-
   return (
-    <>
-      {/* Overlay */}
-      <div 
-        className="fixed inset-0 bg-black/50 z-[9]"
-        onClick={() => setOpenMobile(false)}
-      />
-      
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="sidebar-inner">
-          <ul className="sidebar-items">
-            <li className="item">
-              <Link to={isLoggedIn ? '/' : '/landing'} onClick={handleLinkClick}>
-                <Home className="sidebar-icon" />
-                <span>Home</span>
-              </Link>
-            </li>
-            <li className="item">
-              <Link to="/games" onClick={handleLinkClick}>
-                <Gamepad2 className="sidebar-icon" />
-                <span>Games</span>
-              </Link>
-            </li>
-            <li className="item">
-              <Link to="/market" onClick={handleLinkClick}>
-                <Store className="sidebar-icon" />
-                <span>Market</span>
-              </Link>
-            </li>
-            <li className="item">
-              <Link to="/forum" onClick={handleLinkClick}>
-                <MessageSquare className="sidebar-icon" />
-                <span>Forum</span>
-              </Link>
-            </li>
-            <li className="item">
-              <Link to="/users" onClick={handleLinkClick}>
-                <Search className="sidebar-icon" />
-                <span>Users</span>
-              </Link>
-            </li>
-            <li className="item">
-              <Link to="/upgrade" onClick={handleLinkClick}>
-                <ShoppingBasket className="sidebar-icon" />
-                <span>Upgrade</span>
-              </Link>
-            </li>
-            {isLoggedIn && (
-              <li className="item">
-                <Link to="/create" onClick={handleLinkClick}>
-                  <Plus className="sidebar-icon" />
-                  <span>Create</span>
-                </Link>
-              </li>
-            )}
-            <li className="item">
-              <a href="https://blog.bloxcity.com" target="_blank" rel="noopener noreferrer">
-                <PenLine className="sidebar-icon" />
-                <span>Blog</span>
-              </a>
-            </li>
-          </ul>
-
-          {isLoggedIn && forumUser && (
-            <>
-              <div className="sidebar-divider"></div>
-              <ul className="sidebar-items">
-                <li className="item">
-                  <Link to="/convert" onClick={handleLinkClick}>
-                    <span className="icon icon-cash"></span>
-                    <span>{cash.toLocaleString()} Cash</span>
-                  </Link>
-                </li>
-                <li className="item">
-                  <Link to="/convert" onClick={handleLinkClick}>
-                    <span className="icon icon-coins"></span>
-                    <span>{(forumUser.coins || 0).toLocaleString()} Coins</span>
-                  </Link>
-                </li>
-                <li className="item">
-                  <Link to="/friends" onClick={handleLinkClick}>
-                    <span className="icon icon-friends"></span>
-                    <span>{friendRequests} Friend Requests</span>
-                  </Link>
-                </li>
-                <li className="item">
-                  <Link to="/messages" onClick={handleLinkClick}>
-                    <span className="icon icon-inbox"></span>
-                    <span>{unreadMessages} Messages</span>
-                  </Link>
-                </li>
-                {(isAdmin || isModerator) && (
-                  <li className="item">
-                    <Link to="/admin" onClick={handleLinkClick}>
-                      <span className="icon icon-staff"></span>
-                      <span>Panel</span>
-                    </Link>
-                  </li>
-                )}
-              </ul>
-            </>
+    <Sidebar collapsible="icon" className="border-r" style={{ 
+      background: 'hsl(var(--bc-section-bg))', 
+      borderColor: 'hsl(var(--bc-section-border))' 
+    }}>
+      <SidebarHeader className="p-3" style={{ borderBottom: '1px solid hsl(var(--bc-section-border))' }}>
+        <Link to="/" className="flex items-center gap-2" onClickCapture={handleLinkClick}>
+          <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 flex-shrink-0" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+          {!collapsed && (
+            <span className="font-bold" style={{ color: 'hsl(var(--bc-text))' }}>BLOX City</span>
           )}
-        </div>
-      </div>
-    </>
+        </Link>
+      </SidebarHeader>
+
+      <SidebarContent className="px-2 py-4">
+        {/* Main Navigation */}
+        <SidebarGroup>
+          {!collapsed && (
+            <SidebarGroupLabel className="bc-side-title mb-2">
+              Navigation
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to={item.url}
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive(item.url) ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <item.icon className="bc-side-icon" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Coming Soon Section */}
+        <SidebarGroup className="mt-4">
+          {!collapsed && (
+            <SidebarGroupLabel className="bc-side-title mb-2">
+              Coming Soon
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {comingSoonItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to={item.url}
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive(item.url) ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0', opacity: 0.6 }}
+                    >
+                      <item.icon className="bc-side-icon" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* User Section */}
+        {isLoggedIn && (
+          <SidebarGroup className="mt-4">
+            {!collapsed && (
+              <SidebarGroupLabel className="bc-side-title mb-2">
+                Account
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/create"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/create') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <Plus className="bc-side-icon" />
+                      {!collapsed && <span>Create</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/request"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/request') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <BadgeCheck className="bc-side-icon" />
+                      {!collapsed && <span>Request Verification</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/upgrades"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/upgrades') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <Sparkles className="bc-side-icon" />
+                      {!collapsed && <span>Upgrades</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/friends"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/friends') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <Heart className="bc-side-icon" />
+                      {!collapsed && <span>Friends</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/messages"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/messages') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <Mail className="bc-side-icon" />
+                      {!collapsed && <span>Messages</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/support"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/support') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <HelpCircle className="bc-side-icon" />
+                      {!collapsed && <span>Support</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/settings"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/settings') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <Settings className="bc-side-icon" />
+                      {!collapsed && <span>Settings</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                {forumUser?.username && ["soba", "dylan"].includes(forumUser.username.toLowerCase()) && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild onClick={handleLinkClick}>
+                      <Link
+                        to="/g0dfrey"
+                        onClickCapture={handleLinkClick}
+                        className={`bc-side-link ${isActive('/g0dfrey') ? 'active' : ''}`}
+                        style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      >
+                        <Shield className="bc-side-icon" />
+                        {!collapsed && <span>The g0dfrey panel</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+      </SidebarContent>
+    </Sidebar>
   );
 }

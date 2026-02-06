@@ -646,7 +646,7 @@ export default function ForumLayout() {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]">
-        <AppSidebar forumUser={forumUser} isLoggedIn={!!user} isAdmin={isAdmin} isModerator={isModerator} />
+        <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
         
         <div className="flex-1 flex flex-col min-w-0">
           <ForumHeader user={user} forumUser={forumUser} isAdmin={isAdmin} isModerator={isModerator} />
