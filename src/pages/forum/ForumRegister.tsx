@@ -224,12 +224,15 @@ export default function ForumRegister() {
 
         const dobString = `${parseInt(dobYear)}-${String(parseInt(dobMonth)).padStart(2, '0')}-${String(parseInt(dobDay)).padStart(2, '0')}`;
         
+        const defaultAvatarUrl = 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/default/default-avatar.png';
+        
         const { data: forumUserData, error: profileError } = await supabase.from('forum_users').insert({
           user_id: authData.user.id,
           username: trimmedUsername,
           display_name: trimmedDisplayName,
           date_of_birth: dobString,
-          dob_updated_at: new Date().toISOString()
+          dob_updated_at: new Date().toISOString(),
+          avatar_url: defaultAvatarUrl
         }).select('id').single();
 
         if (profileError) {
@@ -263,10 +266,13 @@ export default function ForumRegister() {
       }
 
       // For existing auth users, just create forum profile
+      const defaultAvatarUrl = 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/default/default-avatar.png';
+      
       const { data: forumUserData, error: profileError } = await supabase.from('forum_users').insert({
         user_id: userIdToUse,
         username: trimmedUsername,
-        display_name: trimmedDisplayName
+        display_name: trimmedDisplayName,
+        avatar_url: defaultAvatarUrl
       }).select('id').single();
 
       if (profileError) {

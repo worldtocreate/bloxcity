@@ -1,8 +1,8 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
-// Default avatar - hosted in public folder
-const DEFAULT_AVATAR = '/default-avatar.png';
+// Default avatar - hosted in Supabase storage for consistency
+const DEFAULT_AVATAR = 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/default/default-avatar.png';
 
 export type AvatarEffect =
   | 'glow-gold'
