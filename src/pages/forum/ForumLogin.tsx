@@ -57,11 +57,18 @@ export default function ForumLogin() {
   const [forgotUsernameEmail, setForgotUsernameEmail] = useState('');
   const [sendingUsernameRecovery, setSendingUsernameRecovery] = useState(false);
 
+  const [hasExistingSession, setHasExistingSession] = useState(false);
+
   useEffect(() => {
+    let mounted = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/');
+      if (!mounted) return;
+      setHasExistingSession(!!session);
     });
-  }, [navigate]);
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const check2FA = async (userEmail: string): Promise<{ requires2FA: boolean; method: 'totp' | 'email' | 'none' }> => {
     try {
@@ -494,6 +501,32 @@ export default function ForumLogin() {
             <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Login to BLOX City</p>
           </Link>
         </div>
+        {hasExistingSession && (
+          <div className="bc-alert bc-alert-warning mb-4">
+            <p className="text-sm font-medium">You’re already signed in.</p>
+            <p className="text-xs mt-1 opacity-80">If you meant to use a different account, sign out first.</p>
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="bc-btn bc-btn-info px-4"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setHasExistingSession(false);
+                  toast.success('Signed out');
+                }}
+                className="bc-btn bc-btn-gray px-4"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="bc-card">
           <div className="bc-card-body space-y-4">
