@@ -9,12 +9,220 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Password hashing for admin accounts
+async function hashAdminPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + "bloxcity_admin_salt_v2");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const body = await req.json();
+    const { action } = body;
+
+    // ========== ADMIN PANEL AUTH (no auth required) ==========
+    if (action === "admin_register") {
+      const { email, password, displayName } = body;
+      
+      if (!email || !password) {
+        return new Response(
+          JSON.stringify({ error: "Email and password are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: existing } = await supabaseAdmin
+        .from("admin_accounts")
+        .select("id")
+        .eq("email", email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: "An account with this email already exists" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { count } = await supabaseAdmin
+        .from("admin_accounts")
+        .select("id", { count: "exact", head: true });
+
+      const isFirstAdmin = count === 0;
+      const passwordHash = await hashAdminPassword(password);
+
+      const { data: newAdmin, error: createError } = await supabaseAdmin
+        .from("admin_accounts")
+        .insert({
+          email: email.toLowerCase().trim(),
+          password_hash: passwordHash,
+          display_name: displayName || null,
+          is_active: isFirstAdmin,
+        })
+        .select("id, email, display_name, is_active")
+        .single();
+
+      if (createError) {
+        console.error("Create admin error:", createError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create account" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (isFirstAdmin) {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await supabaseAdmin.from("admin_sessions").insert({
+          admin_account_id: newAdmin.id,
+          session_token: token,
+          expires_at: expiresAt.toISOString(),
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            sessionToken: token,
+            admin: { id: newAdmin.id, email: newAdmin.email, displayName: newAdmin.display_name },
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, needsApproval: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "admin_login") {
+      const { email, password } = body;
+      
+      if (!email || !password) {
+        return new Response(
+          JSON.stringify({ error: "Email and password are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const passwordHash = await hashAdminPassword(password);
+
+      const { data: admin } = await supabaseAdmin
+        .from("admin_accounts")
+        .select("id, email, display_name, is_active, password_hash")
+        .eq("email", email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (!admin || admin.password_hash !== passwordHash) {
+        return new Response(
+          JSON.stringify({ error: "Invalid email or password" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!admin.is_active) {
+        return new Response(
+          JSON.stringify({ error: "Your account is pending approval" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      await supabaseAdmin.from("admin_sessions").insert({
+        admin_account_id: admin.id,
+        session_token: token,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      await supabaseAdmin
+        .from("admin_accounts")
+        .update({ last_login_at: new Date().toISOString() })
+        .eq("id", admin.id);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          sessionToken: token,
+          admin: { id: admin.id, email: admin.email, displayName: admin.display_name },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "admin_verify") {
+      const { sessionToken } = body;
+      
+      if (!sessionToken) {
+        return new Response(
+          JSON.stringify({ valid: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: session } = await supabaseAdmin
+        .from("admin_sessions")
+        .select("admin_account_id, expires_at")
+        .eq("session_token", sessionToken)
+        .maybeSingle();
+
+      if (!session || new Date(session.expires_at) < new Date()) {
+        return new Response(
+          JSON.stringify({ valid: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: admin } = await supabaseAdmin
+        .from("admin_accounts")
+        .select("id, email, display_name, is_active")
+        .eq("id", session.admin_account_id)
+        .single();
+
+      if (!admin || !admin.is_active) {
+        return new Response(
+          JSON.stringify({ valid: false }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          valid: true,
+          admin: { id: admin.id, email: admin.email, displayName: admin.display_name },
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "admin_logout") {
+      const { sessionToken } = body;
+      if (sessionToken) {
+        await supabaseAdmin.from("admin_sessions").delete().eq("session_token", sessionToken);
+      }
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ========== REGULAR ADMIN ACTIONS (require auth) ==========
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -22,10 +230,6 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -39,7 +243,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
       _user_id: user.id,
       _role: "admin",
@@ -52,7 +255,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, targetUserId, role, email, requestId, forumUserId, requestType, approved, reason } = await req.json();
+    const { targetUserId, role, email, requestId, forumUserId, requestType, approved, reason } = body;
 
     // ========== SEND VERIFICATION REQUEST EMAIL ==========
     if (action === "send_verification_email") {

@@ -40,8 +40,8 @@ function AdminLogin() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-auth", {
-        body: { action: "login", email: loginEmail, password: loginPassword },
+      const { data, error } = await supabase.functions.invoke("admin-manage-users", {
+        body: { action: "admin_login", email: loginEmail, password: loginPassword },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -69,8 +69,8 @@ function AdminLogin() {
     }
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-auth", {
-        body: { action: "register", email: signupEmail, password: signupPassword, displayName: signupDisplayName },
+      const { data, error } = await supabase.functions.invoke("admin-manage-users", {
+        body: { action: "admin_register", email: signupEmail, password: signupPassword, displayName: signupDisplayName },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
