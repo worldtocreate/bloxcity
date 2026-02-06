@@ -32,52 +32,29 @@ export default function ForumStaff() {
   }, []);
 
   const fetchStaff = async () => {
-    // Get all active admin accounts with their linked forum users
-    const { data: adminAccounts } = await supabase
-      .from('admin_accounts')
-      .select(`
-        id,
-        display_name,
-        staff_role,
-        forum_user_id,
-        is_active
-      `)
-      .eq('is_active', true)
-      .in('staff_role', ['admin', 'owner', 'moderator']);
+    setLoading(true);
 
-    if (!adminAccounts || adminAccounts.length === 0) {
+    // Use secure RPC to avoid direct admin_accounts access from the client
+    const { data, error } = await supabase.rpc('get_staff_list');
+
+    if (error || !data) {
+      setStaff([]);
       setLoading(false);
       return;
     }
 
-    // Get forum user info for linked accounts
-    const forumUserIds = adminAccounts
-      .filter(a => a.forum_user_id)
-      .map(a => a.forum_user_id);
-
-    const { data: forumUsers } = await supabase
-      .from('forum_users')
-      .select('id, serial_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp')
-      .in('id', forumUserIds);
-
-    // Build staff list
-    const staffList: StaffMember[] = adminAccounts
-      .filter(account => account.forum_user_id && forumUsers?.find(fu => fu.id === account.forum_user_id))
-      .map(account => {
-        const forumUser = forumUsers!.find(fu => fu.id === account.forum_user_id)!;
-        return {
-          ...forumUser,
-          role: account.staff_role || 'moderator',
-          display_name: account.display_name
-        };
-      })
+    const staffList = (data as any[])
+      .map((row) => ({
+        ...row,
+        role: row.role || 'moderator',
+        display_name: row.display_name ?? null,
+      }))
       .sort((a, b) => {
-        // Sort by role priority: owner > admin > moderator
         const rolePriority: Record<string, number> = { owner: 0, admin: 1, moderator: 2 };
         return (rolePriority[a.role] ?? 3) - (rolePriority[b.role] ?? 3);
       });
 
-    setStaff(staffList);
+    setStaff(staffList as any);
     setLoading(false);
   };
 

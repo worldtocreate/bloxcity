@@ -125,6 +125,9 @@ export default function ForumUserProfile() {
   const [hideAffiliates, setHideAffiliates] = useState(false);
   const [affiliatedUsers, setAffiliatedUsers] = useState<AffiliateUser[]>([]);
 
+  // Staff role for the profile being viewed (owner/admin/mod)
+  const [profileStaffRole, setProfileStaffRole] = useState<string | null>(null);
+
   const isOwnProfile = forumUser?.serial_id === parseInt(serialId || '0') || 
                        forumUser?.username?.toLowerCase() === username?.toLowerCase();
 
@@ -182,7 +185,16 @@ export default function ForumUserProfile() {
 
     setProfile(userData as ProfileData);
 
-    // Check if blocked
+    // Resolve staff role (via security definer RPC) for the profile being viewed
+    if ((userData as any).user_id) {
+      const { data: staffRole } = await supabase.rpc('get_staff_role', {
+        _user_id: (userData as any).user_id,
+      });
+      setProfileStaffRole((staffRole as string | null) ?? null);
+    } else {
+      setProfileStaffRole(null);
+    }
+
     if (forumUser && forumUser.id !== userData.id) {
       const { data: blockData } = await supabase
         .from('forum_blocked_users')
@@ -567,14 +579,25 @@ export default function ForumUserProfile() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
-                <div className="flex items-center gap-1.5 font-semibold text-xl text-[hsl(var(--bc-text))]">
-                  {profile.username}
-                  <VerificationBadge 
-                    forumUserId={profile.id}
-                    isVerified={profile.is_verified}
-                    size="md"
-                  />
-                </div>
+                 <div className="flex items-center gap-1.5 font-semibold text-xl text-[hsl(var(--bc-text))]">
+                   {profile.username}
+                   <VerificationBadge 
+                     forumUserId={profile.id}
+                     isVerified={profile.is_verified}
+                     size="md"
+                   />
+                   {profileStaffRole && ['owner', 'admin', 'moderator'].includes(profileStaffRole) && (
+                     <span
+                       className={
+                         profileStaffRole === 'moderator'
+                           ? 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
+                           : 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]'
+                       }
+                     >
+                       {profileStaffRole === 'owner' ? 'Owner' : profileStaffRole === 'admin' ? 'Admin' : 'Mod'}
+                     </span>
+                   )}
+                 </div>
                 <div className="text-sm text-[hsl(var(--bc-text-muted))]">
                   @{profile.username}
                 </div>

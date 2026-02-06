@@ -71,27 +71,31 @@ export default function ForumUsers() {
     const { data: usersData } = await usersQuery;
 
     if (usersData) {
-      // Get staff status from admin_accounts (new system)
-      const forumUserIds = usersData.map(u => u.id);
-      const { data: adminAccounts } = await supabase
-        .from('admin_accounts')
-        .select('forum_user_id, staff_role, is_active')
-        .in('forum_user_id', forumUserIds)
-        .eq('is_active', true);
+      // Resolve staff roles via secure RPC (avoids direct admin_accounts access)
+      const roleEntries = await Promise.all(
+        usersData.map(async (u) => {
+          const { data } = await supabase.rpc('get_staff_role', { _user_id: u.user_id });
+          return [u.id, (data as string | null) ?? null] as const;
+        })
+      );
+      const roleMap = new Map(roleEntries);
 
       const ONLINE_THRESHOLD_MS = 3 * 60 * 1000;
       const now = Date.now();
       const isOnline = (lastSeen: string | null | undefined) => {
         if (!lastSeen) return false;
         const t = new Date(lastSeen).getTime();
-        return Number.isFinite(t) && (now - t) <= ONLINE_THRESHOLD_MS;
+        return Number.isFinite(t) && now - t <= ONLINE_THRESHOLD_MS;
       };
 
-      const usersWithRoles = usersData.map(user => ({
-        ...user,
-        is_admin: adminAccounts?.some(a => a.forum_user_id === user.id && ['admin', 'owner'].includes(a.staff_role || '')),
-        is_moderator: adminAccounts?.some(a => a.forum_user_id === user.id && a.staff_role === 'moderator')
-      }));
+      const usersWithRoles = usersData.map((user) => {
+        const staffRole = roleMap.get(user.id);
+        return {
+          ...user,
+          is_admin: staffRole === 'owner' || staffRole === 'admin',
+          is_moderator: staffRole === 'moderator',
+        };
+      });
 
       usersWithRoles.sort((a: any, b: any) => {
         const aOnline = isOnline(a.last_seen_at);
@@ -101,7 +105,7 @@ export default function ForumUsers() {
         const bSeen = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
         return bSeen - aSeen;
       });
-      
+
       setUsers(usersWithRoles);
     }
     setLoading(false);

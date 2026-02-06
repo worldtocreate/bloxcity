@@ -3435,6 +3435,22 @@ export type Database = {
       }
       get_maintenance_status: { Args: never; Returns: Json }
       get_reservation_count: { Args: never; Returns: number }
+      get_staff_list: {
+        Args: never
+        Returns: {
+          avatar_effect: string
+          avatar_url: string
+          display_name: string
+          id: string
+          is_verified: boolean
+          level: number
+          membership_tier: string
+          role: string
+          serial_id: number
+          username: string
+          xp: number
+        }[]
+      }
       get_staff_role: { Args: { _user_id: string }; Returns: string }
       has_gold_checkmark: { Args: { _forum_user_id: string }; Returns: boolean }
       has_pending_verification_request: {
