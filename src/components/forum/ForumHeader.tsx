@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'; // v2
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, ChevronDown, User } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ForumUser } from '@/hooks/useForumAuth';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
@@ -22,6 +22,11 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
   const [friendRequests, setFriendRequests] = useState(0);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [mobileUserDropdownOpen, setMobileUserDropdownOpen] = useState(false);
+  
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileUserDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (forumUser) {
@@ -30,6 +35,26 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
       fetchFriendRequests();
     }
   }, [forumUser]);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(target)) {
+        setMoreDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(target)) {
+        setUserDropdownOpen(false);
+      }
+      if (mobileUserDropdownRef.current && !mobileUserDropdownRef.current.contains(target)) {
+        setMobileUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchCash = async () => {
     if (!forumUser) return;
@@ -72,13 +97,31 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
     setOpenMobile(true);
   };
 
+  const toggleMoreDropdown = () => {
+    setMoreDropdownOpen(!moreDropdownOpen);
+    setUserDropdownOpen(false);
+    setMobileUserDropdownOpen(false);
+  };
+
+  const toggleUserDropdown = () => {
+    setUserDropdownOpen(!userDropdownOpen);
+    setMoreDropdownOpen(false);
+    setMobileUserDropdownOpen(false);
+  };
+
+  const toggleMobileUserDropdown = () => {
+    setMobileUserDropdownOpen(!mobileUserDropdownOpen);
+    setMoreDropdownOpen(false);
+    setUserDropdownOpen(false);
+  };
+
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <>
       <nav className="topbar">
         {/* Mobile View - Only visible below 1024px */}
-        <div className="topbar-mobile" style={{ display: 'none' }}>
+        <div className="topbar-mobile">
           <button 
             onClick={handleToggleSidebar}
             className="topbar-sidebar-toggler"
@@ -92,28 +135,29 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
           
           <div className="topbar-right">
             {!user ? (
-              <div className="relative">
+              <div className="topbar-dropdown-container" ref={mobileUserDropdownRef}>
                 <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  onClick={toggleMobileUserDropdown}
                   className="topbar-link"
+                  data-toggle="topbar-user-dropdown-mobile"
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <i className="icon icon-dropdown-arrow"></i>
                 </button>
-                {userDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserDropdownOpen(false)} />
-                    <ul className="dropdown-content navbar-user-dropdown">
-                      <li className="dropdown-item"><Link to="/login" onClick={() => setUserDropdownOpen(false)}>Login</Link></li>
-                      <li className="dropdown-item"><Link to="/register" onClick={() => setUserDropdownOpen(false)}>Register</Link></li>
-                    </ul>
-                  </>
-                )}
+                <ul 
+                  id="topbar-user-dropdown-mobile" 
+                  className="navbar-user-dropdown"
+                  style={{ display: mobileUserDropdownOpen ? 'block' : 'none' }}
+                >
+                  <li className="dropdown-item"><Link to="/login" onClick={() => setMobileUserDropdownOpen(false)}>Login</Link></li>
+                  <li className="dropdown-item"><Link to="/register" onClick={() => setMobileUserDropdownOpen(false)}>Register</Link></li>
+                </ul>
               </div>
             ) : (
-              <div className="relative">
+              <div className="topbar-dropdown-container" ref={mobileUserDropdownRef}>
                 <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  onClick={toggleMobileUserDropdown}
                   className="topbar-link"
+                  data-toggle="topbar-user-dropdown-mobile"
                 >
                   {forumUser?.avatar_url ? (
                     <img src={forumUser.avatar_url} alt="" className="w-[35px] h-[35px] rounded-full object-cover" />
@@ -123,25 +167,24 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
                     </div>
                   )}
                 </button>
-                {userDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserDropdownOpen(false)} />
-                    <ul className="dropdown-content navbar-user-dropdown">
-                      <li className="dropdown-item"><Link to={`/user/${forumUser?.username}`} onClick={() => setUserDropdownOpen(false)}>Profile</Link></li>
-                      <li className="dropdown-item"><Link to="/character" onClick={() => setUserDropdownOpen(false)}>Character</Link></li>
-                      <li className="dropdown-item"><Link to="/settings" onClick={() => setUserDropdownOpen(false)}>Settings</Link></li>
-                      <li className="dropdown-item"><button onClick={handleLogout} className="w-full text-left">Logout</button></li>
-                    </ul>
-                  </>
-                )}
+                <ul 
+                  id="topbar-user-dropdown-mobile" 
+                  className="navbar-user-dropdown"
+                  style={{ display: mobileUserDropdownOpen ? 'block' : 'none' }}
+                >
+                  <li className="dropdown-item"><Link to={`/user/${forumUser?.username}`} onClick={() => setMobileUserDropdownOpen(false)}>Profile</Link></li>
+                  <li className="dropdown-item"><Link to="/character" onClick={() => setMobileUserDropdownOpen(false)}>Character</Link></li>
+                  <li className="dropdown-item"><Link to="/settings" onClick={() => setMobileUserDropdownOpen(false)}>Settings</Link></li>
+                  <li className="dropdown-item"><button onClick={handleLogout} className="w-full text-left">Logout</button></li>
+                </ul>
               </div>
             )}
           </div>
         </div>
 
         {/* Desktop View - Always visible, full navigation */}
-        <div className="topbar-desktop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
-          <div className="topbar-left flex items-center">
+        <div className="topbar-desktop">
+          <div className="topbar-left">
             <Link to={user ? "/" : "/landing"} className="topbar-logo">
               <img src={bloxcityLogo} alt="BLOX City" style={{ height: 50 }} />
             </Link>
@@ -152,28 +195,28 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
             {user && (
               <Link to="/create" className={`topbar-link ${isActive('/create') ? 'active' : ''}`}>Create</Link>
             )}
-            <div className="relative">
+            <div className="topbar-dropdown-container" ref={moreDropdownRef}>
               <button
-                onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
-                className="topbar-link"
+                onClick={toggleMoreDropdown}
+                className={`topbar-link ${moreDropdownOpen ? 'active' : ''}`}
+                data-toggle="topbar-more-dropdown"
               >
-                <ChevronDown className="w-4 h-4" />
+                <i className="icon icon-dropdown-arrow"></i>
               </button>
-              {moreDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMoreDropdownOpen(false)} />
-                  <ul className="dropdown-content navbar-more-dropdown">
-                    <li className="dropdown-item"><Link to="/users" onClick={() => setMoreDropdownOpen(false)}>Users</Link></li>
-                    <li className="dropdown-item"><Link to="/groups" onClick={() => setMoreDropdownOpen(false)}>Groups</Link></li>
-                    <li className="dropdown-item"><Link to="/upgrade" onClick={() => setMoreDropdownOpen(false)}>Upgrade</Link></li>
-                    <li className="dropdown-item"><a href="https://discord.gg/bloxcity" target="_blank" rel="noopener noreferrer" onClick={() => setMoreDropdownOpen(false)}>Discord</a></li>
-                  </ul>
-                </>
-              )}
+              <ul 
+                id="topbar-more-dropdown" 
+                className="navbar-more-dropdown"
+                style={{ display: moreDropdownOpen ? 'block' : 'none' }}
+              >
+                <li className="dropdown-item"><Link to="/users" onClick={() => setMoreDropdownOpen(false)}>Users</Link></li>
+                <li className="dropdown-item"><Link to="/groups" onClick={() => setMoreDropdownOpen(false)}>Groups</Link></li>
+                <li className="dropdown-item"><Link to="/upgrade" onClick={() => setMoreDropdownOpen(false)}>Upgrade</Link></li>
+                <li className="dropdown-item"><a href="https://discord.gg/bloxcity" target="_blank" rel="noopener noreferrer" onClick={() => setMoreDropdownOpen(false)}>Discord</a></li>
+              </ul>
             </div>
           </div>
           
-          <div className="topbar-right flex items-center">
+          <div className="topbar-right">
             {!user ? (
               <>
                 <Link to="/login" className="topbar-link">Login</Link>
@@ -193,35 +236,35 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
                 <Link to="/convert" className="topbar-link" title={`${(forumUser?.coins || 0).toLocaleString()} Coins`}>
                   <span className="icon icon-coins"></span> {(forumUser?.coins || 0).toLocaleString()}
                 </Link>
-                <div className="relative">
+                <div className="topbar-dropdown-container" ref={userDropdownRef}>
                   <button
-                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="topbar-link flex items-center gap-1"
+                    onClick={toggleUserDropdown}
+                    className={`topbar-link topbar-user-button ${userDropdownOpen ? 'active' : ''}`}
+                    data-toggle="topbar-user-dropdown"
                   >
                     {forumUser?.avatar_url ? (
-                      <img src={forumUser.avatar_url} alt="" className="w-[25px] h-[25px] rounded-full object-cover mr-1" />
+                      <img src={forumUser.avatar_url} alt="" className="topbar-user-avatar" />
                     ) : (
-                      <div className="w-[25px] h-[25px] rounded-full bg-white/20 flex items-center justify-center mr-1">
+                      <div className="topbar-user-avatar-placeholder">
                         <User className="w-3 h-3" />
                       </div>
                     )}
-                    <span className="max-w-[80px] truncate">{forumUser?.username || 'User'}</span>
-                    <ChevronDown className="w-4 h-4" />
+                    <span className="topbar-username">{forumUser?.username || 'User'}</span>
+                    <i className="icon icon-dropdown-arrow"></i>
                   </button>
-                  {userDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setUserDropdownOpen(false)} />
-                      <ul className="dropdown-content navbar-user-dropdown">
-                        <li className="dropdown-item"><Link to={`/user/${forumUser?.username}`} onClick={() => setUserDropdownOpen(false)}>Profile</Link></li>
-                        <li className="dropdown-item"><Link to="/character" onClick={() => setUserDropdownOpen(false)}>Character</Link></li>
-                        <li className="dropdown-item"><Link to="/settings" onClick={() => setUserDropdownOpen(false)}>Settings</Link></li>
-                        {(isAdmin || isModerator) && (
-                          <li className="dropdown-item"><Link to="/admin" onClick={() => setUserDropdownOpen(false)}>Admin</Link></li>
-                        )}
-                        <li className="dropdown-item"><button onClick={handleLogout} className="w-full text-left">Logout</button></li>
-                      </ul>
-                    </>
-                  )}
+                  <ul 
+                    id="topbar-user-dropdown" 
+                    className="navbar-user-dropdown"
+                    style={{ display: userDropdownOpen ? 'block' : 'none' }}
+                  >
+                    <li className="dropdown-item"><Link to={`/user/${forumUser?.username}`} onClick={() => setUserDropdownOpen(false)}>Profile</Link></li>
+                    <li className="dropdown-item"><Link to="/character" onClick={() => setUserDropdownOpen(false)}>Character</Link></li>
+                    <li className="dropdown-item"><Link to="/settings" onClick={() => setUserDropdownOpen(false)}>Settings</Link></li>
+                    {(isAdmin || isModerator) && (
+                      <li className="dropdown-item"><Link to="/admin" onClick={() => setUserDropdownOpen(false)}>Admin</Link></li>
+                    )}
+                    <li className="dropdown-item"><button onClick={handleLogout} className="w-full text-left">Logout</button></li>
+                  </ul>
                 </div>
               </>
             )}
