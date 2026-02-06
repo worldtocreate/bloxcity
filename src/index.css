@@ -240,9 +240,317 @@
 }
 
 /* ========================================
-   DARK MODE COMPONENT OVERRIDES
-   Comprehensive dark theme styling
+   VALENTINE'S THEME COMPONENT OVERRIDES
+   Comprehensive pink/red romantic styling
 ======================================== */
+
+/* Core body and background */
+.valentines body {
+  background: hsl(350 100% 98%) !important;
+  color: hsl(340 50% 20%) !important;
+}
+
+.valentines #root {
+  background: hsl(350 100% 98%);
+}
+
+/* ========================================
+   VALENTINE'S CARDS & SURFACES
+======================================== */
+.valentines .bc-card,
+.valentines .card,
+.valentines [class*="bg-card"],
+.valentines [class*="bg-[hsl(var(--bc-bg-card))]"],
+.valentines [class*="bg-[hsl(var(--bc-section-bg))]"] {
+  background: hsl(0 0% 100%) !important;
+  border-color: hsl(350 50% 88%) !important;
+}
+
+.valentines [class*="bg-[hsl(var(--bc-bg))]"],
+.valentines [class*="bg-[hsl(var(--bc-body-bg))]"],
+.valentines [class*="bg-background"] {
+  background: hsl(350 100% 98%) !important;
+}
+
+.valentines [class*="bg-[hsl(var(--bc-bg-light))]"],
+.valentines [class*="bg-[hsl(var(--bc-input-bg))]"],
+.valentines [class*="bg-muted"] {
+  background: hsl(350 60% 96%) !important;
+}
+
+/* ========================================
+   VALENTINE'S TEXT COLORS
+======================================== */
+.valentines [class*="text-[hsl(var(--bc-text))]"] {
+  color: hsl(340 50% 20%) !important;
+}
+
+.valentines [class*="text-[hsl(var(--bc-text-muted))]"] {
+  color: hsl(340 30% 45%) !important;
+}
+
+.valentines [class*="text-foreground"] {
+  color: hsl(340 50% 20%) !important;
+}
+
+.valentines [class*="text-muted-foreground"] {
+  color: hsl(340 30% 45%) !important;
+}
+
+/* ========================================
+   VALENTINE'S BORDERS
+======================================== */
+.valentines [class*="border-[hsl(var(--bc-border))]"],
+.valentines [class*="border-[hsl(var(--bc-section-border))]"],
+.valentines [class*="border-border"] {
+  border-color: hsl(350 50% 88%) !important;
+}
+
+/* ========================================
+   VALENTINE'S INPUTS & FORMS
+======================================== */
+.valentines .bc-input,
+.valentines input:not([type="checkbox"]):not([type="radio"]),
+.valentines textarea,
+.valentines select {
+  background: hsl(350 60% 97%) !important;
+  border-color: hsl(350 40% 80%) !important;
+  color: hsl(340 50% 20%) !important;
+}
+
+.valentines .bc-input:focus,
+.valentines input:focus,
+.valentines textarea:focus,
+.valentines select:focus {
+  border-color: hsl(340 82% 52%) !important;
+  box-shadow: 0 0 0 2px hsla(340, 82%, 52%, 0.2) !important;
+}
+
+.valentines input::placeholder,
+.valentines textarea::placeholder {
+  color: hsl(340 30% 60%) !important;
+}
+
+.valentines input[type="checkbox"]:checked,
+.valentines input[type="radio"]:checked {
+  background: hsl(340 82% 52%) !important;
+  border-color: hsl(340 82% 52%) !important;
+}
+
+/* ========================================
+   VALENTINE'S BUTTONS - Primary Pink
+======================================== */
+.valentines .bc-btn-info,
+.valentines .btn-primary,
+.valentines [class*="bg-[hsl(var(--bc-primary))]"] {
+  background: hsl(340 82% 52%) !important;
+  color: white !important;
+}
+
+.valentines .bc-btn-info:hover,
+.valentines .btn-primary:hover,
+.valentines [class*="hover:bg-[hsl(var(--bc-primary-dark))]"]:hover {
+  background: hsl(340 85% 42%) !important;
+}
+
+.valentines .bc-btn-gray,
+.valentines .btn-secondary {
+  background: hsl(350 60% 94%) !important;
+  color: hsl(340 50% 30%) !important;
+  border-color: hsl(350 50% 85%) !important;
+}
+
+.valentines .bc-btn-gray:hover,
+.valentines .btn-secondary:hover {
+  background: hsl(350 60% 90%) !important;
+}
+
+/* ========================================
+   VALENTINE'S NAVBAR & HEADER
+======================================== */
+.valentines .bc-navbar,
+.valentines .site-header,
+.valentines header {
+  background: hsl(0 0% 100%) !important;
+  border-color: hsl(350 50% 88%) !important;
+}
+
+.valentines .bc-nav-link,
+.valentines .header-nav-link {
+  color: hsl(340 30% 45%) !important;
+}
+
+.valentines .bc-nav-link:hover,
+.valentines .header-nav-link:hover {
+  background: hsl(350 80% 96%) !important;
+  color: hsl(340 82% 52%) !important;
+}
+
+.valentines .bc-nav-link.active,
+.valentines .header-nav-link.active {
+  color: hsl(340 82% 52%) !important;
+}
+
+/* ========================================
+   VALENTINE'S SIDEBAR
+======================================== */
+.valentines .bc-sidebar,
+.valentines [data-sidebar="sidebar"] {
+  background: hsl(0 0% 100%) !important;
+  border-color: hsl(350 50% 88%) !important;
+}
+
+.valentines .bc-side-link,
+.valentines [data-sidebar="menu-button"] {
+  color: hsl(340 30% 40%) !important;
+}
+
+.valentines .bc-side-link:hover,
+.valentines [data-sidebar="menu-button"]:hover {
+  background: hsl(350 80% 96%) !important;
+  color: hsl(340 82% 52%) !important;
+}
+
+.valentines .bc-side-link.active,
+.valentines [data-sidebar="menu-button"][data-active="true"] {
+  background: hsl(340 82% 52%) !important;
+  color: white !important;
+}
+
+.valentines .bc-side-title {
+  color: hsl(340 30% 55%) !important;
+}
+
+/* ========================================
+   VALENTINE'S TABS
+======================================== */
+.valentines .bc-tab-link {
+  color: hsl(340 30% 40%) !important;
+}
+
+.valentines .bc-tab-link:hover {
+  background: hsl(350 80% 96%) !important;
+}
+
+.valentines .bc-tab-link.active,
+.valentines [data-state="active"][role="tab"] {
+  background: hsl(340 82% 52%) !important;
+  color: white !important;
+}
+
+.valentines [role="tablist"] {
+  background: hsl(350 60% 96%) !important;
+  border-color: hsl(350 50% 88%) !important;
+}
+
+/* ========================================
+   VALENTINE'S DROPDOWNS & MENUS
+======================================== */
+.valentines .bc-dropdown-menu,
+.valentines [data-radix-popper-content-wrapper] > div,
+.valentines [role="menu"],
+.valentines [role="listbox"] {
+  background: hsl(0 0% 100%) !important;
+  border-color: hsl(350 50% 85%) !important;
+  box-shadow: 0 10px 40px rgba(219, 39, 119, 0.15) !important;
+}
+
+.valentines [role="menuitem"],
+.valentines [role="option"] {
+  color: hsl(340 50% 25%) !important;
+}
+
+.valentines [role="menuitem"]:hover,
+.valentines [role="menuitem"]:focus,
+.valentines [role="option"][data-highlighted] {
+  background: hsl(350 80% 96%) !important;
+  color: hsl(340 82% 45%) !important;
+}
+
+/* ========================================
+   VALENTINE'S MODALS & DIALOGS
+======================================== */
+.valentines [role="dialog"] {
+  background: hsl(0 0% 100%) !important;
+  border-color: hsl(350 50% 85%) !important;
+  box-shadow: 0 25px 50px -12px rgba(219, 39, 119, 0.2) !important;
+}
+
+/* ========================================
+   VALENTINE'S TABLES
+======================================== */
+.valentines .bc-table-header,
+.valentines thead,
+.valentines th {
+  background: hsl(350 80% 96%) !important;
+  border-color: hsl(350 60% 85%) !important;
+  color: hsl(340 82% 45%) !important;
+}
+
+.valentines tbody tr:hover {
+  background: hsl(350 90% 98%) !important;
+}
+
+.valentines td,
+.valentines tbody tr {
+  border-color: hsl(350 40% 90%) !important;
+}
+
+/* ========================================
+   VALENTINE'S ALERTS & BADGES
+======================================== */
+.valentines .bg-blue-50 {
+  background: hsl(350 80% 96%) !important;
+}
+
+.valentines .border-blue-200 {
+  border-color: hsl(350 60% 85%) !important;
+}
+
+.valentines .text-blue-700,
+.valentines .text-blue-600 {
+  color: hsl(340 82% 45%) !important;
+}
+
+/* ========================================
+   VALENTINE'S LINKS
+======================================== */
+.valentines a:not(.btn):not([class*="bg-"]) {
+  color: hsl(340 82% 48%);
+}
+
+.valentines a:not(.btn):not([class*="bg-"]):hover {
+  color: hsl(340 85% 38%);
+}
+
+/* ========================================
+   VALENTINE'S SCROLLBAR
+======================================== */
+.valentines ::-webkit-scrollbar-track {
+  background: hsl(350 60% 96%);
+}
+
+.valentines ::-webkit-scrollbar-thumb {
+  background: hsl(340 50% 75%);
+}
+
+.valentines ::-webkit-scrollbar-thumb:hover {
+  background: hsl(340 60% 65%);
+}
+
+/* ========================================
+   VALENTINE'S SPECIAL EFFECTS
+======================================== */
+.valentines .ring-primary,
+.valentines [class*="ring-[hsl(var(--bc-primary))]"] {
+  --tw-ring-color: hsl(340 82% 52%) !important;
+}
+
+.valentines .focus\:ring-primary:focus {
+  --tw-ring-color: hsl(340 82% 52%) !important;
+}
+
+
 
 /* Core body and background */
 .dark body {
