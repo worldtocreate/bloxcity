@@ -53,15 +53,12 @@ export default function AppSidebar({ forumUser, isLoggedIn, isAdmin, isModerator
     setUnreadMessages(msgCount || 0);
   };
 
-  const isActive = (path: string) => location.pathname === path;
-
   const handleLinkClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    setOpenMobile(false);
   };
 
-  // Only show on mobile when open
+  // MOBILE ONLY - sidebar is exclusively for mobile users
+  // Desktop users get all features in the topbar
   if (!isMobile || !openMobile) return null;
 
   return (
