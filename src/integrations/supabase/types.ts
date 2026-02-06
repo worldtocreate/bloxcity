@@ -4155,6 +4155,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_account: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_user: { Args: { _user_id: string }; Returns: boolean }
       is_moderator_account: { Args: { _user_id: string }; Returns: boolean }
       is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
       process_referral: {
