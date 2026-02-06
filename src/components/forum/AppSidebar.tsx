@@ -10,7 +10,6 @@ import {
   UsersRound,
   Settings,
   Mail,
-  ChevronLeft,
   Heart,
   Award,
   Plus,
@@ -19,7 +18,7 @@ import {
   HelpCircle,
   Shield,
   Map,
-   Briefcase,
+  Briefcase,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -31,7 +30,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
 import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
@@ -44,25 +42,28 @@ interface AppSidebarProps {
 }
 
 const mainNavItems = [
-  { title: 'Dashboard', url: '/', icon: Home },
+  { title: 'Home', url: '/', icon: Home },
+  { title: 'Games', url: '/games', icon: Gamepad2 },
+  { title: 'Market', url: '/market', icon: Store },
   { title: 'Forum', url: '/forum', icon: MessageSquare },
   { title: 'Players', url: '/players', icon: Users },
   { title: 'Groups', url: '/groups', icon: UsersRound },
-  { title: 'Games', url: '/games', icon: Gamepad2 },
+];
+
+const moreItems = [
   { title: 'Achievements', url: '/achievements', icon: Award },
   { title: 'Roadmap', url: '/roadmap', icon: Map },
-   { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
+  { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
 ];
 
 const comingSoonItems = [
-  { title: 'Market', url: '/market', icon: Store },
   { title: 'Character', url: '/character', icon: User },
   { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
 ];
 
 export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
   const location = useLocation();
-  const { state, setOpenMobile, isMobile, toggleSidebar } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === 'collapsed';
 
   const isActive = (path: string) => {
@@ -76,40 +77,79 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
     }
   };
 
+  const linkStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 15px',
+    color: '#777',
+    fontWeight: 500,
+    lineHeight: 1.5,
+    fontSize: '14px',
+    textDecoration: 'none',
+    transition: 'background-color 0.35s',
+  };
+
+  const activeLinkStyle = {
+    ...linkStyle,
+    background: '#ededed',
+  };
+
+  const iconStyle = {
+    fontSize: '21px',
+    width: '25px',
+    flexShrink: 0,
+  };
+
   return (
-    <Sidebar collapsible="icon" className="border-r" style={{ 
-      background: 'hsl(var(--bc-section-bg))', 
-      borderColor: 'hsl(var(--bc-section-border))' 
-    }}>
-      <SidebarHeader className="p-3" style={{ borderBottom: '1px solid hsl(var(--bc-section-border))' }}>
-        <Link to="/" className="flex items-center gap-2" onClickCapture={handleLinkClick}>
-          <img src={bloxcityLogo} alt="BLOX City" className="w-8 h-8 flex-shrink-0" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
+    <Sidebar 
+      collapsible="icon" 
+      className="sidebar"
+      style={{ 
+        background: '#fff',
+        borderRight: '1px solid #ccc',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        width: collapsed ? '60px' : '200px',
+        zIndex: 10,
+        overflowY: 'auto'
+      }}
+    >
+      <SidebarHeader style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
+        <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
+          <img src={bloxcityLogo} alt="BLOX City" style={{ width: '40px', height: '40px', borderRadius: '4px' }} />
           {!collapsed && (
-            <span className="font-bold" style={{ color: 'hsl(var(--bc-text))' }}>BLOX City</span>
+            <span style={{ fontWeight: 600, color: '#333' }}>BLOX City</span>
           )}
         </Link>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-4">
+      <SidebarContent style={{ marginTop: '10px' }}>
         {/* Main Navigation */}
         <SidebarGroup>
-          {!collapsed && (
-            <SidebarGroupLabel className="bc-side-title mb-2">
-              Navigation
-            </SidebarGroupLabel>
-          )}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to={item.url}
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive(item.url) ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive(item.url) ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive(item.url)) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive(item.url)) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <item.icon className="bc-side-icon" />
+                      <item.icon style={iconStyle} />
                       {!collapsed && <span>{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -119,25 +159,29 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Coming Soon Section */}
-        <SidebarGroup className="mt-4">
-          {!collapsed && (
-            <SidebarGroupLabel className="bc-side-title mb-2">
-              Coming Soon
-            </SidebarGroupLabel>
-          )}
+        {/* More Section */}
+        <SidebarGroup style={{ marginTop: '10px' }}>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {comingSoonItems.map((item) => (
+            <SidebarMenu style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {moreItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to={item.url}
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive(item.url) ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0', opacity: 0.6 }}
+                      onClick={handleLinkClick}
+                      style={isActive(item.url) ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive(item.url)) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive(item.url)) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <item.icon className="bc-side-icon" />
+                      <item.icon style={iconStyle} />
                       {!collapsed && <span>{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -147,25 +191,32 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* User Section */}
+        {/* Divider */}
+        <div style={{ background: '#eee', margin: '15px 0', height: '1px', width: '100%' }} />
+
+        {/* User Section - Only for logged in users */}
         {isLoggedIn && (
-          <SidebarGroup className="mt-4">
-            {!collapsed && (
-              <SidebarGroupLabel className="bc-side-title mb-2">
-                Account
-              </SidebarGroupLabel>
-            )}
+          <SidebarGroup>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/create"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/create') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive('/create') ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive('/create')) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive('/create')) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <Plus className="bc-side-icon" />
+                      <Plus style={iconStyle} />
                       {!collapsed && <span>Create</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -173,26 +224,22 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
-                      to="/request"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/request') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
-                    >
-                      <BadgeCheck className="bc-side-icon" />
-                      {!collapsed && <span>Request Verification</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
                       to="/upgrades"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/upgrades') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive('/upgrades') ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive('/upgrades')) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive('/upgrades')) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <Sparkles className="bc-side-icon" />
-                      {!collapsed && <span>Upgrades</span>}
+                      <Sparkles style={iconStyle} />
+                      {!collapsed && <span>Upgrade</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -200,11 +247,20 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/friends"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/friends') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive('/friends') ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive('/friends')) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive('/friends')) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <Heart className="bc-side-icon" />
+                      <Heart style={iconStyle} />
                       {!collapsed && <span>Friends</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -213,11 +269,20 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/messages"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/messages') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive('/messages') ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive('/messages')) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive('/messages')) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <Mail className="bc-side-icon" />
+                      <Mail style={iconStyle} />
                       {!collapsed && <span>Messages</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -226,11 +291,20 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/support"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/support') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive('/support') ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive('/support')) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive('/support')) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <HelpCircle className="bc-side-icon" />
+                      <HelpCircle style={iconStyle} />
                       {!collapsed && <span>Support</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -239,11 +313,20 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link
                       to="/settings"
-                      onClickCapture={handleLinkClick}
-                      className={`bc-side-link ${isActive('/settings') ? 'active' : ''}`}
-                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                      onClick={handleLinkClick}
+                      style={isActive('/settings') ? activeLinkStyle : linkStyle}
+                      onMouseEnter={(e) => {
+                        if (!isActive('/settings')) {
+                          e.currentTarget.style.background = '#ededed';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive('/settings')) {
+                          e.currentTarget.style.background = 'transparent';
+                        }
+                      }}
                     >
-                      <Settings className="bc-side-icon" />
+                      <Settings style={iconStyle} />
                       {!collapsed && <span>Settings</span>}
                     </Link>
                   </SidebarMenuButton>
@@ -254,12 +337,21 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
                     <SidebarMenuButton asChild onClick={handleLinkClick}>
                       <Link
                         to="/g0dfrey"
-                        onClickCapture={handleLinkClick}
-                        className={`bc-side-link ${isActive('/g0dfrey') ? 'active' : ''}`}
-                        style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                        onClick={handleLinkClick}
+                        style={isActive('/g0dfrey') ? activeLinkStyle : linkStyle}
+                        onMouseEnter={(e) => {
+                          if (!isActive('/g0dfrey')) {
+                            e.currentTarget.style.background = '#ededed';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive('/g0dfrey')) {
+                            e.currentTarget.style.background = 'transparent';
+                          }
+                        }}
                       >
-                        <Shield className="bc-side-icon" />
-                        {!collapsed && <span>The g0dfrey panel</span>}
+                        <Shield style={iconStyle} />
+                        {!collapsed && <span>Panel</span>}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -268,7 +360,6 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-
       </SidebarContent>
     </Sidebar>
   );
