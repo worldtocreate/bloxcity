@@ -2994,13 +2994,13 @@ const Admin = () => {
         )}
 
         {/* IP Blocking Tab */}
-        {activeTab === "ip-blocking" && <IPBlockingTab />}
+        {activeTab === "ip-blocking" && <IPBlockingTab darkMode={darkMode} />}
 
         {/* Forum Moderation Tab */}
-        {activeTab === "forum-mod" && <ForumModTab />}
+        {activeTab === "forum-mod" && <ForumModTab darkMode={darkMode} />}
 
         {/* Content Moderation Tab */}
-        {activeTab === "content-mod" && <ContentModerationTab />}
+        {activeTab === "content-mod" && <ContentModerationTab darkMode={darkMode} />}
 
         {/* Support Tickets Tab */}
         {activeTab === "support-tickets" && <SupportTicketsTab darkMode={darkMode} />}
@@ -3009,22 +3009,22 @@ const Admin = () => {
         {activeTab === "user-mgmt" && <UserManagementTab />}
 
         {/* Maintenance Tab */}
-        {activeTab === "maintenance" && <MaintenanceTab />}
+        {activeTab === "maintenance" && <MaintenanceTab darkMode={darkMode} />}
 
         {/* Updates Tab */}
-        {activeTab === "updates" && <UpdatesTab />}
+        {activeTab === "updates" && <UpdatesTab darkMode={darkMode} />}
 
         {/* Reports Tab */}
-        {activeTab === "reports" && <ReportsTab />}
+        {activeTab === "reports" && <ReportsTab darkMode={darkMode} />}
         
         {/* Ads Tab */}
-        {activeTab === "ads" && <AdsTab />}
+        {activeTab === "ads" && <AdsTab darkMode={darkMode} />}
 
         {/* Achievements Tab */}
-        {activeTab === "achievements" && <AchievementsTab />}
+        {activeTab === "achievements" && <AchievementsTab darkMode={darkMode} />}
 
         {/* Groups Tab */}
-        {activeTab === "groups" && <GroupsTab />}
+        {activeTab === "groups" && <GroupsTab darkMode={darkMode} />}
 
         {/* Games Management Tab */}
         {activeTab === "games" && <GamesManagementTab darkMode={darkMode} />}
@@ -3251,7 +3251,7 @@ const Admin = () => {
         )}
 
         {/* Settings Tab */}
-        {activeTab === "settings" && <SettingsTab />}
+        {activeTab === "settings" && <SettingsTab darkMode={darkMode} />}
           </div>
         </div>
       </AdminTabs>

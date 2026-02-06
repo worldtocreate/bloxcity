@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon, Star, KeyRound, Loader2 } from 'lucide-react';
+import { User, Ban, Clock, Search, RefreshCw, Check, X, Shield, Image, BadgeCheck, ImageIcon, Star, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ForumUserData {
@@ -23,7 +23,9 @@ interface AvatarRequest {
   image_url: string;
   status: string;
   created_at: string;
-  forum_user?: { username: string };
+  forum_user?: {
+    username: string;
+  };
 }
 
 interface CoverRequest {
@@ -32,7 +34,9 @@ interface CoverRequest {
   image_url: string;
   status: string;
   created_at: string;
-  forum_user?: { username: string };
+  forum_user?: {
+    username: string;
+  };
 }
 
 interface VerificationRequest {
@@ -42,10 +46,17 @@ interface VerificationRequest {
   reason: string | null;
   denial_reason: string | null;
   created_at: string;
-  forum_user?: { username: string; avatar_url: string | null };
+  forum_user?: {
+    username: string;
+    avatar_url: string | null;
+  };
 }
 
-export default function ForumModTab() {
+interface ForumModTabProps {
+  darkMode: boolean;
+}
+
+export default function ForumModTab({ darkMode }: ForumModTabProps) {
   const [forumUsers, setForumUsers] = useState<ForumUserData[]>([]);
   const [avatarRequests, setAvatarRequests] = useState<AvatarRequest[]>([]);
   const [coverRequests, setCoverRequests] = useState<CoverRequest[]>([]);
@@ -85,121 +96,343 @@ export default function ForumModTab() {
 
   const fetchForumUsers = async () => {
     setLoading(true);
-    const { data } = await supabase.from('forum_users').select('*').order('created_at', { ascending: false });
-    if (data) setForumUsers(data);
+    const { data, error } = await supabase
+      .from('forum_users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setForumUsers(data);
+    }
     setLoading(false);
   };
 
   const fetchAvatarRequests = async () => {
     setLoadingAvatars(true);
-    const { data } = await supabase.from('forum_avatar_requests').select('*, forum_user:forum_user_id (username)').eq('status', 'pending').order('created_at', { ascending: true });
-    if (data) setAvatarRequests(data as AvatarRequest[]);
+    const { data, error } = await supabase
+      .from('forum_avatar_requests')
+      .select('*, forum_user:forum_user_id (username)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setAvatarRequests(data as AvatarRequest[]);
+    }
     setLoadingAvatars(false);
   };
 
   const fetchCoverRequests = async () => {
     setLoadingCovers(true);
-    const { data } = await supabase.from('forum_cover_requests').select('*, forum_user:forum_user_id (username)').eq('status', 'pending').order('created_at', { ascending: true });
-    if (data) setCoverRequests(data as CoverRequest[]);
+    const { data } = await supabase
+      .from('forum_cover_requests')
+      .select('*, forum_user:forum_user_id (username)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setCoverRequests(data as CoverRequest[]);
+    }
     setLoadingCovers(false);
   };
 
   const fetchVerificationRequests = async () => {
     setLoadingVerifications(true);
-    const { data } = await supabase.from('forum_verification_requests').select('*, forum_user:forum_user_id (username, avatar_url)').eq('status', 'pending').order('created_at', { ascending: true });
-    if (data) setVerificationRequests(data as VerificationRequest[]);
+    const { data } = await supabase
+      .from('forum_verification_requests')
+      .select('*, forum_user:forum_user_id (username, avatar_url)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setVerificationRequests(data as VerificationRequest[]);
+    }
     setLoadingVerifications(false);
   };
 
   const handleApproveAvatar = async (request: AvatarRequest) => {
     setProcessingAvatar(request.id);
-    const { error: updateError } = await supabase.from('forum_avatar_requests').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', request.id);
-    if (updateError) { toast.error('Failed to approve avatar'); setProcessingAvatar(null); return; }
-    const { error: userError } = await supabase.from('forum_users').update({ avatar_url: request.image_url }).eq('id', request.forum_user_id);
-    if (userError) toast.error('Failed to update user avatar');
-    else { toast.success('Avatar approved and updated'); fetchAvatarRequests(); fetchForumUsers(); }
+
+    // Update the avatar request status
+    const { error: updateError } = await supabase
+      .from('forum_avatar_requests')
+      .update({ 
+        status: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (updateError) {
+      toast.error('Failed to approve avatar');
+      setProcessingAvatar(null);
+      return;
+    }
+
+    // Update the user's avatar
+    const { error: userError } = await supabase
+      .from('forum_users')
+      .update({ avatar_url: request.image_url })
+      .eq('id', request.forum_user_id);
+
+    if (userError) {
+      toast.error('Failed to update user avatar');
+    } else {
+      toast.success('Avatar approved and updated');
+      fetchAvatarRequests();
+      fetchForumUsers();
+    }
     setProcessingAvatar(null);
   };
 
   const handleDenyAvatar = async (requestId: string) => {
     setProcessingAvatar(requestId);
-    const { error } = await supabase.from('forum_avatar_requests').update({ status: 'denied', denial_reason: denyReason || 'Image does not meet community guidelines', reviewed_at: new Date().toISOString() }).eq('id', requestId);
-    if (error) toast.error('Failed to deny avatar');
-    else { toast.success('Avatar request denied'); fetchAvatarRequests(); setShowDenyModal(null); setDenyReason(''); }
+
+    const { error } = await supabase
+      .from('forum_avatar_requests')
+      .update({ 
+        status: 'denied',
+        denial_reason: denyReason || 'Image does not meet community guidelines',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to deny avatar');
+    } else {
+      toast.success('Avatar request denied');
+      fetchAvatarRequests();
+      setShowDenyModal(null);
+      setDenyReason('');
+    }
     setProcessingAvatar(null);
   };
 
   const handleApproveCover = async (request: CoverRequest) => {
     setProcessingCover(request.id);
-    const { error: updateError } = await supabase.from('forum_cover_requests').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', request.id);
-    if (updateError) { toast.error('Failed to approve cover'); setProcessingCover(null); return; }
-    const { error: userError } = await supabase.from('forum_users').update({ cover_url: request.image_url }).eq('id', request.forum_user_id);
-    if (userError) toast.error('Failed to update user cover');
-    else { toast.success('Cover photo approved'); fetchCoverRequests(); fetchForumUsers(); }
+
+    const { error: updateError } = await supabase
+      .from('forum_cover_requests')
+      .update({ 
+        status: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (updateError) {
+      toast.error('Failed to approve cover');
+      setProcessingCover(null);
+      return;
+    }
+
+    const { error: userError } = await supabase
+      .from('forum_users')
+      .update({ cover_url: request.image_url })
+      .eq('id', request.forum_user_id);
+
+    if (userError) {
+      toast.error('Failed to update user cover');
+    } else {
+      toast.success('Cover photo approved and updated');
+      fetchCoverRequests();
+      fetchForumUsers();
+    }
     setProcessingCover(null);
   };
 
   const handleDenyCover = async (requestId: string) => {
     setProcessingCover(requestId);
-    const { error } = await supabase.from('forum_cover_requests').update({ status: 'denied', denial_reason: coverDenyReason || 'Image does not meet community guidelines', reviewed_at: new Date().toISOString() }).eq('id', requestId);
-    if (error) toast.error('Failed to deny cover');
-    else { toast.success('Cover request denied'); fetchCoverRequests(); setShowDenyCoverModal(null); setCoverDenyReason(''); }
+
+    const { error } = await supabase
+      .from('forum_cover_requests')
+      .update({ 
+        status: 'denied',
+        denial_reason: coverDenyReason || 'Image does not meet community guidelines',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to deny cover');
+    } else {
+      toast.success('Cover request denied');
+      fetchCoverRequests();
+      setShowDenyCoverModal(null);
+      setCoverDenyReason('');
+    }
     setProcessingCover(null);
   };
 
   const handleApproveVerification = async (request: VerificationRequest) => {
     setProcessingVerification(request.id);
-    const { error: updateError } = await supabase.from('forum_verification_requests').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', request.id);
-    if (updateError) { toast.error('Failed to approve verification'); setProcessingVerification(null); return; }
-    const { error: userError } = await supabase.from('forum_users').update({ is_verified: true }).eq('id', request.forum_user_id);
-    if (userError) toast.error('Failed to update user verification');
-    else { toast.success('User verified!'); fetchVerificationRequests(); fetchForumUsers(); }
+
+    // Update verification request status
+    const { error: updateError } = await supabase
+      .from('forum_verification_requests')
+      .update({ 
+        status: 'approved',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', request.id);
+
+    if (updateError) {
+      toast.error('Failed to approve verification');
+      setProcessingVerification(null);
+      return;
+    }
+
+    // Update user's verified status
+    const { error: userError } = await supabase
+      .from('forum_users')
+      .update({ is_verified: true })
+      .eq('id', request.forum_user_id);
+
+    if (userError) {
+      toast.error('Failed to update user verification');
+    } else {
+      // Send notification email to the user
+      try {
+        // Get user's email
+        const { data: forumUserData } = await supabase
+          .from('forum_users')
+          .select('user_id, username')
+          .eq('id', request.forum_user_id)
+          .single();
+        
+        if (forumUserData) {
+          // Get auth user email
+          const { data } = await supabase.functions.invoke('send-verification-notification', {
+            body: {
+              forumUserId: request.forum_user_id,
+              email: '', // Will be fetched server-side
+              username: forumUserData.username
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't block the success flow
+      }
+      
+      toast.success('User verified!');
+      fetchVerificationRequests();
+      fetchForumUsers();
+    }
     setProcessingVerification(null);
   };
 
   const handleDenyVerification = async (requestId: string) => {
     setProcessingVerification(requestId);
-    const { error } = await supabase.from('forum_verification_requests').update({ status: 'denied', denial_reason: verifyDenyReason || 'Does not meet verification criteria', reviewed_at: new Date().toISOString() }).eq('id', requestId);
-    if (error) toast.error('Failed to deny verification');
-    else { toast.success('Verification request denied'); fetchVerificationRequests(); setShowDenyVerificationModal(null); setVerifyDenyReason(''); }
+
+    const { error } = await supabase
+      .from('forum_verification_requests')
+      .update({ 
+        status: 'denied',
+        denial_reason: verifyDenyReason || 'Does not meet verification criteria',
+        reviewed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (error) {
+      toast.error('Failed to deny verification');
+    } else {
+      toast.success('Verification request denied');
+      fetchVerificationRequests();
+      setShowDenyVerificationModal(null);
+      setVerifyDenyReason('');
+    }
     setProcessingVerification(null);
   };
 
   const handleRemoveVerification = async (userId: string) => {
-    const { error } = await supabase.from('forum_users').update({ is_verified: false }).eq('id', userId);
-    if (error) toast.error('Failed to remove verification');
-    else { toast.success('Verification removed'); fetchForumUsers(); }
+    const { error } = await supabase
+      .from('forum_users')
+      .update({ is_verified: false })
+      .eq('id', userId);
+
+    if (error) {
+      toast.error('Failed to remove verification');
+    } else {
+      toast.success('Verification removed');
+      fetchForumUsers();
+    }
   };
 
   const handleSuspend = async (userId: string) => {
     setSuspending(true);
-    const expiresAt = suspensionDays === 'permanent' ? null : new Date(Date.now() + parseInt(suspensionDays) * 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await supabase.from('forum_users').update({ is_suspended: true, suspension_reason: suspensionReason || 'Violation of community guidelines', suspension_ends_at: expiresAt }).eq('id', userId);
-    if (error) toast.error('Failed to suspend user');
-    else { toast.success('User suspended'); fetchForumUsers(); setShowSuspendModal(null); setSuspensionReason(''); setSuspensionDays('7'); }
+
+    const expiresAt = suspensionDays === 'permanent' 
+      ? null 
+      : new Date(Date.now() + parseInt(suspensionDays) * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({
+        is_suspended: true,
+        suspension_reason: suspensionReason || 'Violation of community guidelines',
+        suspension_ends_at: expiresAt
+      })
+      .eq('id', userId);
+
+    if (error) {
+      toast.error('Failed to suspend user');
+    } else {
+      toast.success('User suspended');
+      fetchForumUsers();
+      setShowSuspendModal(null);
+      setSuspensionReason('');
+      setSuspensionDays('7');
+    }
     setSuspending(false);
   };
 
   const handleUnsuspend = async (userId: string) => {
-    const { error } = await supabase.from('forum_users').update({ is_suspended: false, suspension_reason: null, suspension_ends_at: null }).eq('id', userId);
-    if (error) toast.error('Failed to unsuspend user');
-    else { toast.success('User unsuspended'); fetchForumUsers(); }
+    const { error } = await supabase
+      .from('forum_users')
+      .update({
+        is_suspended: false,
+        suspension_reason: null,
+        suspension_ends_at: null
+      })
+      .eq('id', userId);
+
+    if (error) {
+      toast.error('Failed to unsuspend user');
+    } else {
+      toast.success('User unsuspended');
+      fetchForumUsers();
+    }
   };
 
   const handleSetMembership = async (userId: string) => {
     setSavingMembership(true);
-    const { error } = await supabase.from('forum_users').update({ membership_tier: selectedMembership || null }).eq('id', userId);
-    if (error) toast.error('Failed to update membership');
-    else { toast.success(selectedMembership ? `Membership set to ${selectedMembership}` : 'Membership removed'); fetchForumUsers(); setShowMembershipModal(null); setSelectedMembership(''); }
+
+    const { error } = await supabase
+      .from('forum_users')
+      .update({
+        membership_tier: selectedMembership || null
+      })
+      .eq('id', userId);
+
+    if (error) {
+      toast.error('Failed to update membership');
+    } else {
+      toast.success(selectedMembership ? `Membership set to ${selectedMembership}` : 'Membership removed');
+      fetchForumUsers();
+      setShowMembershipModal(null);
+      setSelectedMembership('');
+    }
     setSavingMembership(false);
   };
 
   const handleResetPassword = async (userId: string) => {
     setResettingPassword(true);
     try {
-      const { data, error } = await supabase.functions.invoke('admin-reset-password', { body: { forumUserId: userId, sendEmail: sendPasswordEmail } });
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: { forumUserId: userId, sendEmail: sendPasswordEmail }
+      });
+ 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+ 
       toast.success(data?.message || 'Password reset successfully');
       setShowPasswordResetModal(null);
       setSendPasswordEmail(true);
@@ -209,213 +442,622 @@ export default function ForumModTab() {
       setResettingPassword(false);
     }
   };
-
+ 
   const getMembershipBadge = (tier: string | null) => {
     if (!tier) return null;
-    const colors: Record<string, string> = { bronze: 'bg-amber-700 text-amber-100', silver: 'bg-gray-400 text-gray-900', platinum: 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white' };
-    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors[tier] || 'bg-gray-700 text-gray-300'}`}><Star className="w-3 h-3" />{tier.charAt(0).toUpperCase() + tier.slice(1)}</span>;
+    const colors: Record<string, string> = {
+      bronze: 'bg-amber-700 text-amber-100',
+      silver: 'bg-gray-400 text-gray-900',
+      platinum: 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white'
+    };
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors[tier] || 'bg-gray-200 text-gray-700'}`}>
+        <Star className="w-3 h-3" />
+        {tier.charAt(0).toUpperCase() + tier.slice(1)}
+      </span>
+    );
   };
 
-  const filteredUsers = forumUsers.filter(u => search.trim() === '' || u.username.toLowerCase().includes(search.toLowerCase()));
+  const filteredUsers = forumUsers.filter(u => 
+    search.trim() === '' || u.username.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900';
+  const textClass = darkMode ? 'text-white' : 'text-gray-800';
+  const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-500';
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Forum Moderation</h2>
+        <h2 className={`text-xl font-semibold ${textClass}`}>Forum Moderation</h2>
         <div className="flex items-center gap-3">
           {activeSection === 'users' && (
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search username..." className="pl-10 pr-4 py-2.5 w-64 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search username..."
+                className={`pl-9 pr-4 py-2 w-64 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm ${inputClass}`}
+              />
             </div>
           )}
-          <button onClick={() => { fetchForumUsers(); fetchAvatarRequests(); fetchCoverRequests(); fetchVerificationRequests(); }} className="flex items-center gap-2 px-4 py-2.5 bg-[#0f0f18] border border-white/5 hover:border-white/10 text-gray-300 rounded-xl transition text-sm font-medium">
-            <RefreshCw className="w-4 h-4" />Refresh
+          <button
+            onClick={() => { fetchForumUsers(); fetchAvatarRequests(); fetchCoverRequests(); fetchVerificationRequests(); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
+              darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-100 border-gray-200'
+            }`}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
           </button>
         </div>
       </div>
 
       {/* Section Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {(['users', 'avatars', 'covers', 'verification', 'memberships'] as const).map((tab) => (
-          <button key={tab} onClick={() => setActiveSection(tab)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition ${activeSection === tab ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20' : 'bg-[#0f0f18] border border-white/5 text-gray-400 hover:text-white hover:border-white/10'}`}>
-            {tab === 'users' && <User className="w-4 h-4" />}
-            {tab === 'avatars' && <Image className="w-4 h-4" />}
-            {tab === 'covers' && <ImageIcon className="w-4 h-4" />}
-            {tab === 'verification' && <BadgeCheck className="w-4 h-4" />}
-            {tab === 'memberships' && <Star className="w-4 h-4" />}
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            {tab === 'avatars' && avatarRequests.length > 0 && <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{avatarRequests.length}</span>}
-            {tab === 'covers' && coverRequests.length > 0 && <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{coverRequests.length}</span>}
-            {tab === 'verification' && verificationRequests.length > 0 && <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">{verificationRequests.length}</span>}
-          </button>
-        ))}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setActiveSection('users')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'users'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <User className="w-4 h-4" />
+          Users
+        </button>
+        <button
+          onClick={() => setActiveSection('avatars')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'avatars'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Image className="w-4 h-4" />
+          Avatar Requests
+          {avatarRequests.length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {avatarRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveSection('covers')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'covers'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          Cover Requests
+          {coverRequests.length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {coverRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveSection('verification')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'verification'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <BadgeCheck className="w-4 h-4" />
+          Verification
+          {verificationRequests.length > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+              {verificationRequests.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveSection('memberships')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            activeSection === 'memberships'
+              ? 'bg-blue-600 text-white'
+              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Star className="w-4 h-4" />
+          Memberships
+        </button>
       </div>
 
-      {/* Users Section */}
-      {activeSection === 'users' && (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No users found</div>
-          ) : (
-            <div className="divide-y divide-white/5">
-              {filteredUsers.slice(0, 50).map(user => (
-                <div key={user.id} className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition">
-                  <div className="flex items-center gap-3">
-                    {user.avatar_url ? <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-xl" /> : <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center"><User className="w-5 h-5 text-gray-500" /></div>}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-white">{user.username}</span>
-                        {user.is_verified && <BadgeCheck className="w-4 h-4 text-blue-400" />}
-                        {getMembershipBadge(user.membership_tier)}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        {user.is_suspended && <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded-full">Suspended</span>}
-                        <span className="text-xs text-gray-500">{user.post_count} posts</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => { setShowMembershipModal(user.id); setSelectedMembership(user.membership_tier || ''); }} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg"><Star className="w-4 h-4" />Tier</button>
-                    <button onClick={() => setShowPasswordResetModal(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg"><KeyRound className="w-4 h-4" />Reset</button>
-                    {user.is_verified ? (
-                      <button onClick={() => handleRemoveVerification(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-lg"><X className="w-4 h-4" />Unverify</button>
-                    ) : null}
-                    {user.is_suspended ? (
-                      <button onClick={() => handleUnsuspend(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg"><Check className="w-4 h-4" />Unsuspend</button>
-                    ) : (
-                      <button onClick={() => setShowSuspendModal(user.id)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg"><Ban className="w-4 h-4" />Suspend</button>
-                    )}
-                  </div>
+      {activeSection === 'users' ? (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className={`${cardClass} border rounded-xl p-4`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-600/20 flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-400" />
                 </div>
-              ))}
+                <div>
+                  <div className={`text-2xl font-bold ${textClass}`}>{forumUsers.length}</div>
+                  <div className={`text-sm ${mutedClass}`}>Total Users</div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+            <div className={`${cardClass} border rounded-xl p-4`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-600/20 flex items-center justify-center">
+                  <Ban className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <div className={`text-2xl font-bold ${textClass}`}>
+                    {forumUsers.filter(u => u.is_suspended).length}
+                  </div>
+                  <div className={`text-sm ${mutedClass}`}>Suspended</div>
+                </div>
+              </div>
+            </div>
+            <div className={`${cardClass} border rounded-xl p-4`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-600/20 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <div className={`text-2xl font-bold ${textClass}`}>
+                    {forumUsers.filter(u => !u.is_suspended).length}
+                  </div>
+                  <div className={`text-sm ${mutedClass}`}>Active</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Avatars Section */}
-      {activeSection === 'avatars' && (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
+          {/* Users Table */}
+          <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <tr>
+                    <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>User</th>
+                    <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Status</th>
+                    <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Posts</th>
+                    <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Joined</th>
+                    <th className={`text-right px-6 py-4 text-sm font-semibold ${mutedClass}`}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className={`px-6 py-12 text-center ${mutedClass}`}>
+                        Loading...
+                      </td>
+                    </tr>
+                  ) : filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className={`px-6 py-12 text-center ${mutedClass}`}>
+                        No users found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {user.avatar_url ? (
+                              <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                                <User className="w-5 h-5 text-white" />
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1.5">
+                              <span className={`font-medium ${textClass}`}>{user.username}</span>
+                              {user.is_verified && (
+                                <BadgeCheck className="w-4 h-4 text-blue-500" />
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {user.is_suspended ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                <Ban className="w-3 h-3" />
+                                Suspended
+                              </span>
+                              {user.suspension_ends_at && (
+                                <div className={`text-xs mt-1 ${mutedClass}`}>
+                                  Until: {new Date(user.suspension_ends_at).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                              <Check className="w-3 h-3" />
+                              Active
+                            </span>
+                          )}
+                        </td>
+                        <td className={`px-6 py-4 ${mutedClass}`}>{user.post_count}</td>
+                        <td className={`px-6 py-4 text-sm ${mutedClass}`}>
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {user.is_verified && (
+                              <button
+                                onClick={() => handleRemoveVerification(user.id)}
+                                className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-xs rounded transition"
+                                title="Remove verification"
+                              >
+                                <X className="w-3 h-3" />
+                                Unverify
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setShowPasswordResetModal(user.id)}
+                              className="flex items-center gap-1 px-2 py-1 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-xs rounded transition"
+                              title="Reset password"
+                            >
+                              <KeyRound className="w-3 h-3" />
+                              Reset PW
+                            </button>
+                            {user.is_suspended ? (
+                              <button
+                                onClick={() => handleUnsuspend(user.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
+                              >
+                                <Check className="w-4 h-4" />
+                                Unsuspend
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setShowSuspendModal(user.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition"
+                              >
+                                <Ban className="w-4 h-4" />
+                                Suspend
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : activeSection === 'avatars' ? (
+        /* Avatar Requests Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
           {loadingAvatars ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>Loading...</div>
           ) : avatarRequests.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No pending avatar requests</div>
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>
+              <Image className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending avatar requests</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-              {avatarRequests.map(request => (
-                <div key={request.id} className="bg-white/5 rounded-xl p-4 space-y-3">
-                  <img src={request.image_url} alt="" className="w-full aspect-square rounded-xl object-cover" />
-                  <div className="text-sm text-white font-medium">{request.forum_user?.username}</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+              {avatarRequests.map((request) => (
+                <div 
+                  key={request.id} 
+                  className={`border rounded-xl p-4 ${darkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}
+                >
+                  <div className="aspect-square w-full mb-3 rounded-lg overflow-hidden bg-gray-200">
+                    <img 
+                      src={request.image_url} 
+                      alt="Avatar request"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <div className={`font-medium ${textClass}`}>
+                      {request.forum_user?.username || 'Unknown User'}
+                    </div>
+                    <div className={`text-xs ${mutedClass}`}>
+                      Submitted: {new Date(request.created_at).toLocaleString()}
+                    </div>
+                  </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleApproveAvatar(request)} disabled={processingAvatar === request.id} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm">
-                      {processingAvatar === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    <button
+                      onClick={() => handleApproveAvatar(request)}
+                      disabled={processingAvatar === request.id}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                    >
+                      <Check className="w-4 h-4" />
+                      Approve
                     </button>
-                    <button onClick={() => setShowDenyModal(request.id)} className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm"><X className="w-4 h-4" /></button>
+                    <button
+                      onClick={() => setShowDenyModal(request.id)}
+                      disabled={processingAvatar === request.id}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                    >
+                      <X className="w-4 h-4" />
+                      Deny
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      )}
-
-      {/* Covers Section */}
-      {activeSection === 'covers' && (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
+      ) : activeSection === 'covers' ? (
+        /* Cover Requests Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
           {loadingCovers ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>Loading...</div>
           ) : coverRequests.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No pending cover requests</div>
-          ) : (
-            <div className="space-y-4 p-4">
-              {coverRequests.map(request => (
-                <div key={request.id} className="bg-white/5 rounded-xl overflow-hidden">
-                  <img src={request.image_url} alt="" className="w-full h-32 object-cover" />
-                  <div className="p-4 flex items-center justify-between">
-                    <span className="text-sm text-white font-medium">{request.forum_user?.username}</span>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleApproveCover(request)} disabled={processingCover === request.id} className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm">
-                        {processingCover === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}Approve
-                      </button>
-                      <button onClick={() => setShowDenyCoverModal(request.id)} className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm"><X className="w-4 h-4" />Deny</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>
+              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending cover requests</p>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Verification Section */}
-      {activeSection === 'verification' && (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
-          {loadingVerifications ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
-          ) : verificationRequests.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">No pending verification requests</div>
           ) : (
-            <div className="divide-y divide-white/5">
-              {verificationRequests.map(request => (
-                <div key={request.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {request.forum_user?.avatar_url ? <img src={request.forum_user.avatar_url} alt="" className="w-10 h-10 rounded-xl" /> : <div className="w-10 h-10 rounded-xl bg-white/5" />}
-                    <div>
-                      <span className="font-medium text-white">{request.forum_user?.username}</span>
-                      {request.reason && <p className="text-sm text-gray-400 mt-1">{request.reason}</p>}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+              {coverRequests.map((request) => (
+                <div 
+                  key={request.id} 
+                  className={`border rounded-xl p-4 ${darkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}
+                >
+                  <div className="aspect-[4/1] w-full mb-3 rounded-lg overflow-hidden bg-gray-200">
+                    <img 
+                      src={request.image_url} 
+                      alt="Cover request"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <div className={`font-medium ${textClass}`}>
+                      {request.forum_user?.username || 'Unknown User'}
+                    </div>
+                    <div className={`text-xs ${mutedClass}`}>
+                      Submitted: {new Date(request.created_at).toLocaleString()}
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleApproveVerification(request)} disabled={processingVerification === request.id} className="flex items-center gap-1 px-3 py-1.5 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-sm">
-                      {processingVerification === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}Verify
+                    <button
+                      onClick={() => handleApproveCover(request)}
+                      disabled={processingCover === request.id}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                    >
+                      <Check className="w-4 h-4" />
+                      Approve
                     </button>
-                    <button onClick={() => setShowDenyVerificationModal(request.id)} className="flex items-center gap-1 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm"><X className="w-4 h-4" />Deny</button>
+                    <button
+                      onClick={() => setShowDenyCoverModal(request.id)}
+                      disabled={processingCover === request.id}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                    >
+                      <X className="w-4 h-4" />
+                      Deny
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      )}
-
-      {/* Memberships Section */}
-      {activeSection === 'memberships' && (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
-          {loading ? (
-            <div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-500 animate-spin" /></div>
+      ) : activeSection === 'verification' ? (
+        /* Verification Requests Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          {loadingVerifications ? (
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>Loading...</div>
+          ) : verificationRequests.length === 0 ? (
+            <div className={`px-6 py-12 text-center ${mutedClass}`}>
+              <BadgeCheck className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>No pending verification requests</p>
+            </div>
           ) : (
-            <div className="divide-y divide-white/5">
-              {forumUsers.filter(u => u.membership_tier).map(user => (
-                <div key={user.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {user.avatar_url ? <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-xl" /> : <div className="w-10 h-10 rounded-xl bg-white/5" />}
-                    <div>
-                      <span className="font-medium text-white">{user.username}</span>
-                      <div className="mt-1">{getMembershipBadge(user.membership_tier)}</div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {verificationRequests.map((request) => (
+                <div key={request.id} className="p-4 flex items-start gap-4">
+                  {request.forum_user?.avatar_url ? (
+                    <img 
+                      src={request.forum_user.avatar_url} 
+                      alt=""
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
+                      <User className="w-6 h-6 text-white" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className={`font-medium ${textClass}`}>
+                      {request.forum_user?.username || 'Unknown User'}
+                    </div>
+                    <div className={`text-sm mt-1 ${mutedClass}`}>
+                      <strong>Reason:</strong> {request.reason || 'No reason provided'}
+                    </div>
+                    <div className={`text-xs mt-1 ${mutedClass}`}>
+                      Submitted: {new Date(request.created_at).toLocaleString()}
                     </div>
                   </div>
-                  <button onClick={() => { setShowMembershipModal(user.id); setSelectedMembership(user.membership_tier || ''); }} className="flex items-center gap-1 px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg text-sm"><Star className="w-4 h-4" />Edit</button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApproveVerification(request)}
+                      disabled={processingVerification === request.id}
+                      className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                    >
+                      <Check className="w-4 h-4" />
+                      Verify
+                    </button>
+                    <button
+                      onClick={() => setShowDenyVerificationModal(request.id)}
+                      disabled={processingVerification === request.id}
+                      className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+                    >
+                      <X className="w-4 h-4" />
+                      Deny
+                    </button>
+                  </div>
                 </div>
               ))}
-              {forumUsers.filter(u => u.membership_tier).length === 0 && <div className="text-center py-12 text-gray-500">No users with memberships</div>}
             </div>
           )}
         </div>
-      )}
+      ) : activeSection === 'memberships' ? (
+        /* Memberships Section */
+        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 className={`font-semibold ${textClass}`}>Manage Memberships</h3>
+            <p className={`text-sm ${mutedClass} mt-1`}>Assign Bronze, Silver, or Platinum membership tiers to users.</p>
+          </div>
+          
+          {/* Stats */}
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => u.membership_tier === 'bronze').length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>Bronze</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => u.membership_tier === 'silver').length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>Silver</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => u.membership_tier === 'platinum').length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>Platinum</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${textClass}`}>
+                  {forumUsers.filter(u => !u.membership_tier).length}
+                </div>
+                <div className={`text-xs ${mutedClass}`}>No Tier</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <tr>
+                  <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>User</th>
+                  <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Current Tier</th>
+                  <th className={`text-left px-6 py-4 text-sm font-semibold ${mutedClass}`}>Posts</th>
+                  <th className={`text-right px-6 py-4 text-sm font-semibold ${mutedClass}`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className={`px-6 py-12 text-center ${mutedClass}`}>
+                      Loading...
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className={`px-6 py-12 text-center ${mutedClass}`}>
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className={`border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {user.avatar_url ? (
+                            <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                              <User className="w-5 h-5 text-white" />
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5">
+                            <span className={`font-medium ${textClass}`}>{user.username}</span>
+                            {user.is_verified && (
+                              <BadgeCheck className="w-4 h-4 text-blue-500" />
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {getMembershipBadge(user.membership_tier) || (
+                          <span className={`text-sm ${mutedClass}`}>None</span>
+                        )}
+                      </td>
+                      <td className={`px-6 py-4 ${mutedClass}`}>{user.post_count}</td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => {
+                            setSelectedMembership(user.membership_tier || '');
+                            setShowMembershipModal(user.id);
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition ml-auto"
+                        >
+                          <Star className="w-4 h-4" />
+                          Set Tier
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       {/* Suspend Modal */}
       {showSuspendModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Suspend User</h3>
-            <div><label className="block text-sm font-medium mb-2 text-gray-300">Reason</label><textarea value={suspensionReason} onChange={(e) => setSuspensionReason(e.target.value)} placeholder="Reason for suspension..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500" rows={3} /></div>
-            <div><label className="block text-sm font-medium mb-2 text-gray-300">Duration</label><select value={suspensionDays} onChange={(e) => setSuspensionDays(e.target.value)} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white"><option value="1">1 day</option><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="permanent">Permanent</option></select></div>
-            <div className="flex gap-3 pt-2">
-              <button onClick={() => setShowSuspendModal(null)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl">Cancel</button>
-              <button onClick={() => handleSuspend(showSuspendModal)} disabled={suspending} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl">{suspending && <Loader2 className="w-4 h-4 animate-spin" />}Suspend</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${cardClass} border rounded-2xl p-6 w-full max-w-md`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Suspend User</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Reason</label>
+                <textarea
+                  value={suspensionReason}
+                  onChange={(e) => setSuspensionReason(e.target.value)}
+                  placeholder="Reason for suspension..."
+                  className={`w-full px-4 py-2 border rounded-lg resize-none ${inputClass}`}
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Duration</label>
+                <select
+                  value={suspensionDays}
+                  onChange={(e) => setSuspensionDays(e.target.value)}
+                  className={`w-full px-4 py-2 border rounded-lg ${inputClass}`}
+                >
+                  <option value="1">1 day</option>
+                  <option value="3">3 days</option>
+                  <option value="7">7 days</option>
+                  <option value="14">14 days</option>
+                  <option value="30">30 days</option>
+                  <option value="permanent">Permanent</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowSuspendModal(null)}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSuspend(showSuspendModal)}
+                disabled={suspending}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <Ban className="w-4 h-4" />
+                {suspending ? 'Suspending...' : 'Suspend User'}
+              </button>
             </div>
           </div>
         </div>
@@ -423,27 +1065,36 @@ export default function ForumModTab() {
 
       {/* Deny Avatar Modal */}
       {showDenyModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Deny Avatar Request</h3>
-            <div><label className="block text-sm font-medium mb-2 text-gray-300">Reason</label><textarea value={denyReason} onChange={(e) => setDenyReason(e.target.value)} placeholder="Reason for denial..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500" rows={3} /></div>
-            <div className="flex gap-3">
-              <button onClick={() => { setShowDenyModal(null); setDenyReason(''); }} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl">Cancel</button>
-              <button onClick={() => handleDenyAvatar(showDenyModal)} disabled={processingAvatar === showDenyModal} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl">{processingAvatar === showDenyModal && <Loader2 className="w-4 h-4 animate-spin" />}Deny</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${cardClass} border rounded-2xl p-6 w-full max-w-md`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Avatar Request</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Reason (optional)</label>
+              <textarea
+                value={denyReason}
+                onChange={(e) => setDenyReason(e.target.value)}
+                placeholder="Reason for denial..."
+                className={`w-full px-4 py-2 border rounded-lg resize-none ${inputClass}`}
+                rows={3}
+              />
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Deny Cover Modal */}
-      {showDenyCoverModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Deny Cover Request</h3>
-            <div><label className="block text-sm font-medium mb-2 text-gray-300">Reason</label><textarea value={coverDenyReason} onChange={(e) => setCoverDenyReason(e.target.value)} placeholder="Reason for denial..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500" rows={3} /></div>
-            <div className="flex gap-3">
-              <button onClick={() => { setShowDenyCoverModal(null); setCoverDenyReason(''); }} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl">Cancel</button>
-              <button onClick={() => handleDenyCover(showDenyCoverModal)} disabled={processingCover === showDenyCoverModal} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl">{processingCover === showDenyCoverModal && <Loader2 className="w-4 h-4 animate-spin" />}Deny</button>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowDenyModal(null); setDenyReason(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDenyAvatar(showDenyModal)}
+                disabled={processingAvatar === showDenyModal}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+                Deny Request
+              </button>
             </div>
           </div>
         </div>
@@ -451,13 +1102,73 @@ export default function ForumModTab() {
 
       {/* Deny Verification Modal */}
       {showDenyVerificationModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Deny Verification</h3>
-            <div><label className="block text-sm font-medium mb-2 text-gray-300">Reason</label><textarea value={verifyDenyReason} onChange={(e) => setVerifyDenyReason(e.target.value)} placeholder="Reason for denial..." className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500" rows={3} /></div>
-            <div className="flex gap-3">
-              <button onClick={() => { setShowDenyVerificationModal(null); setVerifyDenyReason(''); }} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl">Cancel</button>
-              <button onClick={() => handleDenyVerification(showDenyVerificationModal)} disabled={processingVerification === showDenyVerificationModal} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl">{processingVerification === showDenyVerificationModal && <Loader2 className="w-4 h-4 animate-spin" />}Deny</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className={`${cardClass} border rounded-2xl p-6 w-full max-w-md`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Verification Request</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Reason (optional)</label>
+              <textarea
+                value={verifyDenyReason}
+                onChange={(e) => setVerifyDenyReason(e.target.value)}
+                placeholder="Reason for denial..."
+                className={`w-full px-4 py-2 border rounded-lg resize-none ${inputClass}`}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowDenyVerificationModal(null); setVerifyDenyReason(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDenyVerification(showDenyVerificationModal)}
+                disabled={processingVerification === showDenyVerificationModal}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+                Deny Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deny Cover Modal */}
+      {showDenyCoverModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${cardClass}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Deny Cover Request</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Reason (optional)</label>
+              <textarea
+                value={coverDenyReason}
+                onChange={(e) => setCoverDenyReason(e.target.value)}
+                placeholder="Reason for denial..."
+                className={`w-full px-4 py-2 border rounded-lg resize-none ${inputClass}`}
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowDenyCoverModal(null); setCoverDenyReason(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDenyCover(showDenyCoverModal)}
+                disabled={processingCover === showDenyCoverModal}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+                Deny Request
+              </button>
             </div>
           </div>
         </div>
@@ -465,13 +1176,39 @@ export default function ForumModTab() {
 
       {/* Membership Modal */}
       {showMembershipModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Set Membership Tier</h3>
-            <div><label className="block text-sm font-medium mb-2 text-gray-300">Tier</label><select value={selectedMembership} onChange={(e) => setSelectedMembership(e.target.value)} className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white"><option value="">None</option><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="platinum">Platinum</option></select></div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowMembershipModal(null)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl">Cancel</button>
-              <button onClick={() => handleSetMembership(showMembershipModal)} disabled={savingMembership} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl">{savingMembership && <Loader2 className="w-4 h-4 animate-spin" />}Save</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${cardClass}`}>
+            <h3 className={`text-lg font-semibold mb-4 ${textClass}`}>Set Membership Tier</h3>
+            
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${mutedClass}`}>Membership Tier</label>
+              <select
+                value={selectedMembership}
+                onChange={(e) => setSelectedMembership(e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg ${inputClass}`}
+              >
+                <option value="">No Membership</option>
+                <option value="bronze">Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="platinum">Platinum</option>
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowMembershipModal(null); setSelectedMembership(''); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleSetMembership(showMembershipModal)}
+                disabled={savingMembership}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <Star className="w-4 h-4" />
+                {savingMembership ? 'Saving...' : 'Save Membership'}
+              </button>
             </div>
           </div>
         </div>
@@ -479,14 +1216,52 @@ export default function ForumModTab() {
 
       {/* Password Reset Modal */}
       {showPasswordResetModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-white">Reset Password</h3>
-            <p className="text-gray-400 text-sm">This will generate a new random password for the user.</p>
-            <label className="flex items-center gap-3"><input type="checkbox" checked={sendPasswordEmail} onChange={(e) => setSendPasswordEmail(e.target.checked)} className="w-4 h-4 rounded border-gray-600" /><span className="text-gray-300">Send password via email</span></label>
-            <div className="flex gap-3">
-              <button onClick={() => setShowPasswordResetModal(null)} className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl">Cancel</button>
-              <button onClick={() => handleResetPassword(showPasswordResetModal)} disabled={resettingPassword} className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">{resettingPassword && <Loader2 className="w-4 h-4 animate-spin" />}Reset</button>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${cardClass}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
+                <KeyRound className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className={`text-lg font-semibold ${textClass}`}>Reset User Password</h3>
+            </div>
+            
+            <p className={`text-sm mb-4 ${mutedClass}`}>
+              This will generate a new secure password for this user. The admin will NOT see the new password.
+            </p>
+
+            <label className="flex items-center gap-3 mb-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendPasswordEmail}
+                onChange={(e) => setSendPasswordEmail(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className={`text-sm ${textClass}`}>Send new password to user via email</span>
+            </label>
+
+            {!sendPasswordEmail && (
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  ⚠️ Without email notification, the user will be locked out until you manually provide them with a new password via another channel.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => { setShowPasswordResetModal(null); setSendPasswordEmail(true); }}
+                className={`px-4 py-2 ${mutedClass} hover:opacity-80`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleResetPassword(showPasswordResetModal)}
+                disabled={resettingPassword}
+                className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition"
+              >
+                <KeyRound className="w-4 h-4" />
+                {resettingPassword ? 'Resetting...' : 'Reset Password'}
+              </button>
             </div>
           </div>
         </div>
