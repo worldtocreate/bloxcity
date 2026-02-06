@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Clock, Lock, BadgeCheck, Moon, Sun, Send, Sparkles, Users, Award, Calendar, Check, X, Trash2, LogOut, Monitor, Smartphone, Link2, MessageSquare, Ban, ImageIcon } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Clock, Lock, BadgeCheck, Moon, Sun, Send, Sparkles, Users, Award, Calendar, Check, X, Trash2, LogOut, Monitor, Smartphone, Link2, MessageSquare, Ban, ImageIcon, Heart } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
@@ -73,7 +73,7 @@ interface UserSession {
 
 export default function ForumSettings() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, hasValentinesTheme, setHasValentinesTheme } = useTheme();
   const { user, forumUser, isAdmin, emailVerified } = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
@@ -193,8 +193,39 @@ export default function ForumSettings() {
       fetchBlockedUsers();
       fetchGoldCheckmark();
       fetchAffiliates();
+      fetchValentinesTheme();
     }
   }, [forumUser]);
+
+  const fetchValentinesTheme = async () => {
+    if (!forumUser) return;
+    const { data } = await supabase
+      .from('forum_users')
+      .select('has_valentines_theme, selected_theme')
+      .eq('id', forumUser.id)
+      .single();
+    
+    if (data) {
+      setHasValentinesTheme(data.has_valentines_theme || false);
+      if (data.selected_theme === 'valentines' && data.has_valentines_theme) {
+        setTheme('valentines');
+      }
+    }
+  };
+
+  const handleThemeChange = async (newTheme: 'light' | 'valentines') => {
+    if (newTheme === 'valentines' && !hasValentinesTheme) return;
+    
+    setTheme(newTheme);
+    
+    // Save to database
+    if (forumUser) {
+      await supabase
+        .from('forum_users')
+        .update({ selected_theme: newTheme })
+        .eq('id', forumUser.id);
+    }
+  };
 
   const fetchGoldCheckmark = async () => {
     if (!forumUser) return;
@@ -845,10 +876,84 @@ export default function ForumSettings() {
         </div>
       </div>
 
-      {/* Website Theme - Coming Soon */}
+      {/* Website Theme */}
       <div className="card card-body">
-        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Website Theme</h3>
-        <p className="text-sm text-[hsl(var(--bc-text-muted))]">Dark mode coming soon! Currently using light theme.</p>
+        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4">Website Theme</h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Light Theme */}
+          <button
+            onClick={() => handleThemeChange('light')}
+            className={`relative p-4 rounded-xl border-2 transition-all ${
+              theme === 'light' 
+                ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/5' 
+                : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center">
+                <Sun className="w-6 h-6 text-blue-500" />
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-[hsl(var(--bc-text))]">Light</div>
+                <div className="text-xs text-[hsl(var(--bc-text-muted))]">Default theme</div>
+              </div>
+            </div>
+            {theme === 'light' && (
+              <div className="absolute top-2 right-2">
+                <Check className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+              </div>
+            )}
+          </button>
+
+          {/* Valentine's Theme */}
+          <button
+            onClick={() => hasValentinesTheme && handleThemeChange('valentines')}
+            disabled={!hasValentinesTheme}
+            className={`relative p-4 rounded-xl border-2 transition-all ${
+              !hasValentinesTheme 
+                ? 'border-[hsl(var(--bc-border))] opacity-60 cursor-not-allowed'
+                : theme === 'valentines' 
+                  ? 'border-pink-500 bg-pink-500/5' 
+                  : 'border-[hsl(var(--bc-border))] hover:border-pink-500/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-200 to-red-100 border border-pink-300 flex items-center justify-center">
+                <Heart className={`w-6 h-6 ${hasValentinesTheme ? 'text-pink-500' : 'text-gray-400'}`} />
+              </div>
+              <div className="text-left">
+                <div className={`font-semibold ${hasValentinesTheme ? 'text-[hsl(var(--bc-text))]' : 'text-gray-400'}`}>
+                  Valentine's
+                </div>
+                <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                  {hasValentinesTheme ? 'Limited edition' : (
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Locked
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            {theme === 'valentines' && hasValentinesTheme && (
+              <div className="absolute top-2 right-2">
+                <Check className="w-5 h-5 text-pink-500" />
+              </div>
+            )}
+            {!hasValentinesTheme && (
+              <div className="absolute top-2 right-2">
+                <Lock className="w-4 h-4 text-gray-400" />
+              </div>
+            )}
+          </button>
+        </div>
+
+        {!hasValentinesTheme && (
+          <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-4 flex items-center gap-2">
+            <Heart className="w-4 h-4 text-pink-400" />
+            The Valentine's theme was a limited-time exclusive available during Valentine's Day 2026.
+          </p>
+        )}
       </div>
 
       {/* Profile Picture & Cover */}
