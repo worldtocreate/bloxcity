@@ -2997,10 +2997,10 @@ const Admin = () => {
         {activeTab === "ip-blocking" && <IPBlockingTab />}
 
         {/* Forum Moderation Tab */}
-        {activeTab === "forum-mod" && <ForumModTab darkMode={darkMode} />}
+        {activeTab === "forum-mod" && <ForumModTab />}
 
         {/* Content Moderation Tab */}
-        {activeTab === "content-mod" && <ContentModerationTab darkMode={darkMode} />}
+        {activeTab === "content-mod" && <ContentModerationTab />}
 
         {/* Support Tickets Tab */}
         {activeTab === "support-tickets" && <SupportTicketsTab darkMode={darkMode} />}
@@ -3015,7 +3015,7 @@ const Admin = () => {
         {activeTab === "updates" && <UpdatesTab />}
 
         {/* Reports Tab */}
-        {activeTab === "reports" && <ReportsTab darkMode={darkMode} />}
+        {activeTab === "reports" && <ReportsTab />}
         
         {/* Ads Tab */}
         {activeTab === "ads" && <AdsTab />}
