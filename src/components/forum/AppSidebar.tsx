@@ -1,75 +1,59 @@
 import { Link, useLocation } from 'react-router-dom';
-import {
-  Home,
-  MessageSquare,
-  Gamepad2,
-  Store,
-  User,
-  ArrowLeftRight,
-  Users,
-  UsersRound,
-  Settings,
-  Mail,
-  Heart,
-  Award,
-  Plus,
-  BadgeCheck,
-  Sparkles,
-  HelpCircle,
-  Shield,
-  Map,
-  Briefcase,
-} from 'lucide-react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarHeader,
-  useSidebar,
-} from '@/components/ui/sidebar';
-import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
+import { Home, Gamepad2, Store, MessageSquare, Search, ShoppingBasket, Plus, PenLine, Shield } from 'lucide-react';
+import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
+import { ForumUser } from '@/hooks/useForumAuth';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppSidebarProps {
-  forumUser?: {
-    username: string;
-  } | null;
+  forumUser?: ForumUser | null;
   isLoggedIn: boolean;
+  isAdmin?: boolean;
+  isModerator?: boolean;
 }
 
-const mainNavItems = [
-  { title: 'Home', url: '/', icon: Home },
-  { title: 'Games', url: '/games', icon: Gamepad2 },
-  { title: 'Market', url: '/market', icon: Store },
-  { title: 'Forum', url: '/forum', icon: MessageSquare },
-  { title: 'Players', url: '/players', icon: Users },
-  { title: 'Groups', url: '/groups', icon: UsersRound },
-];
-
-const moreItems = [
-  { title: 'Achievements', url: '/achievements', icon: Award },
-  { title: 'Roadmap', url: '/roadmap', icon: Map },
-  { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
-];
-
-const comingSoonItems = [
-  { title: 'Character', url: '/character', icon: User },
-  { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
-];
-
-export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
+export default function AppSidebar({ forumUser, isLoggedIn, isAdmin, isModerator }: AppSidebarProps) {
   const location = useLocation();
-  const { state, setOpenMobile, isMobile } = useSidebar();
-  const collapsed = state === 'collapsed';
+  const { openMobile, setOpenMobile, isMobile } = useSidebar();
+  const [cash, setCash] = useState(0);
+  const [friendRequests, setFriendRequests] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
+  useEffect(() => {
+    if (forumUser) {
+      fetchData();
+    }
+  }, [forumUser]);
+
+  const fetchData = async () => {
+    if (!forumUser) return;
+    
+    // Fetch cash
+    const { data: userData } = await supabase
+      .from('forum_users')
+      .select('cash')
+      .eq('id', forumUser.id)
+      .single();
+    if (userData) setCash((userData as any).cash || 0);
+
+    // Fetch friend requests
+    const { count: friendCount } = await supabase
+      .from('forum_friend_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('receiver_id', forumUser.id)
+      .eq('status', 'pending');
+    setFriendRequests(friendCount || 0);
+
+    // Fetch unread messages
+    const { count: msgCount } = await supabase
+      .from('forum_direct_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', forumUser.id)
+      .eq('is_read', false);
+    setUnreadMessages(msgCount || 0);
   };
+
+  const isActive = (path: string) => location.pathname === path;
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -77,290 +61,114 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
     }
   };
 
-  const linkStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '10px 15px',
-    color: '#777',
-    fontWeight: 500,
-    lineHeight: 1.5,
-    fontSize: '14px',
-    textDecoration: 'none',
-    transition: 'background-color 0.35s',
-  };
-
-  const activeLinkStyle = {
-    ...linkStyle,
-    background: '#ededed',
-  };
-
-  const iconStyle = {
-    fontSize: '21px',
-    width: '25px',
-    flexShrink: 0,
-  };
+  // Only show on mobile when open
+  if (!isMobile || !openMobile) return null;
 
   return (
-    <Sidebar 
-      collapsible="icon" 
-      className="sidebar"
-      style={{ 
-        background: '#fff',
-        borderRight: '1px solid #ccc',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        bottom: 0,
-        width: collapsed ? '60px' : '200px',
-        zIndex: 10,
-        overflowY: 'auto'
-      }}
-    >
-      <SidebarHeader style={{ padding: '12px', borderBottom: '1px solid #eee' }}>
-        <Link to="/" className="flex items-center gap-2" onClick={handleLinkClick}>
-          <img src={bloxcityLogo} alt="BLOX City" style={{ width: '40px', height: '40px', borderRadius: '4px' }} />
-          {!collapsed && (
-            <span style={{ fontWeight: 600, color: '#333' }}>BLOX City</span>
-          )}
-        </Link>
-      </SidebarHeader>
+    <>
+      {/* Overlay */}
+      <div 
+        className="fixed inset-0 bg-black/50 z-[9]"
+        onClick={() => setOpenMobile(false)}
+      />
+      
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="sidebar-inner">
+          <ul className="sidebar-items">
+            <li className="item">
+              <Link to={isLoggedIn ? '/' : '/landing'} onClick={handleLinkClick}>
+                <Home className="sidebar-icon" />
+                <span>Home</span>
+              </Link>
+            </li>
+            <li className="item">
+              <Link to="/games" onClick={handleLinkClick}>
+                <Gamepad2 className="sidebar-icon" />
+                <span>Games</span>
+              </Link>
+            </li>
+            <li className="item">
+              <Link to="/market" onClick={handleLinkClick}>
+                <Store className="sidebar-icon" />
+                <span>Market</span>
+              </Link>
+            </li>
+            <li className="item">
+              <Link to="/forum" onClick={handleLinkClick}>
+                <MessageSquare className="sidebar-icon" />
+                <span>Forum</span>
+              </Link>
+            </li>
+            <li className="item">
+              <Link to="/users" onClick={handleLinkClick}>
+                <Search className="sidebar-icon" />
+                <span>Users</span>
+              </Link>
+            </li>
+            <li className="item">
+              <Link to="/upgrade" onClick={handleLinkClick}>
+                <ShoppingBasket className="sidebar-icon" />
+                <span>Upgrade</span>
+              </Link>
+            </li>
+            {isLoggedIn && (
+              <li className="item">
+                <Link to="/create" onClick={handleLinkClick}>
+                  <Plus className="sidebar-icon" />
+                  <span>Create</span>
+                </Link>
+              </li>
+            )}
+            <li className="item">
+              <a href="https://blog.bloxcity.com" target="_blank" rel="noopener noreferrer">
+                <PenLine className="sidebar-icon" />
+                <span>Blog</span>
+              </a>
+            </li>
+          </ul>
 
-      <SidebarContent style={{ marginTop: '10px' }}>
-        {/* Main Navigation */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {mainNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to={item.url}
-                      onClick={handleLinkClick}
-                      style={isActive(item.url) ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive(item.url)) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive(item.url)) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <item.icon style={iconStyle} />
-                      {!collapsed && <span>{item.title}</span>}
+          {isLoggedIn && forumUser && (
+            <>
+              <div className="sidebar-divider"></div>
+              <ul className="sidebar-items">
+                <li className="item">
+                  <Link to="/convert" onClick={handleLinkClick}>
+                    <span className="icon icon-cash"></span>
+                    <span>{cash.toLocaleString()} Cash</span>
+                  </Link>
+                </li>
+                <li className="item">
+                  <Link to="/convert" onClick={handleLinkClick}>
+                    <span className="icon icon-coins"></span>
+                    <span>{(forumUser.coins || 0).toLocaleString()} Coins</span>
+                  </Link>
+                </li>
+                <li className="item">
+                  <Link to="/friends" onClick={handleLinkClick}>
+                    <span className="icon icon-friends"></span>
+                    <span>{friendRequests} Friend Requests</span>
+                  </Link>
+                </li>
+                <li className="item">
+                  <Link to="/messages" onClick={handleLinkClick}>
+                    <span className="icon icon-inbox"></span>
+                    <span>{unreadMessages} Messages</span>
+                  </Link>
+                </li>
+                {(isAdmin || isModerator) && (
+                  <li className="item">
+                    <Link to="/admin" onClick={handleLinkClick}>
+                      <span className="icon icon-staff"></span>
+                      <span>Panel</span>
                     </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* More Section */}
-        <SidebarGroup style={{ marginTop: '10px' }}>
-          <SidebarGroupContent>
-            <SidebarMenu style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {moreItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to={item.url}
-                      onClick={handleLinkClick}
-                      style={isActive(item.url) ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive(item.url)) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive(item.url)) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <item.icon style={iconStyle} />
-                      {!collapsed && <span>{item.title}</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Divider */}
-        <div style={{ background: '#eee', margin: '15px 0', height: '1px', width: '100%' }} />
-
-        {/* User Section - Only for logged in users */}
-        {isLoggedIn && (
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to="/create"
-                      onClick={handleLinkClick}
-                      style={isActive('/create') ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive('/create')) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive('/create')) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <Plus style={iconStyle} />
-                      {!collapsed && <span>Create</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to="/upgrades"
-                      onClick={handleLinkClick}
-                      style={isActive('/upgrades') ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive('/upgrades')) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive('/upgrades')) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <Sparkles style={iconStyle} />
-                      {!collapsed && <span>Upgrade</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to="/friends"
-                      onClick={handleLinkClick}
-                      style={isActive('/friends') ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive('/friends')) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive('/friends')) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <Heart style={iconStyle} />
-                      {!collapsed && <span>Friends</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to="/messages"
-                      onClick={handleLinkClick}
-                      style={isActive('/messages') ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive('/messages')) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive('/messages')) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <Mail style={iconStyle} />
-                      {!collapsed && <span>Messages</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to="/support"
-                      onClick={handleLinkClick}
-                      style={isActive('/support') ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive('/support')) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive('/support')) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <HelpCircle style={iconStyle} />
-                      {!collapsed && <span>Support</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild onClick={handleLinkClick}>
-                    <Link
-                      to="/settings"
-                      onClick={handleLinkClick}
-                      style={isActive('/settings') ? activeLinkStyle : linkStyle}
-                      onMouseEnter={(e) => {
-                        if (!isActive('/settings')) {
-                          e.currentTarget.style.background = '#ededed';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive('/settings')) {
-                          e.currentTarget.style.background = 'transparent';
-                        }
-                      }}
-                    >
-                      <Settings style={iconStyle} />
-                      {!collapsed && <span>Settings</span>}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {forumUser?.username && ["soba", "dylan"].includes(forumUser.username.toLowerCase()) && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild onClick={handleLinkClick}>
-                      <Link
-                        to="/g0dfrey"
-                        onClick={handleLinkClick}
-                        style={isActive('/g0dfrey') ? activeLinkStyle : linkStyle}
-                        onMouseEnter={(e) => {
-                          if (!isActive('/g0dfrey')) {
-                            e.currentTarget.style.background = '#ededed';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive('/g0dfrey')) {
-                            e.currentTarget.style.background = 'transparent';
-                          }
-                        }}
-                      >
-                        <Shield style={iconStyle} />
-                        {!collapsed && <span>Panel</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  </li>
                 )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-      </SidebarContent>
-    </Sidebar>
+              </ul>
+            </>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
