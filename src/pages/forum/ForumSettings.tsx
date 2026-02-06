@@ -213,8 +213,18 @@ export default function ForumSettings() {
     }
   };
 
+  // Check if Valentine's Day has arrived
+  const isValentinesDayOrAfter = () => {
+    const now = new Date();
+    const valentinesDay = new Date('2026-02-14T00:00:00');
+    return now >= valentinesDay;
+  };
+
+  const isValentinesUnlocked = hasValentinesTheme && isValentinesDayOrAfter();
+
   const handleThemeChange = async (newTheme: 'light' | 'valentines') => {
-    if (newTheme === 'valentines' && !hasValentinesTheme) return;
+    // Valentine's theme only available if claimed AND it's Valentine's Day or after
+    if (newTheme === 'valentines' && !isValentinesUnlocked) return;
     
     setTheme(newTheme);
     
@@ -908,10 +918,10 @@ export default function ForumSettings() {
 
           {/* Valentine's Theme */}
           <button
-            onClick={() => hasValentinesTheme && handleThemeChange('valentines')}
-            disabled={!hasValentinesTheme}
+            onClick={() => isValentinesUnlocked && handleThemeChange('valentines')}
+            disabled={!isValentinesUnlocked}
             className={`relative p-4 rounded-xl border-2 transition-all ${
-              !hasValentinesTheme 
+              !isValentinesUnlocked 
                 ? 'border-[hsl(var(--bc-border))] opacity-60 cursor-not-allowed'
                 : theme === 'valentines' 
                   ? 'border-pink-500 bg-pink-500/5' 
@@ -920,27 +930,28 @@ export default function ForumSettings() {
           >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-200 to-red-100 border border-pink-300 flex items-center justify-center">
-                <Heart className={`w-6 h-6 ${hasValentinesTheme ? 'text-pink-500' : 'text-gray-400'}`} />
+                <Heart className={`w-6 h-6 ${isValentinesUnlocked ? 'text-pink-500' : 'text-gray-400'}`} />
               </div>
               <div className="text-left">
-                <div className={`font-semibold ${hasValentinesTheme ? 'text-[hsl(var(--bc-text))]' : 'text-gray-400'}`}>
+                <div className={`font-semibold ${isValentinesUnlocked ? 'text-[hsl(var(--bc-text))]' : 'text-gray-400'}`}>
                   Valentine's
                 </div>
                 <div className="text-xs text-[hsl(var(--bc-text-muted))]">
-                  {hasValentinesTheme ? 'Limited edition' : (
+                  {isValentinesUnlocked ? 'Limited edition' : (
                     <span className="flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> Locked
+                      <Lock className="w-3 h-3" /> 
+                      {hasValentinesTheme ? 'Unlocks Feb 14' : 'Locked'}
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            {theme === 'valentines' && hasValentinesTheme && (
+            {theme === 'valentines' && isValentinesUnlocked && (
               <div className="absolute top-2 right-2">
                 <Check className="w-5 h-5 text-pink-500" />
               </div>
             )}
-            {!hasValentinesTheme && (
+            {!isValentinesUnlocked && (
               <div className="absolute top-2 right-2">
                 <Lock className="w-4 h-4 text-gray-400" />
               </div>
@@ -948,10 +959,13 @@ export default function ForumSettings() {
           </button>
         </div>
 
-        {!hasValentinesTheme && (
+        {!isValentinesUnlocked && (
           <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-4 flex items-center gap-2">
             <Heart className="w-4 h-4 text-pink-400" />
-            The Valentine's theme was a limited-time exclusive available during Valentine's Day 2026.
+            {hasValentinesTheme 
+              ? "You've claimed this theme! It will unlock on February 14th, 2026."
+              : "The Valentine's theme is a limited-time exclusive available during Valentine's Day 2026."
+            }
           </p>
         )}
       </div>
