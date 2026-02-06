@@ -1537,12 +1537,11 @@ html, body {
 }
 
 body {
-  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-  font-weight: 500;
-  background: hsl(var(--bc-body-bg));
-  color: hsl(var(--bc-text));
+  font-family: 'Hind', sans-serif;
+  font-weight: 400;
+  background: #ededed;
+  color: #333;
   min-height: 100vh;
-  letter-spacing: -0.3px;
 }
 
 /* ========================================
@@ -3675,3 +3674,102 @@ textarea.bc-input {
 .site-banner a {
   color: #fff;
 }
+
+/* ========================================
+   DASHBOARD PAGE - Reference Design
+======================================== */
+.dashboard-page .dashboard-header {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
+}
+
+.dashboard-page .dashboard-avatar-container .dashboard-avatar {
+  width: 100%;
+}
+
+.dashboard-page .dashboard-blog-container .dashboard-blog-post:not(:last-child) {
+  margin-bottom: 25px;
+}
+
+.dashboard-page .dashboard-blog-container .dashboard-blog-post .blog-post-title {
+  color: #444;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.dashboard-page .dashboard-blog-container .dashboard-blog-post .blog-post-body {
+  color: #666;
+  font-size: 12px;
+}
+
+.dashboard-page .dashboard-feed-container .feed-no-notifications {
+  color: #444;
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.dashboard-page .dashboard-feed-container .feed-why-not {
+  color: #666;
+  font-size: 15px;
+}
+
+.dashboard-page .dashboard-feed-container .dashboard-status:not(:last-child) {
+  margin-bottom: 15px;
+}
+
+.dashboard-page .dashboard-feed-container .dashboard-status .dashboard-status-creator-avatar {
+  border: 1px solid #eee;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 5px;
+}
+
+.dashboard-page .dashboard-feed-container .dashboard-status .dashboard-status-creator-avatar .dashboard-status-creator-avatar-image {
+  width: 100%;
+}
+
+.dashboard-page .dashboard-feed-container .dashboard-status .dashboard-status-creator {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.dashboard-page .dashboard-feed-container .dashboard-status .dashboard-status-content {
+  word-wrap: break-word;
+  margin-top: 5px;
+}
+
+.dashboard-page .dashboard-feed-container .dashboard-status .dashboard-status-time {
+  color: #777;
+  font-size: 14px;
+}
+
+/* Responsive grid for dashboard */
+@media (max-width: 768px) {
+  .dashboard-page > div {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Push utilities from reference */
+.push-5 { height: 5px; }
+.push-10 { height: 10px; }
+.push-15 { height: 15px; }
+.push-20 { height: 20px; }
+.push-25 { height: 25px; }
+.push-50 { height: 50px; }
+.mb-5 { margin-bottom: 5px; }
+.mb-10 { margin-bottom: 10px; }
+.mb-15 { margin-bottom: 15px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-25 { margin-bottom: 25px; }
+.mb-50 { margin-bottom: 50px; }
