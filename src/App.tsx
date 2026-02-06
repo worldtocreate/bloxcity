@@ -476,6 +476,8 @@ import ForumHome from "./pages/forum/ForumHome";
 import ForumCategory from "./pages/forum/ForumCategory";
 import ForumThread from "./pages/forum/ForumThread";
 import ForumNewThread from "./pages/forum/ForumNewThread";
+import ForumSearch from "./pages/forum/ForumSearch";
+import ComingSoon from "./pages/forum/ComingSoon";
 import ForumLogin from "./pages/forum/ForumLogin";
 import ForumRegister from "./pages/forum/ForumRegister";
 import ForumForgotPassword from "./pages/forum/ForumForgotPassword";
@@ -2877,8 +2879,11 @@ const App = () => {
                 <Route index element={<HomeOrLanding />} />
                 <Route path="forum" element={<ForumHome />} />
                 <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
+                <Route path="forum/search" element={<ForumSearch />} />
+                <Route path="forum/my-threads" element={<ComingSoon title="My Threads" />} />
                 <Route path="category/:slug" element={<ForumCategory />} />
                 <Route path="category/:slug/new" element={<ForumNewThread />} />
+                <Route path="category/:slug/create" element={<ForumNewThread />} />
                 <Route path="thread/:threadId" element={<ForumThread />} />
                 
                 {/* Settings routes with nested layout */}

@@ -14,18 +14,20 @@ interface Category {
 export default function ForumNewThread() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { forumUser, isAdmin, emailVerified } = useOutletContext<{ 
+  const context = useOutletContext<{ 
     forumUser: ForumUser | null;
     isAdmin: boolean;
     emailVerified: boolean | null;
   }>();
+  
+  const forumUser = context?.forumUser;
+  const isAdmin = context?.isAdmin || false;
+  const isLoggedIn = !!forumUser;
 
   const [category, setCategory] = useState<Category | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const isLoggedIn = !!forumUser;
 
   useEffect(() => {
     fetchCategory();
@@ -98,14 +100,14 @@ export default function ForumNewThread() {
     <div>
       {/* Mobile Buttons */}
       {isLoggedIn && (
-        <div className="show-for-small-only text-center mb-4">
+        <div className="show-for-small-only text-center">
           <Link to="/forum/my-threads" className="button button-blue">My Threads</Link>
           <Link to="/forum/search" className="button button-red">Search Forum</Link>
         </div>
       )}
 
       {/* Navigation Row */}
-      <div className="grid-x grid-margin-x mb-4">
+      <div className="grid-x grid-margin-x">
         <div className="cell small-9 medium-6">
           <div className="forum-navigation">
             <div className="forum-navigation-item">

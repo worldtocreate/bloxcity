@@ -3388,12 +3388,58 @@ textarea.bc-input {
   }
 }
 
+/* Dropdown Container - for proper positioning */
+.topbar-dropdown-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 61px;
+}
+
+/* User button specific styles */
+.topbar-user-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-user-avatar {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.topbar-user-avatar-placeholder {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-username {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dropdown Arrow Icon */
+.icon-dropdown-arrow::before {
+  content: "▼";
+  font-size: 8px;
+  margin-left: 2px;
+}
+
 /* Dropdown Content */
-.dropdown-content {
+.navbar-more-dropdown,
+.navbar-user-dropdown {
   background: #fff;
   margin: 0;
-  display: block;
-  min-width: 100px;
+  min-width: 150px;
   overflow-y: auto;
   position: absolute;
   z-index: 9999;
@@ -3401,10 +3447,19 @@ textarea.bc-input {
   list-style: none;
   padding: 0;
   top: 100%;
-  right: 0;
 }
 
-.dropdown-content .dropdown-item {
+.navbar-more-dropdown {
+  left: 0;
+  right: auto;
+}
+
+.navbar-user-dropdown {
+  right: 0;
+  left: auto;
+}
+
+.dropdown-item {
   color: #777;
   font-size: 14px;
   min-height: 50px;
@@ -3415,8 +3470,8 @@ textarea.bc-input {
   transition: background-color 0.3s;
 }
 
-.dropdown-content .dropdown-item a,
-.dropdown-content .dropdown-item button {
+.dropdown-item a,
+.dropdown-item button {
   color: #777;
   font-size: 14px;
   font-weight: 600;
@@ -3427,20 +3482,17 @@ textarea.bc-input {
   background: transparent;
   border: none;
   cursor: pointer;
+  width: 100%;
+  text-align: left;
 }
 
-.dropdown-content .dropdown-item:hover {
+.dropdown-item:hover {
   background: #ededed;
 }
 
-.dropdown-content.navbar-more-dropdown {
-  left: 0;
-  right: auto;
-}
-
-.dropdown-content.navbar-user-dropdown {
-  margin-right: 0;
-  right: 0;
+.dropdown-item a:hover,
+.dropdown-item button:hover {
+  color: #333;
 }
 
 /* ========================================
