@@ -1,8 +1,8 @@
 import { forwardRef } from 'react';
-import { User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import defaultAvatar from '@/assets/default-avatar.png';
 
-export type AvatarEffect = 
+export type AvatarEffect =
   | 'glow-gold'
   | 'glow-purple'
   | 'glow-rainbow'
@@ -78,31 +78,21 @@ const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   const effectClass = hasEffect && effect in effectStyles ? effectStyles[effect] : '';
   const frameOverlay = hasEffect && effect && effect in frameOverlays ? frameOverlays[effect] : null;
 
+  const avatarSrc = avatarUrl || defaultAvatar;
+
   return (
     <div ref={ref} className={cn('relative inline-flex items-center justify-center', frameSizes[size])}>
-      {avatarUrl ? (
-        <img 
-          src={avatarUrl} 
-          alt={username}
-          className={cn(
-            sizeClasses[size],
-            'rounded-full object-cover',
-            effectClass,
-            className
-          )}
-        />
-      ) : (
-        <div 
-          className={cn(
-            sizeClasses[size],
-            'rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center',
-            effectClass,
-            className
-          )}
-        >
-          <User className={cn(iconSizes[size], 'text-white')} />
-        </div>
-      )}
+      <img 
+        src={avatarSrc} 
+        alt={username}
+        className={cn(
+          sizeClasses[size],
+          'rounded-full object-cover bg-[hsl(var(--bc-gray-200))]',
+          effectClass,
+          className
+        )}
+      />
+      
       
       {/* Frame Overlay */}
       {frameOverlay && (
