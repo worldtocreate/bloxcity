@@ -3364,26 +3364,26 @@ textarea.bc-input {
 
 .topbar-mobile {
   height: 100%;
-  display: flex !important;
+  display: none !important;
   align-items: center;
   justify-content: space-between;
 }
 
 .topbar-desktop {
-  display: none !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
 }
 
-/* Desktop: show desktop topbar, hide mobile */
-@media (min-width: 1024px) {
+/* Mobile/tablet: show mobile topbar, hide desktop */
+@media (max-width: 1023px) {
   .topbar-mobile {
-    display: none !important;
-  }
-  
-  .topbar-desktop {
     display: flex !important;
-    align-items: center;
-    justify-content: space-between;
-    height: 100%;
+  }
+
+  .topbar-desktop {
+    display: none !important;
   }
 }
 
