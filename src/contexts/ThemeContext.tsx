@@ -15,6 +15,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
   const [hasValentinesTheme, setHasValentinesTheme] = useState(false);
 
+  // Check if Valentine's Day has arrived (Feb 14, 2026)
+  const isValentinesDayOrAfter = () => {
+    const now = new Date();
+    const valentinesDay = new Date('2026-02-14T00:00:00');
+    return now >= valentinesDay;
+  };
+
   // Load theme from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('bloxcity-theme') as Theme | null;
@@ -22,20 +29,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
     setHasValentinesTheme(hasVTheme);
     
-    if (saved === 'valentines' && hasVTheme) {
+    // Only allow valentines theme if it's Valentine's Day or after AND user has claimed it
+    if (saved === 'valentines' && hasVTheme && isValentinesDayOrAfter()) {
       setThemeState('valentines');
       document.documentElement.classList.add('valentines');
       document.documentElement.classList.remove('dark');
     } else {
+      // Force light theme for everyone until Valentine's Day
       setThemeState('light');
+      localStorage.setItem('bloxcity-theme', 'light');
       document.documentElement.classList.remove('valentines', 'dark');
     }
   }, []);
 
   const setTheme = (newTheme: Theme) => {
-    // Only allow valentines if unlocked
-    if (newTheme === 'valentines' && !hasValentinesTheme) {
-      return;
+    // Only allow valentines if unlocked AND it's Valentine's Day or after
+    if (newTheme === 'valentines') {
+      if (!hasValentinesTheme || !isValentinesDayOrAfter()) {
+        return;
+      }
     }
     
     setThemeState(newTheme);
