@@ -16,6 +16,17 @@ export default function ForumRegister() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const referralCode = searchParams.get('ref') || '';
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setExistingAuthUser(null);
+      setEmail('');
+      toast.success('Signed out');
+    } catch {
+      toast.error('Failed to sign out');
+    }
+  };
   
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -195,7 +206,12 @@ export default function ForumRegister() {
         });
 
         if (authError) {
-          setError(authError.message);
+          const msg = authError.message || 'Sign up failed';
+          if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('user already registered')) {
+            setError('That email is already registered. Try logging in instead, or use a different email.');
+          } else {
+            setError(msg);
+          }
           setLoading(false);
           return;
         }
@@ -317,6 +333,25 @@ export default function ForumRegister() {
 
         <div className="bc-card">
           <div className="bc-card-body">
+            {existingAuthUser && (
+              <div className="p-3 mb-4 bg-[hsl(var(--bc-warning)/0.10)] border border-[hsl(var(--bc-warning)/0.35)] rounded-lg">
+                <p className="text-sm text-[hsl(var(--bc-text))] font-medium">
+                  You're currently signed in as <span className="font-bold">{existingAuthUser.email || 'your account'}</span>.
+                </p>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">
+                  The email field is locked while signed in. Sign out to register a new email.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button type="button" onClick={handleSignOut} className="bc-btn bc-btn-gray">
+                    Sign out
+                  </button>
+                  <Link to="/login" className="bc-btn bc-btn-primary">
+                    Go to login
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="flex items-center gap-2 p-3 mb-4 bg-[hsl(var(--bc-danger)/0.1)] border border-[hsl(var(--bc-danger)/0.3)] rounded-lg text-[hsl(var(--bc-danger))]">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
