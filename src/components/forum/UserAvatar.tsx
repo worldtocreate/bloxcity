@@ -1,6 +1,8 @@
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
-import defaultAvatar from '@/assets/default-avatar.png';
+
+// Default avatar - hosted in public folder
+const DEFAULT_AVATAR = '/default-avatar.png';
 
 export type AvatarEffect =
   | 'glow-gold'
@@ -78,7 +80,7 @@ const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
   const effectClass = hasEffect && effect in effectStyles ? effectStyles[effect] : '';
   const frameOverlay = hasEffect && effect && effect in frameOverlays ? frameOverlays[effect] : null;
 
-  const avatarSrc = avatarUrl || defaultAvatar;
+  const avatarSrc = avatarUrl || DEFAULT_AVATAR;
 
   return (
     <div ref={ref} className={cn('relative inline-flex items-center justify-center', frameSizes[size])}>
@@ -87,7 +89,7 @@ const UserAvatar = forwardRef<HTMLDivElement, UserAvatarProps>(({
         alt={username}
         className={cn(
           sizeClasses[size],
-          'rounded-full object-cover bg-[hsl(var(--bc-gray-200))]',
+          'rounded-full object-cover bg-[hsl(var(--bc-gray-300))] dark:bg-[hsl(var(--bc-gray-700))]',
           effectClass,
           className
         )}
