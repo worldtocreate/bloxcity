@@ -71,11 +71,13 @@ export default function ForumUsers() {
     const { data: usersData } = await usersQuery;
 
     if (usersData) {
-      const userIds = usersData.map(u => u.user_id);
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', userIds);
+      // Get staff status from admin_accounts (new system)
+      const forumUserIds = usersData.map(u => u.id);
+      const { data: adminAccounts } = await supabase
+        .from('admin_accounts')
+        .select('forum_user_id, staff_role, is_active')
+        .in('forum_user_id', forumUserIds)
+        .eq('is_active', true);
 
       const ONLINE_THRESHOLD_MS = 3 * 60 * 1000;
       const now = Date.now();
@@ -87,8 +89,8 @@ export default function ForumUsers() {
 
       const usersWithRoles = usersData.map(user => ({
         ...user,
-        is_admin: roles?.some(r => r.user_id === user.user_id && r.role === 'admin'),
-        is_moderator: roles?.some(r => r.user_id === user.user_id && r.role === 'moderator')
+        is_admin: adminAccounts?.some(a => a.forum_user_id === user.id && ['admin', 'owner'].includes(a.staff_role || '')),
+        is_moderator: adminAccounts?.some(a => a.forum_user_id === user.id && a.staff_role === 'moderator')
       }));
 
       usersWithRoles.sort((a: any, b: any) => {
