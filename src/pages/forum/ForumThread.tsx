@@ -129,16 +129,11 @@ export default function ForumThread() {
             .eq('id', post.author_id)
             .single();
           
-          // Check if author is staff via admin_accounts
+          // Check if author is staff via secure RPC
           let isStaff = false;
-          if (author?.id) {
-            const { data: adminAccount } = await supabase
-              .from('admin_accounts')
-              .select('staff_role')
-              .eq('forum_user_id', author.id)
-              .eq('is_active', true)
-              .maybeSingle();
-            isStaff = !!adminAccount;
+          if (author?.user_id) {
+            const { data: role } = await supabase.rpc('get_staff_role', { _user_id: author.user_id });
+            isStaff = !!role;
           }
           
           let quotedPost = undefined;
