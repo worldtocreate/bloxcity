@@ -216,7 +216,7 @@ function DOBPrompt({ isOpen, onClose, forumUserId }: { isOpen: boolean; onClose:
   );
 }
 
-// Inline Valentine's Dialog Component
+// Inline Valentine's Dialog Component - Shows periodically until claimed
 function ValentinesDialog({ forumUserId, hasClaimedTheme, createdAt, onThemeClaimed }: { 
   forumUserId: string; hasClaimedTheme: boolean; createdAt: string; onThemeClaimed: () => void 
 }) {
@@ -224,13 +224,48 @@ function ValentinesDialog({ forumUserId, hasClaimedTheme, createdAt, onThemeClai
   const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
+    // Don't show if already claimed
     if (hasClaimedTheme) return;
+    
+    // Check if user signed up before Feb 14, 2026
     const valentinesDate = new Date('2026-02-14T00:00:00Z');
     if (new Date(createdAt) >= valentinesDate) return;
-    const sessionKey = `valentines_dialog_shown_${forumUserId}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-    setOpen(true);
-    sessionStorage.setItem(sessionKey, 'true');
+    
+    // Check when we last showed the dialog (show every 3 page loads or after 2 hours)
+    const storageKey = `valentines_dialog_${forumUserId}`;
+    const storedData = localStorage.getItem(storageKey);
+    
+    let showCount = 0;
+    let lastShown = 0;
+    
+    if (storedData) {
+      try {
+        const parsed = JSON.parse(storedData);
+        showCount = parsed.count || 0;
+        lastShown = parsed.lastShown || 0;
+      } catch (e) {
+        // Invalid data, reset
+      }
+    }
+    
+    const now = Date.now();
+    const twoHoursMs = 2 * 60 * 60 * 1000;
+    const timeSinceLastShow = now - lastShown;
+    
+    // Show if: never shown, or 2+ hours passed, or every 5th page load
+    const shouldShow = showCount === 0 || timeSinceLastShow > twoHoursMs || (showCount % 5 === 0 && timeSinceLastShow > 30000);
+    
+    if (shouldShow) {
+      // Small delay so it doesn't pop up immediately
+      const timer = setTimeout(() => {
+        setOpen(true);
+        localStorage.setItem(storageKey, JSON.stringify({ count: showCount + 1, lastShown: now }));
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else {
+      // Increment count even if not showing
+      localStorage.setItem(storageKey, JSON.stringify({ count: showCount + 1, lastShown }));
+    }
   }, [forumUserId, hasClaimedTheme, createdAt]);
 
   const handleClaim = async () => {
