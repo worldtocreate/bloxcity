@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_account_permissions: {
+        Row: {
+          admin_account_id: string
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          permission: string
+        }
+        Insert: {
+          admin_account_id: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission: string
+        }
+        Update: {
+          admin_account_id?: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          permission?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_account_permissions_admin_account_id_fkey"
+            columns: ["admin_account_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_account_permissions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_accounts: {
         Row: {
           created_at: string
@@ -22,6 +61,7 @@ export type Database = {
           email: string
           id: string
           is_active: boolean | null
+          is_first_admin: boolean | null
           last_login_at: string | null
           password_hash: string
           updated_at: string
@@ -33,6 +73,7 @@ export type Database = {
           email: string
           id?: string
           is_active?: boolean | null
+          is_first_admin?: boolean | null
           last_login_at?: string | null
           password_hash: string
           updated_at?: string
@@ -44,6 +85,7 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean | null
+          is_first_admin?: boolean | null
           last_login_at?: string | null
           password_hash?: string
           updated_at?: string

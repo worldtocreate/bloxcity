@@ -23,6 +23,7 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import AdminAccountsTab from "@/components/admin/AdminAccountsTab";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -1839,7 +1840,7 @@ import {
 } from "@/components/admin/types";
 
 const Admin = () => {
-  const [adminSession, setAdminSession] = useState<{ id: string; email: string; displayName: string | null } | null>(null);
+  const [adminSession, setAdminSession] = useState<{ id: string; email: string; displayName: string | null; isFirstAdmin?: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [darkMode, setDarkMode] = useState(false);
@@ -1848,6 +1849,7 @@ const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [isFirstAdmin, setIsFirstAdmin] = useState(false);
   
   // Reservations state
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -1920,8 +1922,8 @@ const Admin = () => {
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke('admin-auth', {
-          body: { action: 'verify', sessionToken }
+        const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+          body: { action: 'admin_verify', sessionToken }
         });
 
         if (error || !data?.valid) {
@@ -1933,6 +1935,7 @@ const Admin = () => {
         setAdminSession(data.admin);
         setIsAdmin(true);
         setIsModerator(true);
+        setIsFirstAdmin(data.admin?.isFirstAdmin || false);
         
         // Create a mock user object for backwards compatibility
         setUser({
@@ -2870,8 +2873,11 @@ const Admin = () => {
         
         {/* Game Thumbnails Tab */}
         {activeTab === "game-thumbnails" && <GameThumbnailsTab darkMode={darkMode} />}
+
+        {/* Admin Accounts Tab (new admin panel system) */}
+        {activeTab === "admin-accounts" && <AdminAccountsTab darkMode={darkMode} isFirstAdmin={isFirstAdmin} />}
         
-        {/* Admin Users Tab */}
+        {/* Admin Users Tab (legacy - site admins via user_roles) */}
         {activeTab === "admins" && (
           <div className="space-y-6">
             {/* Add New Admin */}

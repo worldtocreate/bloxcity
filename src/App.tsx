@@ -46,9 +46,9 @@ function AdminLogin() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       if (data?.sessionToken) {
-        localStorage.setItem("admin_session_token", data.sessionToken);
+        localStorage.setItem("bloxcity_admin_session", data.sessionToken);
         toast({ title: "Login successful!" });
-        navigate("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (error: any) {
       toast({ title: error.message || "Login failed", variant: "destructive" });
@@ -81,9 +81,9 @@ function AdminLogin() {
         setSignupConfirmPassword("");
         setSignupDisplayName("");
       } else if (data?.sessionToken) {
-        localStorage.setItem("admin_session_token", data.sessionToken);
+        localStorage.setItem("bloxcity_admin_session", data.sessionToken);
         toast({ title: "Account created! You are the first admin." });
-        navigate("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (error: any) {
       toast({ title: error.message || "Registration failed", variant: "destructive" });

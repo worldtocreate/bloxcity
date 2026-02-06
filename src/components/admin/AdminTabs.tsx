@@ -48,7 +48,8 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "newsletter", label: "Newsletter", icon: Mail, category: "Legacy" },
   
   // System
-  { id: "admins", label: "Admin Users", icon: Shield, category: "System" },
+  { id: "admin-accounts", label: "Admin Accounts", icon: Shield, category: "System" },
+  { id: "admins", label: "Site Admins", icon: Shield, category: "System" },
   { id: "logs", label: "Activity Logs", icon: Activity, category: "System" },
   { id: "maintenance", label: "Maintenance", icon: Wrench, category: "System" },
   { id: "settings", label: "Settings", icon: Settings, category: "System" },
