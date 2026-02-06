@@ -227,6 +227,261 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ========== ADMIN PANEL SESSION-BASED ACTIONS ==========
+    // These actions use sessionToken instead of Authorization header
+    if (action === "create_admin_account" || action === "list_admin_accounts" || action === "delete_admin_account") {
+      const sessionToken = body.sessionToken;
+      if (!sessionToken) {
+        return new Response(
+          JSON.stringify({ error: "Session required" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: session } = await supabaseAdmin
+        .from("admin_sessions")
+        .select("admin_account_id")
+        .eq("session_token", sessionToken)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (!session) {
+        return new Response(
+          JSON.stringify({ error: "Invalid session" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get the admin info
+      const { data: adminInfo } = await supabaseAdmin
+        .from("admin_accounts")
+        .select("id, is_first_admin")
+        .eq("id", session.admin_account_id)
+        .single();
+
+      if (action === "create_admin_account") {
+        const { email: newAdminEmail, displayName, permissions, tempPassword } = body;
+        
+        if (!newAdminEmail || !tempPassword) {
+          return new Response(
+            JSON.stringify({ error: "Email and password are required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (!adminInfo?.is_first_admin) {
+          return new Response(
+            JSON.stringify({ error: "Only the first admin can create new admin accounts" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Check if email already exists
+        const { data: existing } = await supabaseAdmin
+          .from("admin_accounts")
+          .select("id")
+          .eq("email", newAdminEmail.toLowerCase().trim())
+          .maybeSingle();
+
+        if (existing) {
+          return new Response(
+            JSON.stringify({ error: "An admin with this email already exists" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const passwordHash = await hashAdminPassword(tempPassword);
+
+        // Optionally link to a forum user if forumUsername is provided
+        let linkedForumUserId = null;
+        if (body.forumUsername) {
+          const { data: forumUser } = await supabaseAdmin
+            .from("forum_users")
+            .select("id")
+            .ilike("username", body.forumUsername.trim())
+            .maybeSingle();
+          
+          if (forumUser) {
+            linkedForumUserId = forumUser.id;
+          }
+        }
+
+        // Create the admin account
+        const { data: newAdmin, error: createError } = await supabaseAdmin
+          .from("admin_accounts")
+          .insert({
+            email: newAdminEmail.toLowerCase().trim(),
+            password_hash: passwordHash,
+            display_name: displayName || null,
+            is_active: true,
+            created_by: adminInfo.id,
+            staff_role: body.staffRole || 'admin',
+            forum_user_id: linkedForumUserId,
+          })
+          .select("id")
+          .single();
+
+        if (createError) {
+          console.error("Create admin error:", createError);
+          return new Response(
+            JSON.stringify({ error: "Failed to create admin account" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Add permissions
+        if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+          const permRows = permissions.map((perm: string) => ({
+            admin_account_id: newAdmin.id,
+            permission: perm,
+            granted_by: adminInfo.id,
+          }));
+          await supabaseAdmin.from("admin_account_permissions").insert(permRows);
+        }
+
+        // Send email with password
+        try {
+          await resend.emails.send({
+            from: "BLOX City Admin <security@bloxcity.net>",
+            to: [newAdminEmail],
+            subject: "Your BLOX City Admin Account Has Been Created",
+            html: `
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0b; color: #ffffff; padding: 20px; }
+                  .container { max-width: 500px; margin: 0 auto; background: #1a1a1d; border-radius: 12px; padding: 32px; }
+                  .header { text-align: center; margin-bottom: 24px; }
+                  .title { font-size: 24px; font-weight: bold; color: #ffffff; margin: 0; }
+                  .content { color: #d1d5db; line-height: 1.6; }
+                  .password-box { background: #2d2d30; border: 1px solid #3d3d40; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: monospace; text-align: center; font-size: 18px; }
+                  .warning { background: #422006; border: 1px solid #854d0e; border-radius: 8px; padding: 12px; margin: 16px 0; color: #fbbf24; font-size: 14px; }
+                  .button { display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 24px 0; }
+                  .footer { color: #6b7280; font-size: 12px; margin-top: 24px; text-align: center; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h1 class="title">🔐 Admin Account Created</h1>
+                  </div>
+                  
+                  <div class="content">
+                    <p>Hello${displayName ? ` ${displayName}` : ''},</p>
+                    
+                    <p>An admin account has been created for you on the BLOX City Admin Panel.</p>
+                    
+                    <p><strong>Your login credentials:</strong></p>
+                    <p>Email: <strong>${newAdminEmail}</strong></p>
+                    <p>Password:</p>
+                    <div class="password-box">${tempPassword}</div>
+                    
+                    <div class="warning">
+                      ⚠️ Please change your password after your first login for security.
+                    </div>
+                    
+                    <p style="text-align: center;">
+                      <a href="https://admin.bloxcity.net" class="button">Login to Admin Panel</a>
+                    </p>
+                  </div>
+                  
+                  <div class="footer">
+                    <p>This is an automated message from BLOX City. Do not share your credentials.</p>
+                  </div>
+                </div>
+              </body>
+              </html>
+            `,
+          });
+          console.log("Admin invitation email sent to:", newAdminEmail);
+        } catch (emailError) {
+          console.error("Failed to send admin email:", emailError);
+        }
+
+        // Log the action
+        await supabaseAdmin.from("admin_activity_logs").insert({
+          admin_user_id: adminInfo.id,
+          admin_email: null,
+          action: "create_admin_account",
+          target_type: "admin_account",
+          target_id: newAdmin.id,
+          details: { email: newAdminEmail, permissions }
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, adminId: newAdmin.id }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (action === "list_admin_accounts") {
+        const { data: admins } = await supabaseAdmin
+          .from("admin_accounts")
+          .select("id, email, display_name, is_active, is_first_admin, created_at, last_login_at, staff_role, forum_user_id")
+          .order("created_at", { ascending: true });
+
+        // Get permissions for each admin
+        const adminIds = admins?.map(a => a.id) || [];
+        const { data: allPermissions } = await supabaseAdmin
+          .from("admin_account_permissions")
+          .select("admin_account_id, permission")
+          .in("admin_account_id", adminIds);
+
+        // Get forum usernames
+        const forumUserIds = admins?.filter(a => a.forum_user_id).map(a => a.forum_user_id) || [];
+        const { data: forumUsers } = await supabaseAdmin
+          .from("forum_users")
+          .select("id, username")
+          .in("id", forumUserIds);
+
+        const adminsWithPermissions = admins?.map(admin => ({
+          ...admin,
+          permissions: allPermissions?.filter(p => p.admin_account_id === admin.id).map(p => p.permission) || [],
+          forum_username: forumUsers?.find(fu => fu.id === admin.forum_user_id)?.username || null
+        }));
+
+        return new Response(
+          JSON.stringify({ admins: adminsWithPermissions || [] }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (action === "delete_admin_account") {
+        const { adminId } = body;
+        
+        if (!adminId) {
+          return new Response(
+            JSON.stringify({ error: "Admin ID required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (!adminInfo?.is_first_admin) {
+          return new Response(
+            JSON.stringify({ error: "Only the first admin can delete admin accounts" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Can't delete yourself
+        if (adminId === session.admin_account_id) {
+          return new Response(
+            JSON.stringify({ error: "Cannot delete your own account" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Delete the admin
+        await supabaseAdmin.from("admin_accounts").delete().eq("id", adminId);
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // ========== REGULAR ADMIN ACTIONS (require auth) ==========
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -652,297 +907,6 @@ Deno.serve(async (req) => {
         });
 
       console.log("Affiliate accepted successfully");
-
-      return new Response(
-        JSON.stringify({ success: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ========== CREATE ADMIN ACCOUNT (first admin only) ==========
-    if (action === "create_admin_account") {
-      const { email: newAdminEmail, displayName, permissions, tempPassword } = body;
-      
-      if (!newAdminEmail || !tempPassword) {
-        return new Response(
-          JSON.stringify({ error: "Email and password are required" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Verify the session token for admin panel auth
-      const sessionToken = body.sessionToken;
-      if (!sessionToken) {
-        return new Response(
-          JSON.stringify({ error: "Session required" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { data: session } = await supabaseAdmin
-        .from("admin_sessions")
-        .select("admin_account_id")
-        .eq("session_token", sessionToken)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-
-      if (!session) {
-        return new Response(
-          JSON.stringify({ error: "Invalid session" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Verify the creator is the first admin
-      const { data: creatorAdmin } = await supabaseAdmin
-        .from("admin_accounts")
-        .select("id, is_first_admin")
-        .eq("id", session.admin_account_id)
-        .single();
-
-      if (!creatorAdmin?.is_first_admin) {
-        return new Response(
-          JSON.stringify({ error: "Only the first admin can create new admin accounts" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Check if email already exists
-      const { data: existing } = await supabaseAdmin
-        .from("admin_accounts")
-        .select("id")
-        .eq("email", newAdminEmail.toLowerCase().trim())
-        .maybeSingle();
-
-      if (existing) {
-        return new Response(
-          JSON.stringify({ error: "An admin with this email already exists" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const passwordHash = await hashAdminPassword(tempPassword);
-
-      // Optionally link to a forum user if forumUsername is provided
-      let linkedForumUserId = null;
-      if (body.forumUsername) {
-        const { data: forumUser } = await supabaseAdmin
-          .from("forum_users")
-          .select("id")
-          .ilike("username", body.forumUsername.trim())
-          .maybeSingle();
-        
-        if (forumUser) {
-          linkedForumUserId = forumUser.id;
-        }
-      }
-
-      // Create the admin account
-      const { data: newAdmin, error: createError } = await supabaseAdmin
-        .from("admin_accounts")
-        .insert({
-          email: newAdminEmail.toLowerCase().trim(),
-          password_hash: passwordHash,
-          display_name: displayName || null,
-          is_active: true,
-          created_by: creatorAdmin.id,
-          staff_role: body.staffRole || 'admin',
-          forum_user_id: linkedForumUserId,
-        })
-        .select("id")
-        .single();
-
-      if (createError) {
-        console.error("Create admin error:", createError);
-        return new Response(
-          JSON.stringify({ error: "Failed to create admin account" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Add permissions
-      if (permissions && Array.isArray(permissions) && permissions.length > 0) {
-        const permRows = permissions.map((perm: string) => ({
-          admin_account_id: newAdmin.id,
-          permission: perm,
-          granted_by: creatorAdmin.id,
-        }));
-        await supabaseAdmin.from("admin_account_permissions").insert(permRows);
-      }
-
-      // Send email with password
-      try {
-        await resend.emails.send({
-          from: "BLOX City Admin <security@bloxcity.net>",
-          to: [newAdminEmail],
-          subject: "Your BLOX City Admin Account Has Been Created",
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0a0a0b; color: #ffffff; padding: 20px; }
-                .container { max-width: 500px; margin: 0 auto; background: #1a1a1d; border-radius: 12px; padding: 32px; }
-                .header { text-align: center; margin-bottom: 24px; }
-                .title { font-size: 24px; font-weight: bold; color: #ffffff; margin: 0; }
-                .content { color: #d1d5db; line-height: 1.6; }
-                .password-box { background: #2d2d30; border: 1px solid #3d3d40; border-radius: 8px; padding: 16px; margin: 16px 0; font-family: monospace; text-align: center; font-size: 18px; }
-                .warning { background: #422006; border: 1px solid #854d0e; border-radius: 8px; padding: 12px; margin: 16px 0; color: #fbbf24; font-size: 14px; }
-                .button { display: inline-block; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 24px 0; }
-                .footer { color: #6b7280; font-size: 12px; margin-top: 24px; text-align: center; }
-              </style>
-            </head>
-            <body>
-              <div class="container">
-                <div class="header">
-                  <h1 class="title">🔐 Admin Account Created</h1>
-                </div>
-                
-                <div class="content">
-                  <p>Hello${displayName ? ` ${displayName}` : ''},</p>
-                  
-                  <p>An admin account has been created for you on the BLOX City Admin Panel.</p>
-                  
-                  <p><strong>Your login credentials:</strong></p>
-                  <p>Email: <strong>${newAdminEmail}</strong></p>
-                  <p>Password:</p>
-                  <div class="password-box">${tempPassword}</div>
-                  
-                  <div class="warning">
-                    ⚠️ Please change your password after your first login for security.
-                  </div>
-                  
-                  <p style="text-align: center;">
-                    <a href="https://admin.bloxcity.net" class="button">Login to Admin Panel</a>
-                  </p>
-                </div>
-                
-                <div class="footer">
-                  <p>This is an automated message from BLOX City. Do not share your credentials.</p>
-                </div>
-              </div>
-            </body>
-            </html>
-          `,
-        });
-        console.log("Admin invitation email sent to:", newAdminEmail);
-      } catch (emailError) {
-        console.error("Failed to send admin email:", emailError);
-      }
-
-      // Log the action
-      await supabaseAdmin.from("admin_activity_logs").insert({
-        admin_user_id: creatorAdmin.id,
-        admin_email: null,
-        action: "create_admin_account",
-        target_type: "admin_account",
-        target_id: newAdmin.id,
-        details: { email: newAdminEmail, permissions }
-      });
-
-      return new Response(
-        JSON.stringify({ success: true, adminId: newAdmin.id }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ========== LIST ADMIN ACCOUNTS (for admin panel) ==========
-    if (action === "list_admin_accounts") {
-      const sessionToken = body.sessionToken;
-      if (!sessionToken) {
-        return new Response(
-          JSON.stringify({ error: "Session required" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { data: session } = await supabaseAdmin
-        .from("admin_sessions")
-        .select("admin_account_id")
-        .eq("session_token", sessionToken)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-
-      if (!session) {
-        return new Response(
-          JSON.stringify({ error: "Invalid session" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { data: admins } = await supabaseAdmin
-        .from("admin_accounts")
-        .select("id, email, display_name, is_active, is_first_admin, created_at, last_login_at")
-        .order("created_at", { ascending: true });
-
-      // Get permissions for each admin
-      const adminIds = admins?.map(a => a.id) || [];
-      const { data: allPermissions } = await supabaseAdmin
-        .from("admin_account_permissions")
-        .select("admin_account_id, permission")
-        .in("admin_account_id", adminIds);
-
-      const adminsWithPermissions = admins?.map(admin => ({
-        ...admin,
-        permissions: allPermissions?.filter(p => p.admin_account_id === admin.id).map(p => p.permission) || []
-      }));
-
-      return new Response(
-        JSON.stringify({ admins: adminsWithPermissions || [] }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ========== DELETE ADMIN ACCOUNT ==========
-    if (action === "delete_admin_account") {
-      const { adminId } = body;
-      const sessionToken = body.sessionToken;
-      
-      if (!sessionToken || !adminId) {
-        return new Response(
-          JSON.stringify({ error: "Session and admin ID required" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const { data: session } = await supabaseAdmin
-        .from("admin_sessions")
-        .select("admin_account_id")
-        .eq("session_token", sessionToken)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-
-      if (!session) {
-        return new Response(
-          JSON.stringify({ error: "Invalid session" }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Verify the deleter is the first admin
-      const { data: deleterAdmin } = await supabaseAdmin
-        .from("admin_accounts")
-        .select("id, is_first_admin")
-        .eq("id", session.admin_account_id)
-        .single();
-
-      if (!deleterAdmin?.is_first_admin) {
-        return new Response(
-          JSON.stringify({ error: "Only the first admin can delete admin accounts" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Can't delete yourself
-      if (adminId === session.admin_account_id) {
-        return new Response(
-          JSON.stringify({ error: "Cannot delete your own account" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Delete the admin
-      await supabaseAdmin.from("admin_accounts").delete().eq("id", adminId);
 
       return new Response(
         JSON.stringify({ success: true }),
