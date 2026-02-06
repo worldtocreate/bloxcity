@@ -8,7 +8,7 @@ interface ImageCropperProps {
   aspectRatio?: number; // e.g., 1 for square, 16/9 for cover
   onCropComplete: (croppedBlob: Blob) => void;
   onCancel: () => void;
-  type: 'avatar' | 'cover';
+  type: 'avatar' | 'cover' | 'background';
 }
 
 function centerAspectCrop(
@@ -64,8 +64,8 @@ export default function ImageCropper({
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
 
-    const outputWidth = type === 'avatar' ? 256 : 1200;
-    const outputHeight = type === 'avatar' ? 256 : Math.round(1200 / aspectRatio);
+    const outputWidth = type === 'avatar' ? 256 : type === 'background' ? 1920 : 1200;
+    const outputHeight = type === 'avatar' ? 256 : type === 'background' ? 1080 : Math.round(1200 / aspectRatio);
 
     canvas.width = outputWidth;
     canvas.height = outputHeight;
@@ -108,7 +108,7 @@ export default function ImageCropper({
         {/* Header */}
         <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">
-            Crop {type === 'avatar' ? 'Profile Picture' : 'Cover Photo'}
+            Crop {type === 'avatar' ? 'Profile Picture' : type === 'background' ? 'Site Background' : 'Cover Photo'}
           </h2>
           <button
             onClick={onCancel}

@@ -586,6 +586,18 @@ export default function ForumUserProfile() {
         </DialogContent>
       </Dialog>
 
+      {/* Cover Photo Banner */}
+      {profile.cover_url && (
+        <div className="relative w-full h-40 md:h-56 -mt-6 mb-4 overflow-hidden rounded-b-xl">
+          <img 
+            src={profile.cover_url} 
+            alt={`${profile.username}'s cover`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--bc-bg-light))]/80 to-transparent" />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 py-6">
         {/* Left Sidebar */}
         <div className="md:col-span-4 lg:col-span-3 space-y-4">
