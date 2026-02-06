@@ -221,6 +221,25 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Check if email already exists in auth.users
+      if (email) {
+        const trimmedEmail = email.trim().toLowerCase();
+        const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (!authError && authUsers?.users) {
+          const emailExists = authUsers.users.some(
+            (u) => u.email?.toLowerCase() === trimmedEmail
+          );
+          
+          if (emailExists) {
+            return new Response(
+              JSON.stringify({ error: 'An account with this email already exists. Please log in instead.' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      }
+
       // Check username availability with fresh database query
       if (username) {
         const trimmedUsername = username.trim();
