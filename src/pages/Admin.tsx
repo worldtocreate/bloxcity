@@ -2994,7 +2994,7 @@ const Admin = () => {
         )}
 
         {/* IP Blocking Tab */}
-        {activeTab === "ip-blocking" && <IPBlockingTab darkMode={darkMode} />}
+        {activeTab === "ip-blocking" && <IPBlockingTab />}
 
         {/* Forum Moderation Tab */}
         {activeTab === "forum-mod" && <ForumModTab darkMode={darkMode} />}
@@ -3009,22 +3009,22 @@ const Admin = () => {
         {activeTab === "user-mgmt" && <UserManagementTab />}
 
         {/* Maintenance Tab */}
-        {activeTab === "maintenance" && <MaintenanceTab darkMode={darkMode} />}
+        {activeTab === "maintenance" && <MaintenanceTab />}
 
         {/* Updates Tab */}
-        {activeTab === "updates" && <UpdatesTab darkMode={darkMode} />}
+        {activeTab === "updates" && <UpdatesTab />}
 
         {/* Reports Tab */}
         {activeTab === "reports" && <ReportsTab darkMode={darkMode} />}
         
         {/* Ads Tab */}
-        {activeTab === "ads" && <AdsTab darkMode={darkMode} />}
+        {activeTab === "ads" && <AdsTab />}
 
         {/* Achievements Tab */}
-        {activeTab === "achievements" && <AchievementsTab darkMode={darkMode} />}
+        {activeTab === "achievements" && <AchievementsTab />}
 
         {/* Groups Tab */}
-        {activeTab === "groups" && <GroupsTab darkMode={darkMode} />}
+        {activeTab === "groups" && <GroupsTab />}
 
         {/* Games Management Tab */}
         {activeTab === "games" && <GamesManagementTab darkMode={darkMode} />}
@@ -3251,7 +3251,7 @@ const Admin = () => {
         )}
 
         {/* Settings Tab */}
-        {activeTab === "settings" && <SettingsTab darkMode={darkMode} />}
+        {activeTab === "settings" && <SettingsTab />}
           </div>
         </div>
       </AdminTabs>
