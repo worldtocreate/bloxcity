@@ -30,10 +30,6 @@ function AdminLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
-  const [signupDisplayName, setSignupDisplayName] = useState("");
   const { toast } = useToast();
 
   const handleLogin = async (e: FormEvent) => {
@@ -57,41 +53,6 @@ function AdminLogin() {
     }
   };
 
-  const handleSignup = async (e: FormEvent) => {
-    e.preventDefault();
-    if (signupPassword !== signupConfirmPassword) {
-      toast({ title: "Passwords do not match", variant: "destructive" });
-      return;
-    }
-    if (signupPassword.length < 8) {
-      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("admin-manage-users", {
-        body: { action: "admin_register", email: signupEmail, password: signupPassword, displayName: signupDisplayName },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (data?.needsApproval) {
-        toast({ title: "Account created! Waiting for approval from an existing admin." });
-        setSignupEmail("");
-        setSignupPassword("");
-        setSignupConfirmPassword("");
-        setSignupDisplayName("");
-      } else if (data?.sessionToken) {
-        localStorage.setItem("bloxcity_admin_session", data.sessionToken);
-        toast({ title: "Account created! You are the first admin." });
-        window.location.href = "/dashboard";
-      }
-    } catch (error: any) {
-      toast({ title: error.message || "Registration failed", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-card border border-border rounded-xl overflow-hidden">
@@ -102,52 +63,41 @@ function AdminLogin() {
           <h1 className="text-2xl font-bold text-foreground">BLOX City Admin</h1>
           <p className="text-sm text-muted-foreground mt-1">Sign in to access the admin dashboard</p>
         </div>
+
         <div className="p-6">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input id="login-email" type="email" placeholder="admin@example.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <Input id="login-password" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : "Sign In"}
-                </Button>
-              </form>
-            </TabsContent>
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Display Name</Label>
-                  <Input id="signup-name" type="text" placeholder="Your name" value={signupDisplayName} onChange={(e) => setSignupDisplayName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" placeholder="admin@example.com" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input id="signup-password" type="password" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-confirm">Confirm Password</Label>
-                  <Input id="signup-confirm" type="password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</> : "Create Admin Account"}
-                </Button>
-                <p className="text-xs text-muted-foreground text-center">New accounts require approval from an existing admin (unless you're the first).</p>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                placeholder="admin@example.com"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
         </div>
       </div>
     </div>
