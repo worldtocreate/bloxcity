@@ -23,6 +23,7 @@ import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
+import ValentinesHearts from "@/components/forum/ValentinesHearts";
 
 // AdminLogin inlined to avoid production module resolution issues
 function AdminLogin() {
@@ -2834,6 +2835,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <ValentinesHearts />
           <BrowserRouter>
             <Routes>
               {/* Landing page for logged-out users (standalone, no ForumLayout) */}
