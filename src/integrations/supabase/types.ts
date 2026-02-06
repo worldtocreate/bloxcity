@@ -2701,6 +2701,7 @@ export type Database = {
           follower_count: number | null
           following_count: number | null
           has_pending_warning: boolean | null
+          has_valentines_theme: boolean | null
           hide_online_status: boolean | null
           hide_threads: boolean | null
           id: string
@@ -2724,6 +2725,7 @@ export type Database = {
           referral_code: string | null
           referral_count: number | null
           referred_by: string | null
+          selected_theme: string | null
           self_disabled_at: string | null
           self_disabled_reason: string | null
           self_disabled_until: string | null
@@ -2741,6 +2743,7 @@ export type Database = {
           thread_count: number | null
           user_id: string
           username: string
+          valentines_theme_claimed_at: string | null
           wall_is_private: boolean | null
           warning_accepted_at: string | null
           warning_content: string | null
@@ -2765,6 +2768,7 @@ export type Database = {
           follower_count?: number | null
           following_count?: number | null
           has_pending_warning?: boolean | null
+          has_valentines_theme?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
           id?: string
@@ -2788,6 +2792,7 @@ export type Database = {
           referral_code?: string | null
           referral_count?: number | null
           referred_by?: string | null
+          selected_theme?: string | null
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
@@ -2805,6 +2810,7 @@ export type Database = {
           thread_count?: number | null
           user_id: string
           username: string
+          valentines_theme_claimed_at?: string | null
           wall_is_private?: boolean | null
           warning_accepted_at?: string | null
           warning_content?: string | null
@@ -2829,6 +2835,7 @@ export type Database = {
           follower_count?: number | null
           following_count?: number | null
           has_pending_warning?: boolean | null
+          has_valentines_theme?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
           id?: string
@@ -2852,6 +2859,7 @@ export type Database = {
           referral_code?: string | null
           referral_count?: number | null
           referred_by?: string | null
+          selected_theme?: string | null
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
@@ -2869,6 +2877,7 @@ export type Database = {
           thread_count?: number | null
           user_id?: string
           username?: string
+          valentines_theme_claimed_at?: string | null
           wall_is_private?: boolean | null
           warning_accepted_at?: string | null
           warning_content?: string | null

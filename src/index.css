@@ -40,6 +40,105 @@
     --sidebar-ring: 199 95% 46%;
   }
 
+  /* ========================================
+     VALENTINE'S THEME
+     Romantic pink & red color scheme
+  ======================================== */
+  .valentines {
+    /* Core colors - Valentine's Theme */
+    --background: 350 100% 98%;
+    --foreground: 340 50% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 340 50% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 50% 20%;
+    --primary: 340 82% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 100% 95%;
+    --secondary-foreground: 340 50% 20%;
+    --muted: 350 60% 96%;
+    --muted-foreground: 340 30% 45%;
+    --accent: 350 100% 95%;
+    --accent-foreground: 340 50% 20%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 350 50% 85%;
+    --input: 350 40% 90%;
+    --ring: 340 82% 52%;
+    
+    /* Sidebar variables - Valentine's */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 340 50% 20%;
+    --sidebar-primary: 340 82% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 340 82% 52%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 350 50% 85%;
+    --sidebar-ring: 340 82% 52%;
+    
+    /* BLOX City Custom Variables - Valentine's Theme */
+    --bc-primary: 340 82% 52%;
+    --bc-primary-dark: 340 85% 42%;
+    --bc-secondary: 350 90% 60%;
+    --bc-accent: 330 70% 55%;
+    --bc-info: 340 82% 52%;
+    --bc-info-light: 345 80% 58%;
+    --bc-info-dark: 340 85% 42%;
+    --bc-success: 150 60% 45%;
+    --bc-success-light: 150 55% 52%;
+    --bc-danger: 0 84% 55%;
+    --bc-danger-light: 0 90% 64%;
+    --bc-warning: 36 99% 58%;
+    --bc-warning-dark: 35 99% 55%;
+    --bc-upgrade: 320 70% 55%;
+    --bc-upgrade-light: 320 75% 62%;
+    --bc-love: 340 82% 52%;
+    
+    /* Grays with warm pink tint */
+    --bc-gray-100: 350 30% 97%;
+    --bc-gray-200: 350 25% 93%;
+    --bc-gray-300: 350 20% 88%;
+    --bc-gray-400: 350 15% 74%;
+    --bc-gray-500: 350 10% 62%;
+    --bc-gray-600: 350 8% 51%;
+    --bc-gray-700: 340 15% 26%;
+    --bc-gray-800: 340 20% 20%;
+    
+    /* Background & Surface */
+    --bc-body-bg: 350 100% 98%;
+    --bc-section-bg: 0 0% 100%;
+    --bc-section-border: 350 50% 88%;
+    --bc-input-bg: 350 60% 97%;
+    --bc-input-border: 350 40% 80%;
+    --bc-bg: 350 100% 98%;
+    --bc-bg-light: 350 60% 96%;
+    --bc-bg-card: 0 0% 100%;
+    --bc-border: 350 50% 88%;
+    
+    /* Text */
+    --bc-text: 340 50% 20%;
+    --bc-text-muted: 340 30% 45%;
+    
+    /* Sidebar Active State */
+    --bc-sidebar-active-bg: 340 82% 52%;
+    --bc-sidebar-active-text: 0 0% 100%;
+    
+    /* Glow effect */
+    --bc-glow: 340 82% 52%;
+    
+    /* Legacy compatibility */
+    --bc-red: 0 84% 55%;
+    --bc-yellow: 36 99% 58%;
+    --bc-green: 150 60% 45%;
+    --bc-blue: 340 82% 52%;
+    --bc-error: 0 84% 55%;
+    
+    /* Shadows */
+    --bc-shadow-sm: 0 1px 2px rgba(219, 39, 119, 0.08);
+    --bc-shadow: 0 1px 3px rgba(219, 39, 119, 0.12);
+    --bc-shadow-lg: 0 4px 20px rgba(219, 39, 119, 0.15);
+  }
+
   .dark {
     /* Core Tailwind/shadcn variables - Dark Theme */
     --background: 0 0% 9%;
