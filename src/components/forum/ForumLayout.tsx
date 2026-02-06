@@ -232,7 +232,8 @@ function ValentinesDialog({ forumUserId, hasClaimedTheme, createdAt, onThemeClai
     if (new Date(createdAt) >= valentinesDate) return;
     
     // Check when we last showed the dialog (show every 3 page loads or after 2 hours)
-    const storageKey = `valentines_dialog_${forumUserId}`;
+    // Changed key to reset for all users (v2)
+    const storageKey = `valentines_dialog_v2_${forumUserId}`;
     const storedData = localStorage.getItem(storageKey);
     
     let showCount = 0;
