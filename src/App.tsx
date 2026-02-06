@@ -2844,95 +2844,115 @@ function Roadmap() {
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ThemeProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Landing page for logged-out users (standalone, no ForumLayout) */}
-            <Route path="/landing" element={<LandingPage />} />
-            
-            {/* Main Routes with ForumLayout */}
-            <Route path="/" element={<ForumLayout />}>
-              <Route index element={<HomeOrLanding />} />
-              <Route path="forum" element={<ForumHome />} />
-              <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
-              <Route path="category/:slug" element={<ForumCategory />} />
-              <Route path="category/:slug/new" element={<ForumNewThread />} />
-              <Route path="thread/:threadId" element={<ForumThread />} />
-              
-              {/* Settings routes with nested layout */}
-              <Route path="settings" element={<SettingsLayout />}>
-                <Route index element={<ForumSettings />} />
-                <Route path="privacy" element={<SettingsPrivacy />} />
-                <Route path="security" element={<SettingsSecurity />} />
-              </Route>
-              <Route path=":serialId/:username/profile" element={<ForumUserProfile />} />
-              <Route path="messages" element={<ForumMessages />} />
-              <Route path="players" element={<ForumUsers />} />
-              <Route path="groups" element={<Groups />} />
-              <Route path="group/:slug" element={<GroupDetail />} />
-              <Route path="group/:slug/settings" element={<GroupSettings />} />
-              <Route path="staff" element={<ForumStaff />} />
-              <Route path="updates" element={<Updates />} />
-              <Route path="games" element={<Games />} />
-              <Route path="game/:id" element={<GameView />} />
-              <Route path="market" element={<Market />} />
-              <Route path="market/item/:id" element={<MarketItem />} />
-              <Route path="character" element={<Character />} />
-              <Route path="trading" element={<Trading />} />
-              <Route path="login" element={<ForumLogin />} />
-              <Route path="register" element={<ForumRegister />} />
-              <Route path="forgot-password" element={<ForumForgotPassword />} />
-              <Route path="reset-password" element={<ForumResetPassword />} />
-              <Route path="faq" element={<ForumFAQ />} />
-              <Route path="terms-of-service" element={<TermsOfService />} />
-              <Route path="privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="notes" element={<Notes />} />
-              <Route path="friends" element={<Friends />} />
-              <Route path="achievements" element={<Achievements />} />
-              <Route path="roadmap" element={<Roadmap />} />
-              <Route path="create" element={<Create />} />
-              <Route path="request" element={<Request />} />
-              <Route path="convert" element={<Convert />} />
-              <Route path="upgrades" element={<Upgrades />} />
-              <Route path="support" element={<Support />} />
-              <Route path="money" element={<Convert />} />
-              <Route path="accept-affiliate" element={<AcceptAffiliate />} />
-              <Route path="g0dfrey" element={<GodfreyPanel />} />
-               <Route path="jobs" element={<Jobs />} />
-            </Route>
+const App = () => {
+  // Check if we're on the admin domain BEFORE rendering routes
+  const adminDomain = isAdminDomain();
 
-            {/* Suspended page - outside ForumLayout */}
-            <Route path="/suspended" element={<SuspendedPage />} />
-
-            {/* Admin Routes - domain-based */}
-            {isAdminDomain() ? (
-              <>
+  // Admin domain gets its own completely separate routing
+  if (adminDomain) {
+    return (
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
                 <Route path="/" element={<AdminLogin />} />
+                <Route path="/dashboard" element={<Admin />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="*" element={<AdminLogin />} />
-              </>
-            ) : (
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    );
+  }
+
+  // Main site routing
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Landing page for logged-out users (standalone, no ForumLayout) */}
+              <Route path="/landing" element={<LandingPage />} />
+              
+              {/* Main Routes with ForumLayout */}
+              <Route path="/" element={<ForumLayout />}>
+                <Route index element={<HomeOrLanding />} />
+                <Route path="forum" element={<ForumHome />} />
+                <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
+                <Route path="category/:slug" element={<ForumCategory />} />
+                <Route path="category/:slug/new" element={<ForumNewThread />} />
+                <Route path="thread/:threadId" element={<ForumThread />} />
+                
+                {/* Settings routes with nested layout */}
+                <Route path="settings" element={<SettingsLayout />}>
+                  <Route index element={<ForumSettings />} />
+                  <Route path="privacy" element={<SettingsPrivacy />} />
+                  <Route path="security" element={<SettingsSecurity />} />
+                </Route>
+                <Route path=":serialId/:username/profile" element={<ForumUserProfile />} />
+                <Route path="messages" element={<ForumMessages />} />
+                <Route path="players" element={<ForumUsers />} />
+                <Route path="groups" element={<Groups />} />
+                <Route path="group/:slug" element={<GroupDetail />} />
+                <Route path="group/:slug/settings" element={<GroupSettings />} />
+                <Route path="staff" element={<ForumStaff />} />
+                <Route path="updates" element={<Updates />} />
+                <Route path="games" element={<Games />} />
+                <Route path="game/:id" element={<GameView />} />
+                <Route path="market" element={<Market />} />
+                <Route path="market/item/:id" element={<MarketItem />} />
+                <Route path="character" element={<Character />} />
+                <Route path="trading" element={<Trading />} />
+                <Route path="login" element={<ForumLogin />} />
+                <Route path="register" element={<ForumRegister />} />
+                <Route path="forgot-password" element={<ForumForgotPassword />} />
+                <Route path="reset-password" element={<ForumResetPassword />} />
+                <Route path="faq" element={<ForumFAQ />} />
+                <Route path="terms-of-service" element={<TermsOfService />} />
+                <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="notes" element={<Notes />} />
+                <Route path="friends" element={<Friends />} />
+                <Route path="achievements" element={<Achievements />} />
+                <Route path="roadmap" element={<Roadmap />} />
+                <Route path="create" element={<Create />} />
+                <Route path="request" element={<Request />} />
+                <Route path="convert" element={<Convert />} />
+                <Route path="upgrades" element={<Upgrades />} />
+                <Route path="support" element={<Support />} />
+                <Route path="money" element={<Convert />} />
+                <Route path="accept-affiliate" element={<AcceptAffiliate />} />
+                <Route path="g0dfrey" element={<GodfreyPanel />} />
+                <Route path="jobs" element={<Jobs />} />
+              </Route>
+
+              {/* Suspended page - outside ForumLayout */}
+              <Route path="/suspended" element={<SuspendedPage />} />
+
+              {/* Admin route on main site shows 404 */}
               <Route path="/admin" element={<NotFound />} />
-            )}
-            
-            {/* Error pages */}
-            <Route path="/error/403" element={<Error403 />} />
-            <Route path="/error/419" element={<Error419 />} />
-            <Route path="/error/500" element={<Error500 />} />
-            <Route path="/feature-disabled" element={<FeatureDisabled />} />
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+              
+              {/* Error pages */}
+              <Route path="/error/403" element={<Error403 />} />
+              <Route path="/error/419" element={<Error419 />} />
+              <Route path="/error/500" element={<Error500 />} />
+              <Route path="/feature-disabled" element={<FeatureDisabled />} />
+              
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+};
 
 export default App;
