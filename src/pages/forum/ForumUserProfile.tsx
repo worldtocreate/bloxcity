@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  User, Calendar, MessageSquare, MessageCircle, Ban, Loader2, 
+import {
+  User, Calendar, MessageSquare, MessageCircle, Ban, Loader2,
   Clock, Users, MoreVertical, Flag, Award, Frown, Rocket, Medal,
   UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart, UserMinus,
   Send, Crown, BadgeCheck
@@ -13,7 +13,6 @@ import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import FriendButton from '@/components/forum/FriendButton';
 import MembershipBadge from '@/components/forum/MembershipBadge';
-import StaffBadge from '@/components/forum/StaffBadge';
 import ReportButton from '@/components/forum/ReportButton';
 import {
   DropdownMenu,
@@ -28,6 +27,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+
+function StaffBadge({ role, size = 'sm' }: { role: string | null | undefined; size?: 'sm' | 'md' }) {
+  if (!role) return null;
+  const normalized = role.toLowerCase();
+  const label = normalized === 'owner' ? 'Owner' : normalized === 'admin' ? 'Admin' : 'Mod';
+  const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1';
+  const colorClasses =
+    normalized === 'moderator'
+      ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
+      : 'bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]';
+
+  return <span className={`inline-flex items-center font-semibold rounded ${sizeClasses} ${colorClasses}`}>{label}</span>;
+}
+
 
 interface ProfileData {
   id: string;

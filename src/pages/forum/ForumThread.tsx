@@ -7,8 +7,27 @@ import { toast } from 'sonner';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import MembershipBadge from '@/components/forum/MembershipBadge';
-import StaffBadge from '@/components/forum/StaffBadge';
 import { getRelativeTime } from '@/lib/timeUtils';
+
+function StaffBadge({ role, size = 'sm' }: { role: string | null | undefined; size?: 'sm' | 'md' }) {
+  if (!role) return null;
+  const normalized = role.toLowerCase();
+  const label = normalized === 'owner' ? 'Owner' : normalized === 'admin' ? 'Admin' : 'Mod';
+  const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5 gap-0.5' : 'text-xs px-2 py-1 gap-1';
+  const iconSize = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
+  const colorClasses =
+    normalized === 'moderator'
+      ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
+      : 'bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]';
+
+  return (
+    <span className={`inline-flex items-center font-semibold rounded ${sizeClasses} ${colorClasses}`}>
+      <Shield className={iconSize} />
+      {label}
+    </span>
+  );
+}
+
 
 // Character limits
 const CHAR_LIMITS = {
