@@ -80,6 +80,7 @@ export type AdminTab =
   | "newsletter" 
   | "banned" 
   | "admins" 
+  | "admin-accounts"
   | "logs" 
   | "ip-blocking" 
   | "forum-mod"
@@ -96,5 +97,5 @@ export type AdminTab =
   | "support-tickets"
   | "game-thumbnails"
   | "maintenance"
-   | "jobs"
+  | "jobs"
   | "settings";
