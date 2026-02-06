@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useForumAuth } from '@/hooks/useForumAuth';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
-import { useTheme } from '@/contexts/ThemeContext';
 import ForumHeader from './ForumHeader';
 import AppSidebar from './AppSidebar';
-import { Heart, Gift, Sparkles } from 'lucide-react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { Loader2, Megaphone, X, Shield, Lock, Mail, Send, Calendar, Hammer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -216,98 +214,6 @@ function DOBPrompt({ isOpen, onClose, forumUserId }: { isOpen: boolean; onClose:
   );
 }
 
-// Inline Valentine's Dialog Component - Shows periodically until claimed
-function ValentinesDialog({ forumUserId, hasClaimedTheme, createdAt, onThemeClaimed }: { 
-  forumUserId: string; hasClaimedTheme: boolean; createdAt: string; onThemeClaimed: () => void 
-}) {
-  const [open, setOpen] = useState(false);
-  const [claiming, setClaiming] = useState(false);
-
-  useEffect(() => {
-    // Don't show if already claimed
-    if (hasClaimedTheme) return;
-    
-    // Check if user signed up before Feb 14, 2026
-    const valentinesDate = new Date('2026-02-14T00:00:00Z');
-    if (new Date(createdAt) >= valentinesDate) return;
-    
-    // Check when we last showed the dialog (show every 3 page loads or after 2 hours)
-    // Changed key to reset for all users (v2)
-    const storageKey = `valentines_dialog_v2_${forumUserId}`;
-    const storedData = localStorage.getItem(storageKey);
-    
-    let showCount = 0;
-    let lastShown = 0;
-    
-    if (storedData) {
-      try {
-        const parsed = JSON.parse(storedData);
-        showCount = parsed.count || 0;
-        lastShown = parsed.lastShown || 0;
-      } catch (e) {
-        // Invalid data, reset
-      }
-    }
-    
-    const now = Date.now();
-    const twoHoursMs = 2 * 60 * 60 * 1000;
-    const timeSinceLastShow = now - lastShown;
-    
-    // Show if: never shown, or 2+ hours passed, or every 5th page load
-    const shouldShow = showCount === 0 || timeSinceLastShow > twoHoursMs || (showCount % 5 === 0 && timeSinceLastShow > 30000);
-    
-    if (shouldShow) {
-      // Small delay so it doesn't pop up immediately
-      const timer = setTimeout(() => {
-        setOpen(true);
-        localStorage.setItem(storageKey, JSON.stringify({ count: showCount + 1, lastShown: now }));
-      }, 2000);
-      return () => clearTimeout(timer);
-    } else {
-      // Increment count even if not showing
-      localStorage.setItem(storageKey, JSON.stringify({ count: showCount + 1, lastShown }));
-    }
-  }, [forumUserId, hasClaimedTheme, createdAt]);
-
-  const handleClaim = async () => {
-    setClaiming(true);
-    const { error } = await supabase.from('forum_users').update({ 
-      has_valentines_theme: true, valentines_theme_claimed_at: new Date().toISOString(), selected_theme: 'valentines'
-    }).eq('id', forumUserId);
-    if (!error) { toast.success('💕 Valentine\'s theme unlocked!'); onThemeClaimed(); setOpen(false); }
-    else toast.error('Failed to claim theme');
-    setClaiming(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && setOpen(false)}>
-      <DialogContent className="sm:max-w-md bg-gradient-to-br from-pink-50 to-red-50 border-pink-200">
-        <div className="absolute top-4 right-4 text-pink-400 opacity-50"><Heart className="w-6 h-6 fill-current" /></div>
-        <DialogHeader className="text-center">
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-red-500 bg-clip-text text-transparent flex items-center justify-center gap-2">
-            <Sparkles className="w-5 h-5 text-pink-500" /> A Love Letter from BLOX City <Sparkles className="w-5 h-5 text-pink-500" />
-          </DialogTitle>
-        </DialogHeader>
-        <div className="py-4">
-          <div className="bg-white/80 rounded-xl p-5 border border-pink-200">
-            <p className="text-gray-700 italic text-center">On this Valentine's Day, we want to gift you an exclusive <strong className="text-pink-600">Valentine's Theme</strong> — yours to keep forever! 💕</p>
-          </div>
-          <div className="bg-gradient-to-r from-pink-100 to-red-100 rounded-lg p-3 flex items-center gap-3 mt-4">
-            <div className="bg-pink-500 rounded-full p-2"><Gift className="w-5 h-5 text-white" /></div>
-            <div><p className="font-semibold text-pink-700 text-sm">Limited Time Gift!</p></div>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Button onClick={handleClaim} disabled={claiming} className="w-full bg-gradient-to-r from-pink-500 to-red-500 text-white">
-            {claiming ? 'Claiming...' : <><Heart className="w-4 h-4 mr-2 fill-white" />Claim Valentine's Theme</>}
-          </Button>
-          <Button variant="ghost" onClick={() => setOpen(false)} className="w-full text-gray-500">Maybe Later</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 interface ForumAnnouncement {
   enabled: boolean;
   message: string;
@@ -326,7 +232,6 @@ interface MaintenanceSettings {
 
 export default function ForumLayout() {
   const { user, forumUser, isAdmin, isModerator, loading, emailVerified, refreshEmailVerification } = useForumAuth();
-  const { setHasValentinesTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [announcement, setAnnouncement] = useState<ForumAnnouncement | null>(null);
@@ -338,13 +243,6 @@ export default function ForumLayout() {
   const [maintenanceSettings, setMaintenanceSettings] = useState<MaintenanceSettings | null>(null);
   const [showDOBPrompt, setShowDOBPrompt] = useState(false);
   const [maintenanceBypass, setMaintenanceBypass] = useState(false);
-  
-  // Valentine's theme tracking
-  const [valentinesThemeClaimed, setValentinesThemeClaimed] = useState(false);
-  const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null);
-  
-  // Custom background (only visible to logged-in user)
-  const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
 
   // Track online status
   useOnlineStatus(forumUser?.id || null);
@@ -408,40 +306,6 @@ export default function ForumLayout() {
       return () => clearInterval(interval);
     }
   }, [user, emailVerified]);
-
-  // Fetch Valentine's theme status for logged-in users
-  useEffect(() => {
-    if (!loading && forumUser) {
-      fetchValentinesStatus();
-    }
-  }, [loading, forumUser]);
-
-  const fetchValentinesStatus = async () => {
-    if (!forumUser) return;
-    const { data } = await supabase
-      .from('forum_users')
-      .select('has_valentines_theme, selected_theme, created_at, custom_background_url')
-      .eq('id', forumUser.id)
-      .single();
-    
-    if (data) {
-      setValentinesThemeClaimed(data.has_valentines_theme || false);
-      setUserCreatedAt(data.created_at);
-      setHasValentinesTheme(data.has_valentines_theme || false);
-      setCustomBackgroundUrl(data.custom_background_url || null);
-      
-      // Apply saved theme
-      if (data.selected_theme === 'valentines' && data.has_valentines_theme) {
-        setTheme('valentines');
-      }
-    }
-  };
-
-  const handleValentinesThemeClaimed = () => {
-    setValentinesThemeClaimed(true);
-    setHasValentinesTheme(true);
-    setTheme('valentines');
-  };
 
   const checkTwoFAStatus = async () => {
     if (!forumUser) {
@@ -649,15 +513,7 @@ export default function ForumLayout() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div 
-        className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]"
-        style={customBackgroundUrl ? {
-          backgroundImage: `url(${customBackgroundUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        } : undefined}
-      >
+      <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]">
         <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
         
         <div className="flex-1 flex flex-col min-w-0">
@@ -731,15 +587,6 @@ export default function ForumLayout() {
               </div>
             ) : (
               <>
-                {/* Valentine's Dialog for logged-in users */}
-                {forumUser && userCreatedAt && !valentinesThemeClaimed && (
-                  <ValentinesDialog
-                    forumUserId={forumUser.id}
-                    hasClaimedTheme={valentinesThemeClaimed}
-                    createdAt={userCreatedAt}
-                    onThemeClaimed={handleValentinesThemeClaimed}
-                  />
-                )}
                 {/* DOB Prompt for existing users */}
                 {forumUser && showDOBPrompt && (
                   <DOBPrompt

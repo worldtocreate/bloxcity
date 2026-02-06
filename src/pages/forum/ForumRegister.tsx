@@ -248,19 +248,14 @@ export default function ForumRegister() {
 
         // Process referral if provided
         if (referralCode && forumUserData?.id) {
-          const { data: refResult, error: refError } = await supabase.rpc('process_referral', {
-            p_referral_code: referralCode.toUpperCase(),
-            p_referred_user_id: forumUserData.id,
-            p_ip_address: null
-          });
-          const result = refResult as { success?: boolean; coins_awarded?: number; error?: string } | null;
-          if (refError) {
-            console.log('Referral RPC error:', refError);
-          } else if (result?.success) {
-            console.log('Referral processed successfully:', result);
-            toast.success(`🎉 Referral bonus applied! You helped earn ${result.coins_awarded} coins!`);
-          } else if (result?.error) {
-            console.log('Referral processing failed:', result.error);
+          try {
+            await supabase.rpc('process_referral', {
+              p_referral_code: referralCode,
+              p_referred_user_id: forumUserData.id,
+              p_ip_address: null
+            });
+          } catch (refErr) {
+            console.log('Referral processing failed:', refErr);
           }
         }
 
@@ -291,21 +286,16 @@ export default function ForumRegister() {
         return;
       }
 
-      // Process referral if provided (for existing auth users)
+      // Process referral if provided
       if (referralCode && forumUserData?.id) {
-        const { data: refResult, error: refError } = await supabase.rpc('process_referral', {
-          p_referral_code: referralCode.toUpperCase(),
-          p_referred_user_id: forumUserData.id,
-          p_ip_address: null
-        });
-        const result = refResult as { success?: boolean; coins_awarded?: number; error?: string } | null;
-        if (refError) {
-          console.log('Referral RPC error:', refError);
-        } else if (result?.success) {
-          console.log('Referral processed successfully:', result);
-          toast.success(`🎉 Referral bonus applied!`);
-        } else if (result?.error) {
-          console.log('Referral processing failed:', result.error);
+        try {
+          await supabase.rpc('process_referral', {
+            p_referral_code: referralCode,
+            p_referred_user_id: forumUserData.id,
+            p_ip_address: null
+          });
+        } catch (refErr) {
+          console.log('Referral processing failed:', refErr);
         }
       }
 

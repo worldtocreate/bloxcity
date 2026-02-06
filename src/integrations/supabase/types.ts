@@ -14,112 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      admin_account_permissions: {
-        Row: {
-          admin_account_id: string
-          granted_at: string | null
-          granted_by: string | null
-          id: string
-          permission: string
-        }
-        Insert: {
-          admin_account_id: string
-          granted_at?: string | null
-          granted_by?: string | null
-          id?: string
-          permission: string
-        }
-        Update: {
-          admin_account_id?: string
-          granted_at?: string | null
-          granted_by?: string | null
-          id?: string
-          permission?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_account_permissions_admin_account_id_fkey"
-            columns: ["admin_account_id"]
-            isOneToOne: false
-            referencedRelation: "admin_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "admin_account_permissions_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "admin_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      admin_accounts: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          display_name: string | null
-          email: string
-          forum_user_id: string | null
-          id: string
-          is_active: boolean | null
-          is_first_admin: boolean | null
-          last_login_at: string | null
-          password_hash: string
-          staff_role: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          display_name?: string | null
-          email: string
-          forum_user_id?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_first_admin?: boolean | null
-          last_login_at?: string | null
-          password_hash: string
-          staff_role?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          display_name?: string | null
-          email?: string
-          forum_user_id?: string | null
-          id?: string
-          is_active?: boolean | null
-          is_first_admin?: boolean | null
-          last_login_at?: string | null
-          password_hash?: string
-          staff_role?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_accounts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "admin_accounts_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "admin_accounts_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       admin_activity_logs: {
         Row: {
           action: string
@@ -173,44 +67,6 @@ export type Database = {
           role?: string
         }
         Relationships: []
-      }
-      admin_sessions: {
-        Row: {
-          admin_account_id: string
-          created_at: string
-          expires_at: string
-          id: string
-          ip_address: string | null
-          session_token: string
-          user_agent: string | null
-        }
-        Insert: {
-          admin_account_id: string
-          created_at?: string
-          expires_at: string
-          id?: string
-          ip_address?: string | null
-          session_token: string
-          user_agent?: string | null
-        }
-        Update: {
-          admin_account_id?: string
-          created_at?: string
-          expires_at?: string
-          id?: string
-          ip_address?: string | null
-          session_token?: string
-          user_agent?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_sessions_admin_account_id_fkey"
-            columns: ["admin_account_id"]
-            isOneToOne: false
-            referencedRelation: "admin_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       admin_settings: {
         Row: {
@@ -332,13 +188,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "blog_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_2fa_codes: {
@@ -375,13 +224,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_2fa_codes_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -428,13 +270,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_2fa_settings_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: true
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_2fa_trusted_devices: {
@@ -479,13 +314,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_2fa_trusted_devices_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_account_deletion_requests: {
@@ -519,13 +347,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: true
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_account_deletion_requests_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: true
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -597,13 +418,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_ad_clicks_clicker_forum_user_id_fkey"
-            columns: ["clicker_forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_ads: {
@@ -669,13 +483,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_ads_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_affiliate_requests: {
@@ -730,29 +537,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_affiliate_requests_admin_approved_by_fkey"
-            columns: ["admin_approved_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_affiliate_requests_affiliate_user_id_fkey"
             columns: ["affiliate_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_affiliate_requests_affiliate_user_id_fkey"
-            columns: ["affiliate_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_affiliate_requests_gold_user_id_fkey"
-            columns: ["gold_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -761,7 +547,7 @@ export type Database = {
             foreignKeyName: "forum_affiliate_requests_gold_user_id_fkey"
             columns: ["gold_user_id"]
             isOneToOne: false
-            referencedRelation: "forum_users_public"
+            referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
         ]
@@ -794,24 +580,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_affiliates_affiliate_user_id_fkey"
-            columns: ["affiliate_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_affiliates_gold_user_id_fkey"
             columns: ["gold_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_affiliates_gold_user_id_fkey"
-            columns: ["gold_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -855,13 +627,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_avatar_requests_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_blocked_users: {
@@ -892,24 +657,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_blocked_users_blocked_id_fkey"
-            columns: ["blocked_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_blocked_users_blocker_id_fkey"
             columns: ["blocker_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_blocked_users_blocker_id_fkey"
-            columns: ["blocker_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -974,13 +725,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_coin_compensations_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_coin_grants: {
@@ -1017,24 +761,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_coin_grants_admin_id_fkey"
-            columns: ["admin_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_coin_grants_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_coin_grants_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1082,24 +812,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_conversations_participant_1_fkey"
-            columns: ["participant_1"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_conversations_participant_2_fkey"
             columns: ["participant_2"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_conversations_participant_2_fkey"
-            columns: ["participant_2"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1143,13 +859,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_cover_requests_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_direct_messages: {
@@ -1189,24 +898,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_direct_messages_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_direct_messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_direct_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1239,24 +934,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_follows_follower_id_fkey"
-            columns: ["follower_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_follows_following_id_fkey"
             columns: ["following_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_follows_following_id_fkey"
-            columns: ["following_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1295,24 +976,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_friend_requests_receiver_id_fkey"
-            columns: ["receiver_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_friend_requests_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_friend_requests_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1345,24 +1012,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_friendships_user_1_id_fkey"
-            columns: ["user_1_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_friendships_user_2_id_fkey"
             columns: ["user_2_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_friendships_user_2_id_fkey"
-            columns: ["user_2_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1407,24 +1060,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_game_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_game_comments_deleted_by_fkey"
             columns: ["deleted_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_game_comments_deleted_by_fkey"
-            columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -1461,13 +1100,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_game_favorites_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -1577,13 +1209,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_games_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_gold_checkmarks: {
@@ -1617,24 +1242,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_gold_checkmarks_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: true
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_gold_checkmarks_granted_by_fkey"
             columns: ["granted_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_gold_checkmarks_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1689,13 +1300,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_group_affiliates_requested_by_fkey"
-            columns: ["requested_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_group_audit_logs: {
@@ -1735,13 +1339,6 @@ export type Database = {
             columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_group_audit_logs_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -1787,24 +1384,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_group_bans_banned_by_fkey"
-            columns: ["banned_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_group_bans_forum_user_id_fkey"
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_group_bans_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -1844,13 +1427,6 @@ export type Database = {
             columns: ["added_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_group_blocked_words_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -1914,13 +1490,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_group_events_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_group_events_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -1963,13 +1532,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_group_join_requests_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -2053,13 +1615,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_group_members_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -2159,13 +1714,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_group_wall_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_group_wall_posts_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -2243,13 +1791,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_groups_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_membership_redemptions: {
@@ -2280,13 +1821,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_membership_redemptions_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2367,24 +1901,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_notifications_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_notifications_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_notifications_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2414,13 +1934,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_pinned_threads_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -2484,13 +1997,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_posts_quoted_post_id_fkey"
             columns: ["quoted_post_id"]
             isOneToOne: false
@@ -2537,24 +2043,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_profile_views_viewed_user_id_fkey"
-            columns: ["viewed_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_profile_views_viewer_user_id_fkey"
             columns: ["viewer_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_profile_views_viewer_user_id_fkey"
-            columns: ["viewer_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2590,24 +2082,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_referrals_referred_id_fkey"
-            columns: ["referred_id"]
-            isOneToOne: true
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_referrals_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_referrals_referrer_id_fkey"
-            columns: ["referrer_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2661,24 +2139,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_reports_reporter_id_fkey"
-            columns: ["reporter_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_reports_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_reports_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2711,24 +2175,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_status_likes_liked_user_id_fkey"
-            columns: ["liked_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_status_likes_liker_id_fkey"
             columns: ["liker_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_status_likes_liker_id_fkey"
-            columns: ["liker_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2764,13 +2214,6 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_support_ticket_replies_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -2834,24 +2277,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_support_tickets_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_support_tickets_claimed_by_fkey"
             columns: ["claimed_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_support_tickets_claimed_by_fkey"
-            columns: ["claimed_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -2862,24 +2291,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_support_tickets_closed_by_fkey"
-            columns: ["closed_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_support_tickets_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_support_tickets_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2945,13 +2360,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_threads_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_threads_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -2963,13 +2371,6 @@ export type Database = {
             columns: ["last_post_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_threads_last_post_by_fkey"
-            columns: ["last_post_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3005,13 +2406,6 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_ticket_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
           {
@@ -3061,24 +2455,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_user_achievements_awarded_by_fkey"
-            columns: ["awarded_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_user_achievements_forum_user_id_fkey"
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_user_achievements_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3117,13 +2497,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_user_inventory_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3170,13 +2543,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_user_sessions_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_users: {
@@ -3190,7 +2556,6 @@ export type Database = {
           coins: number | null
           cover_url: string | null
           created_at: string | null
-          custom_background_url: string | null
           date_of_birth: string | null
           display_name: string | null
           dm_encryption_pin_hash: string | null
@@ -3199,7 +2564,6 @@ export type Database = {
           follower_count: number | null
           following_count: number | null
           has_pending_warning: boolean | null
-          has_valentines_theme: boolean | null
           hide_online_status: boolean | null
           hide_threads: boolean | null
           id: string
@@ -3223,7 +2587,6 @@ export type Database = {
           referral_code: string | null
           referral_count: number | null
           referred_by: string | null
-          selected_theme: string | null
           self_disabled_at: string | null
           self_disabled_reason: string | null
           self_disabled_until: string | null
@@ -3241,7 +2604,6 @@ export type Database = {
           thread_count: number | null
           user_id: string
           username: string
-          valentines_theme_claimed_at: string | null
           wall_is_private: boolean | null
           warning_accepted_at: string | null
           warning_content: string | null
@@ -3258,7 +2620,6 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
-          custom_background_url?: string | null
           date_of_birth?: string | null
           display_name?: string | null
           dm_encryption_pin_hash?: string | null
@@ -3267,7 +2628,6 @@ export type Database = {
           follower_count?: number | null
           following_count?: number | null
           has_pending_warning?: boolean | null
-          has_valentines_theme?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
           id?: string
@@ -3291,7 +2651,6 @@ export type Database = {
           referral_code?: string | null
           referral_count?: number | null
           referred_by?: string | null
-          selected_theme?: string | null
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
@@ -3309,7 +2668,6 @@ export type Database = {
           thread_count?: number | null
           user_id: string
           username: string
-          valentines_theme_claimed_at?: string | null
           wall_is_private?: boolean | null
           warning_accepted_at?: string | null
           warning_content?: string | null
@@ -3326,7 +2684,6 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
-          custom_background_url?: string | null
           date_of_birth?: string | null
           display_name?: string | null
           dm_encryption_pin_hash?: string | null
@@ -3335,7 +2692,6 @@ export type Database = {
           follower_count?: number | null
           following_count?: number | null
           has_pending_warning?: boolean | null
-          has_valentines_theme?: boolean | null
           hide_online_status?: boolean | null
           hide_threads?: boolean | null
           id?: string
@@ -3359,7 +2715,6 @@ export type Database = {
           referral_code?: string | null
           referral_count?: number | null
           referred_by?: string | null
-          selected_theme?: string | null
           self_disabled_at?: string | null
           self_disabled_reason?: string | null
           self_disabled_until?: string | null
@@ -3377,7 +2732,6 @@ export type Database = {
           thread_count?: number | null
           user_id?: string
           username?: string
-          valentines_theme_claimed_at?: string | null
           wall_is_private?: boolean | null
           warning_accepted_at?: string | null
           warning_content?: string | null
@@ -3390,13 +2744,6 @@ export type Database = {
             columns: ["referred_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_users_referred_by_fkey"
-            columns: ["referred_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3443,13 +2790,6 @@ export type Database = {
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "forum_verification_requests_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       forum_wall_posts: {
@@ -3492,29 +2832,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "forum_wall_posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "forum_wall_posts_deleted_by_fkey"
             columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_wall_posts_deleted_by_fkey"
-            columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "forum_wall_posts_profile_id_fkey"
-            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
             referencedColumns: ["id"]
@@ -3523,7 +2842,7 @@ export type Database = {
             foreignKeyName: "forum_wall_posts_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "forum_users_public"
+            referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
         ]
@@ -3556,24 +2875,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "godfrey_currency_grants_granted_by_forum_user_id_fkey"
-            columns: ["granted_by_forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "godfrey_currency_grants_target_forum_user_id_fkey"
             columns: ["target_forum_user_id"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "godfrey_currency_grants_target_forum_user_id_fkey"
-            columns: ["target_forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3603,13 +2908,6 @@ export type Database = {
             columns: ["forum_user_id"]
             isOneToOne: true
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "godfrey_panel_pins_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: true
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3666,13 +2964,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "job_applications_forum_user_id_fkey"
-            columns: ["forum_user_id"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "job_applications_job_id_fkey"
             columns: ["job_id"]
             isOneToOne: false
@@ -3684,13 +2975,6 @@ export type Database = {
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "job_applications_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3763,13 +3047,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "forum_users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "jobs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3976,114 +3253,7 @@ export type Database = {
       }
     }
     Views: {
-      forum_users_public: {
-        Row: {
-          allow_dms: boolean | null
-          allow_friend_requests: boolean | null
-          avatar_effect: string | null
-          avatar_url: string | null
-          bio: string | null
-          cash: number | null
-          coins: number | null
-          cover_url: string | null
-          created_at: string | null
-          follower_count: number | null
-          following_count: number | null
-          has_valentines_theme: boolean | null
-          hide_online_status: boolean | null
-          id: string | null
-          inventory_privacy: string | null
-          is_locked: boolean | null
-          is_suspended: boolean | null
-          is_verified: boolean | null
-          last_seen_at: string | null
-          level: number | null
-          membership_tier: string | null
-          post_count: number | null
-          referral_code: string | null
-          selected_theme: string | null
-          serial_id: number | null
-          signature: string | null
-          status_text: string | null
-          status_updated_at: string | null
-          thread_count: number | null
-          user_id: string | null
-          username: string | null
-          wall_is_private: boolean | null
-          xp: number | null
-        }
-        Insert: {
-          allow_dms?: boolean | null
-          allow_friend_requests?: boolean | null
-          avatar_effect?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          cash?: number | null
-          coins?: number | null
-          cover_url?: string | null
-          created_at?: string | null
-          follower_count?: number | null
-          following_count?: number | null
-          has_valentines_theme?: boolean | null
-          hide_online_status?: boolean | null
-          id?: string | null
-          inventory_privacy?: string | null
-          is_locked?: boolean | null
-          is_suspended?: boolean | null
-          is_verified?: boolean | null
-          last_seen_at?: string | null
-          level?: number | null
-          membership_tier?: string | null
-          post_count?: number | null
-          referral_code?: string | null
-          selected_theme?: string | null
-          serial_id?: number | null
-          signature?: string | null
-          status_text?: string | null
-          status_updated_at?: string | null
-          thread_count?: number | null
-          user_id?: string | null
-          username?: string | null
-          wall_is_private?: boolean | null
-          xp?: number | null
-        }
-        Update: {
-          allow_dms?: boolean | null
-          allow_friend_requests?: boolean | null
-          avatar_effect?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          cash?: number | null
-          coins?: number | null
-          cover_url?: string | null
-          created_at?: string | null
-          follower_count?: number | null
-          following_count?: number | null
-          has_valentines_theme?: boolean | null
-          hide_online_status?: boolean | null
-          id?: string | null
-          inventory_privacy?: string | null
-          is_locked?: boolean | null
-          is_suspended?: boolean | null
-          is_verified?: boolean | null
-          last_seen_at?: string | null
-          level?: number | null
-          membership_tier?: string | null
-          post_count?: number | null
-          referral_code?: string | null
-          selected_theme?: string | null
-          serial_id?: number | null
-          signature?: string | null
-          status_text?: string | null
-          status_updated_at?: string | null
-          thread_count?: number | null
-          user_id?: string | null
-          username?: string | null
-          wall_is_private?: boolean | null
-          xp?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       accept_friend_request: {
@@ -4112,7 +3282,6 @@ export type Database = {
       claim_daily_coins: { Args: never; Returns: number }
       claim_daily_login_xp: { Args: never; Returns: number }
       claim_random_reward: { Args: never; Returns: Json }
-      cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       click_ad: {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
@@ -4128,23 +3297,6 @@ export type Database = {
       }
       get_maintenance_status: { Args: never; Returns: Json }
       get_reservation_count: { Args: never; Returns: number }
-      get_staff_list: {
-        Args: never
-        Returns: {
-          avatar_effect: string
-          avatar_url: string
-          display_name: string
-          id: string
-          is_verified: boolean
-          level: number
-          membership_tier: string
-          role: string
-          serial_id: number
-          username: string
-          xp: number
-        }[]
-      }
-      get_staff_role: { Args: { _user_id: string }; Returns: string }
       has_gold_checkmark: { Args: { _forum_user_id: string }; Returns: boolean }
       has_pending_verification_request: {
         Args: { _forum_user_id: string }
@@ -4157,9 +3309,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin_account: { Args: { _user_id: string }; Returns: boolean }
-      is_admin_user: { Args: { _user_id: string }; Returns: boolean }
-      is_moderator_account: { Args: { _user_id: string }; Returns: boolean }
       is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
       process_referral: {
         Args: {
@@ -4196,10 +3345,6 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
-      }
-      verify_admin_session: {
-        Args: { p_session_token: string }
-        Returns: string
       }
       verify_maintenance_password: {
         Args: { p_password: string }

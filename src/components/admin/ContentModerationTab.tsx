@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2, Mail, BadgeCheck, Send, Gamepad2, AlertTriangle, UserCircle, ImageIcon } from 'lucide-react';
+import { Trash2, RotateCcw, Search, RefreshCw, MessageSquare, FileText, Clock, User, Image, Check, X, Loader2, Mail, BadgeCheck, Send, Gamepad2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DeletedPost {
@@ -66,34 +66,14 @@ interface AffiliateRequest {
   affiliate_user: { username: string; avatar_url: string | null };
 }
 
-interface AvatarRequest {
-  id: string;
-  forum_user_id: string;
-  image_url: string;
-  status: string;
-  created_at: string;
-  user: { username: string; avatar_url: string | null };
-}
-
-interface CoverRequest {
-  id: string;
-  forum_user_id: string;
-  image_url: string;
-  status: string;
-  created_at: string;
-  user: { username: string; avatar_url: string | null };
-}
-
 interface ContentModerationTabProps {
   darkMode: boolean;
 }
 
 export default function ContentModerationTab({ darkMode }: ContentModerationTabProps) {
-  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'avatars' | 'covers' | 'group-media' | 'game-thumbnails' | 'affiliates' | 'logs'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'threads' | 'group-media' | 'game-thumbnails' | 'affiliates' | 'logs'>('posts');
   const [deletedPosts, setDeletedPosts] = useState<DeletedPost[]>([]);
   const [deletedThreads, setDeletedThreads] = useState<DeletedThread[]>([]);
-  const [avatarRequests, setAvatarRequests] = useState<AvatarRequest[]>([]);
-  const [coverRequests, setCoverRequests] = useState<CoverRequest[]>([]);
   const [groupMediaRequests, setGroupMediaRequests] = useState<GroupMediaRequest[]>([]);
   const [gameThumbnailRequests, setGameThumbnailRequests] = useState<GameThumbnailRequest[]>([]);
   const [affiliateRequests, setAffiliateRequests] = useState<AffiliateRequest[]>([]);
@@ -127,22 +107,6 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         .order('deleted_at', { ascending: false });
       
       setDeletedThreads((data || []) as unknown as DeletedThread[]);
-    } else if (activeTab === 'avatars') {
-      const { data } = await supabase
-        .from('forum_avatar_requests')
-        .select('id, forum_user_id, image_url, status, created_at, user:forum_user_id (username, avatar_url)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
-      setAvatarRequests((data || []) as unknown as AvatarRequest[]);
-    } else if (activeTab === 'covers') {
-      const { data } = await supabase
-        .from('forum_cover_requests')
-        .select('id, forum_user_id, image_url, status, created_at, user:forum_user_id (username, avatar_url)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
-      setCoverRequests((data || []) as unknown as CoverRequest[]);
     } else if (activeTab === 'group-media') {
       const { data } = await supabase
         .from('forum_group_media_requests')
@@ -152,6 +116,7 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
       
       setGroupMediaRequests((data || []) as unknown as GroupMediaRequest[]);
     } else if (activeTab === 'game-thumbnails') {
+      // Fetch games with pending thumbnails or flagged for review
       const { data } = await supabase
         .from('forum_games')
         .select('id, title, thumbnail_url, thumbnail_status, thumbnail_denial_reason, is_under_review, creator:creator_id (username, avatar_url)')
@@ -380,124 +345,6 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
     setProcessing(null);
   };
 
-  // Avatar request handlers
-  const handleApproveAvatar = async (request: AvatarRequest) => {
-    setProcessing(request.id);
-    try {
-      // Update user's avatar
-      const { error: updateError } = await supabase
-        .from('forum_users')
-        .update({ avatar_url: request.image_url })
-        .eq('id', request.forum_user_id);
-
-      if (updateError) throw updateError;
-
-      // Mark request as approved
-      const { error: requestError } = await supabase
-        .from('forum_avatar_requests')
-        .update({ 
-          status: 'approved',
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', request.id);
-
-      if (requestError) throw requestError;
-
-      toast.success('Avatar approved!');
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to approve');
-    }
-    setProcessing(null);
-  };
-
-  const handleDenyAvatar = async (requestId: string) => {
-    if (!denialReason.trim()) {
-      toast.error('Please provide a reason');
-      return;
-    }
-    setProcessing(requestId);
-    try {
-      const { error } = await supabase
-        .from('forum_avatar_requests')
-        .update({ 
-          status: 'denied',
-          denial_reason: denialReason.trim(),
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      toast.success('Avatar denied');
-      setShowDenyModal(null);
-      setDenialReason('');
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to deny');
-    }
-    setProcessing(null);
-  };
-
-  // Cover request handlers
-  const handleApproveCover = async (request: CoverRequest) => {
-    setProcessing(request.id);
-    try {
-      // Update user's cover
-      const { error: updateError } = await supabase
-        .from('forum_users')
-        .update({ cover_url: request.image_url })
-        .eq('id', request.forum_user_id);
-
-      if (updateError) throw updateError;
-
-      // Mark request as approved
-      const { error: requestError } = await supabase
-        .from('forum_cover_requests')
-        .update({ 
-          status: 'approved',
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', request.id);
-
-      if (requestError) throw requestError;
-
-      toast.success('Cover approved!');
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to approve');
-    }
-    setProcessing(null);
-  };
-
-  const handleDenyCover = async (requestId: string) => {
-    if (!denialReason.trim()) {
-      toast.error('Please provide a reason');
-      return;
-    }
-    setProcessing(requestId);
-    try {
-      const { error } = await supabase
-        .from('forum_cover_requests')
-        .update({ 
-          status: 'denied',
-          denial_reason: denialReason.trim(),
-          reviewed_at: new Date().toISOString()
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      toast.success('Cover denied');
-      setShowDenyModal(null);
-      setDenialReason('');
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to deny');
-    }
-    setProcessing(null);
-  };
-
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900';
   const textClass = darkMode ? 'text-white' : 'text-gray-800';
@@ -508,7 +355,7 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
       <div className="flex items-center justify-between">
         <h2 className={`text-xl font-semibold ${textClass}`}>Content Moderation</h2>
         <div className="flex items-center gap-3">
-          {activeTab !== 'logs' && activeTab !== 'group-media' && activeTab !== 'avatars' && activeTab !== 'covers' && (
+          {activeTab !== 'logs' && activeTab !== 'group-media' && (
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -555,38 +402,6 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
         >
           <FileText className="w-4 h-4" />
           Deleted Threads
-        </button>
-        <button
-          onClick={() => setActiveTab('avatars')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-            activeTab === 'avatars'
-              ? 'bg-blue-600 text-white'
-              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <UserCircle className="w-4 h-4" />
-          Avatars
-          {avatarRequests.length > 0 && (
-            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-              {avatarRequests.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('covers')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
-            activeTab === 'covers'
-              ? 'bg-blue-600 text-white'
-              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          Covers
-          {coverRequests.length > 0 && (
-            <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-              {coverRequests.length}
-            </span>
-          )}
         </button>
         <button
           onClick={() => setActiveTab('group-media')}
@@ -741,136 +556,6 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
                     </div>
                   </div>
                 ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Avatar Requests */}
-      {activeTab === 'avatars' && (
-        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
-          {loading ? (
-            <div className={`p-8 text-center ${mutedClass}`}>Loading...</div>
-          ) : avatarRequests.length === 0 ? (
-            <div className={`p-8 text-center ${mutedClass}`}>
-              <UserCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No pending avatar requests</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-              {avatarRequests.map(request => (
-                <div key={request.id} className={`border rounded-xl overflow-hidden ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <div className="relative">
-                    <img 
-                      src={request.image_url} 
-                      alt={`Avatar for ${request.user?.username}`}
-                      className="w-full h-40 object-cover"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      {request.user?.avatar_url ? (
-                        <img src={request.user.avatar_url} alt="" className="w-6 h-6 rounded-full" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                          <User className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                      <span className={`font-medium ${textClass}`}>{request.user?.username}</span>
-                    </div>
-                    <p className={`text-xs ${mutedClass}`}>
-                      Submitted {new Date(request.created_at).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => handleApproveAvatar(request)}
-                        disabled={processing === request.id}
-                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
-                      >
-                        {processing === request.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Check className="w-4 h-4" />
-                        )}
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => setShowDenyModal(`avatar-${request.id}`)}
-                        disabled={processing === request.id}
-                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition"
-                      >
-                        <X className="w-4 h-4" />
-                        Deny
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Cover Requests */}
-      {activeTab === 'covers' && (
-        <div className={`rounded-xl shadow-sm border overflow-hidden ${cardClass}`}>
-          {loading ? (
-            <div className={`p-8 text-center ${mutedClass}`}>Loading...</div>
-          ) : coverRequests.length === 0 ? (
-            <div className={`p-8 text-center ${mutedClass}`}>
-              <ImageIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>No pending cover requests</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-              {coverRequests.map(request => (
-                <div key={request.id} className={`border rounded-xl overflow-hidden ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <div className="relative">
-                    <img 
-                      src={request.image_url} 
-                      alt={`Cover for ${request.user?.username}`}
-                      className="w-full h-32 object-cover"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      {request.user?.avatar_url ? (
-                        <img src={request.user.avatar_url} alt="" className="w-6 h-6 rounded-full" />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                          <User className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                      <span className={`font-medium ${textClass}`}>{request.user?.username}</span>
-                    </div>
-                    <p className={`text-xs ${mutedClass}`}>
-                      Submitted {new Date(request.created_at).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => handleApproveCover(request)}
-                        disabled={processing === request.id}
-                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition"
-                      >
-                        {processing === request.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Check className="w-4 h-4" />
-                        )}
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => setShowDenyModal(`cover-${request.id}`)}
-                        disabled={processing === request.id}
-                        className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition"
-                      >
-                        <X className="w-4 h-4" />
-                        Deny
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
         </div>
@@ -1161,21 +846,11 @@ export default function ContentModerationTab({ darkMode }: ContentModerationTabP
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (showDenyModal.startsWith('avatar-')) {
-                    handleDenyAvatar(showDenyModal.replace('avatar-', ''));
-                  } else if (showDenyModal.startsWith('cover-')) {
-                    handleDenyCover(showDenyModal.replace('cover-', ''));
-                  } else if (gameThumbnailRequests.some(g => g.id === showDenyModal)) {
-                    handleDenyGameThumbnail(showDenyModal);
-                  } else {
-                    handleDenyGroupMedia(showDenyModal);
-                  }
-                }}
-                disabled={!!processing}
+                onClick={() => handleDenyGroupMedia(showDenyModal)}
+                disabled={processing === showDenyModal}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center gap-2"
               >
-                {processing && <Loader2 className="w-4 h-4 animate-spin" />}
+                {processing === showDenyModal && <Loader2 className="w-4 h-4 animate-spin" />}
                 Deny
               </button>
             </div>

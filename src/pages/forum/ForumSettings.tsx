@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Edit2, Save, Upload, Loader2, Shield, Clock, Lock, BadgeCheck, Moon, Sun, Send, Sparkles, Users, Award, Calendar, Check, X, Trash2, LogOut, Monitor, Smartphone, Link2, MessageSquare, Ban, ImageIcon, Heart } from 'lucide-react';
+import { User, Edit2, Save, Upload, Loader2, Shield, Clock, Lock, BadgeCheck, Moon, Sun, Send, Sparkles, Users, Award, Calendar, Check, X, Trash2, LogOut, Monitor, Smartphone, Link2, MessageSquare, Ban, ImageIcon } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 import { hashPin, isValidPin } from '@/lib/encryption';
@@ -73,7 +73,7 @@ interface UserSession {
 
 export default function ForumSettings() {
   const navigate = useNavigate();
-  const { theme, setTheme, hasValentinesTheme, setHasValentinesTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { user, forumUser, isAdmin, emailVerified } = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
@@ -96,19 +96,15 @@ export default function ForumSettings() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
-  const [uploadingBackground, setUploadingBackground] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<AvatarRequest | null>(null);
   const [pendingCover, setPendingCover] = useState<CoverRequest | null>(null);
   const [clearingAvatar, setClearingAvatar] = useState(false);
   const [clearingCover, setClearingCover] = useState(false);
-  const [clearingBackground, setClearingBackground] = useState(false);
-  const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
   
   // Image cropper
   const [cropperImage, setCropperImage] = useState<string | null>(null);
-  const [cropperType, setCropperType] = useState<'avatar' | 'cover' | 'background'>('avatar');
+  const [cropperType, setCropperType] = useState<'avatar' | 'cover'>('avatar');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const backgroundInputRef = useRef<HTMLInputElement>(null);
   
   // Privacy settings
   const [allowDms, setAllowDms] = useState(true);
@@ -176,7 +172,6 @@ export default function ForumSettings() {
       setSocialDiscord((forumUser as any).social_discord || '');
       setSocialX((forumUser as any).social_x || '');
       setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
-      setCustomBackgroundUrl((forumUser as any).custom_background_url || null);
       
       const userDob = (forumUser as any).date_of_birth;
       if (userDob) {
@@ -198,49 +193,8 @@ export default function ForumSettings() {
       fetchBlockedUsers();
       fetchGoldCheckmark();
       fetchAffiliates();
-      fetchValentinesTheme();
     }
   }, [forumUser]);
-
-  const fetchValentinesTheme = async () => {
-    if (!forumUser) return;
-    const { data } = await supabase
-      .from('forum_users')
-      .select('has_valentines_theme, selected_theme')
-      .eq('id', forumUser.id)
-      .single();
-    
-    if (data) {
-      setHasValentinesTheme(data.has_valentines_theme || false);
-      if (data.selected_theme === 'valentines' && data.has_valentines_theme) {
-        setTheme('valentines');
-      }
-    }
-  };
-
-  // Check if Valentine's Day has arrived
-  const isValentinesDayOrAfter = () => {
-    const now = new Date();
-    const valentinesDay = new Date('2026-02-14T00:00:00');
-    return now >= valentinesDay;
-  };
-
-  const isValentinesUnlocked = hasValentinesTheme && isValentinesDayOrAfter();
-
-  const handleThemeChange = async (newTheme: 'light' | 'valentines') => {
-    // Valentine's theme only available if claimed AND it's Valentine's Day or after
-    if (newTheme === 'valentines' && !isValentinesUnlocked) return;
-    
-    setTheme(newTheme);
-    
-    // Save to database
-    if (forumUser) {
-      await supabase
-        .from('forum_users')
-        .update({ selected_theme: newTheme })
-        .eq('id', forumUser.id);
-    }
-  };
 
   const fetchGoldCheckmark = async () => {
     if (!forumUser) return;
@@ -513,24 +467,6 @@ export default function ForumSettings() {
     if (coverInputRef.current) coverInputRef.current.value = '';
   };
 
-  const handleBackgroundSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !forumUser || !user) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Background image must be less than 5MB');
-      return;
-    }
-    const imageUrl = URL.createObjectURL(file);
-    setCropperImage(imageUrl);
-    setCropperType('background');
-    setPendingFile(file);
-    if (backgroundInputRef.current) backgroundInputRef.current.value = '';
-  };
-
   const handleCropComplete = async (croppedBlob: Blob) => {
     if (!forumUser || !user) return;
     setCropperImage(null);
@@ -561,7 +497,7 @@ export default function ForumSettings() {
         toast.error('Failed to upload avatar');
       }
       setUploadingAvatar(false);
-    } else if (cropperType === 'cover') {
+    } else {
       setUploadingCover(true);
       try {
         const filePath = `covers/${user.id}/${Date.now()}.jpg`;
@@ -587,49 +523,8 @@ export default function ForumSettings() {
         toast.error('Failed to upload cover');
       }
       setUploadingCover(false);
-    } else if (cropperType === 'background') {
-      setUploadingBackground(true);
-      try {
-        const filePath = `backgrounds/${user.id}/${Date.now()}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from('forum-avatars')
-          .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
-        if (uploadError) {
-          toast.error('Failed to upload background');
-          setUploadingBackground(false);
-          return;
-        }
-        const { data: urlData } = supabase.storage.from('forum-avatars').getPublicUrl(filePath);
-        // Custom backgrounds don't need review - they're only visible to the user
-        const { error: updateError } = await supabase
-          .from('forum_users')
-          .update({ custom_background_url: urlData.publicUrl })
-          .eq('id', forumUser.id);
-        if (updateError) {
-          toast.error('Failed to save background');
-        } else {
-          toast.success('Custom background set!');
-          setCustomBackgroundUrl(urlData.publicUrl);
-        }
-      } catch (err) {
-        toast.error('Failed to upload background');
-      }
-      setUploadingBackground(false);
     }
     setPendingFile(null);
-  };
-
-  const handleClearBackground = async () => {
-    if (!forumUser) return;
-    setClearingBackground(true);
-    const { error } = await supabase.from('forum_users').update({ custom_background_url: null }).eq('id', forumUser.id);
-    if (error) {
-      toast.error('Failed to clear background');
-    } else {
-      toast.success('Background cleared!');
-      setCustomBackgroundUrl(null);
-    }
-    setClearingBackground(false);
   };
 
   const handleCropCancel = () => {
@@ -950,88 +845,10 @@ export default function ForumSettings() {
         </div>
       </div>
 
-      {/* Website Theme */}
+      {/* Website Theme - Coming Soon */}
       <div className="card card-body">
-        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4">Website Theme</h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Light Theme */}
-          <button
-            onClick={() => handleThemeChange('light')}
-            className={`relative p-4 rounded-xl border-2 transition-all ${
-              theme === 'light' 
-                ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/5' 
-                : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]/50'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-200 flex items-center justify-center">
-                <Sun className="w-6 h-6 text-blue-500" />
-              </div>
-              <div className="text-left">
-                <div className="font-semibold text-[hsl(var(--bc-text))]">Light</div>
-                <div className="text-xs text-[hsl(var(--bc-text-muted))]">Default theme</div>
-              </div>
-            </div>
-            {theme === 'light' && (
-              <div className="absolute top-2 right-2">
-                <Check className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
-              </div>
-            )}
-          </button>
-
-          {/* Valentine's Theme */}
-          <button
-            onClick={() => isValentinesUnlocked && handleThemeChange('valentines')}
-            disabled={!isValentinesUnlocked}
-            className={`relative p-4 rounded-xl border-2 transition-all ${
-              !isValentinesUnlocked 
-                ? 'border-[hsl(var(--bc-border))] opacity-60 cursor-not-allowed'
-                : theme === 'valentines' 
-                  ? 'border-pink-500 bg-pink-500/5' 
-                  : 'border-[hsl(var(--bc-border))] hover:border-pink-500/50'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-pink-200 to-red-100 border border-pink-300 flex items-center justify-center">
-                <Heart className={`w-6 h-6 ${isValentinesUnlocked ? 'text-pink-500' : 'text-gray-400'}`} />
-              </div>
-              <div className="text-left">
-                <div className={`font-semibold ${isValentinesUnlocked ? 'text-[hsl(var(--bc-text))]' : 'text-gray-400'}`}>
-                  Valentine's
-                </div>
-                <div className="text-xs text-[hsl(var(--bc-text-muted))]">
-                  {isValentinesUnlocked ? 'Limited edition' : (
-                    <span className="flex items-center gap-1">
-                      <Lock className="w-3 h-3" /> 
-                      {hasValentinesTheme ? 'Unlocks Feb 14' : 'Locked'}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-            {theme === 'valentines' && isValentinesUnlocked && (
-              <div className="absolute top-2 right-2">
-                <Check className="w-5 h-5 text-pink-500" />
-              </div>
-            )}
-            {!isValentinesUnlocked && (
-              <div className="absolute top-2 right-2">
-                <Lock className="w-4 h-4 text-gray-400" />
-              </div>
-            )}
-          </button>
-        </div>
-
-        {!isValentinesUnlocked && (
-          <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-4 flex items-center gap-2">
-            <Heart className="w-4 h-4 text-pink-400" />
-            {hasValentinesTheme 
-              ? "You've claimed this theme! It will unlock on February 14th, 2026."
-              : "The Valentine's theme is a limited-time exclusive available during Valentine's Day 2026."
-            }
-          </p>
-        )}
+        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Website Theme</h3>
+        <p className="text-sm text-[hsl(var(--bc-text-muted))]">Dark mode coming soon! Currently using light theme.</p>
       </div>
 
       {/* Profile Picture & Cover */}
@@ -1129,46 +946,6 @@ export default function ForumSettings() {
             {(forumUser as any).cover_url && (
               <button onClick={handleClearCover} disabled={clearingCover} className="text-xs text-red-500 hover:text-red-600">
                 {clearingCover ? 'Clearing...' : 'Remove'}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Custom Site Background */}
-      <div className="card card-body">
-        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4">Custom Site Background</h3>
-        
-        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 mb-4">
-          <p className="text-sm text-purple-700 dark:text-purple-300">
-            <strong>Personal Background:</strong> This background is only visible to you while browsing the site. Other users will not see your custom background.
-          </p>
-        </div>
-
-        <div className="flex items-start gap-4">
-          {customBackgroundUrl ? (
-            <div className="w-40 h-24 rounded-lg overflow-hidden bg-[hsl(var(--bc-bg-light))]">
-              <img src={customBackgroundUrl} alt="Background" className="w-full h-full object-cover" />
-            </div>
-          ) : (
-            <div className="w-40 h-24 rounded-lg bg-[hsl(var(--bc-bg-light))] flex items-center justify-center border-2 border-dashed border-[hsl(var(--bc-border))]">
-              <ImageIcon className="w-8 h-8 text-[hsl(var(--bc-text-muted))]" />
-            </div>
-          )}
-          
-          <div className="flex flex-col gap-2">
-            <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundSelect} className="hidden" />
-            <button
-              onClick={() => backgroundInputRef.current?.click()}
-              disabled={uploadingBackground}
-              className="btn btn-primary btn-sm"
-            >
-              {uploadingBackground ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uploadingBackground ? 'Uploading...' : customBackgroundUrl ? 'Change' : 'Upload'}
-            </button>
-            {customBackgroundUrl && (
-              <button onClick={handleClearBackground} disabled={clearingBackground} className="text-xs text-red-500 hover:text-red-600">
-                {clearingBackground ? 'Clearing...' : 'Remove'}
               </button>
             )}
           </div>

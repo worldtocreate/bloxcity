@@ -6,7 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext } from "react-router-dom";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,125 +23,7 @@ import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
-
-// Inlined ValentinesHearts component to avoid module resolution issues
-function ValentinesHearts() {
-  const { theme } = useTheme();
-  if (theme !== 'valentines') return null;
-  
-  const hearts = Array.from({ length: 20 }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    top: Math.random() * 100,
-    size: 12 + Math.random() * 24,
-    delay: Math.random() * 5,
-    duration: 15 + Math.random() * 10,
-    opacity: 0.1 + Math.random() * 0.25,
-  }));
-  
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }} aria-hidden="true">
-      {hearts.map((heart) => (
-        <div
-          key={heart.id}
-          className="absolute animate-float-heart"
-          style={{ left: `${heart.left}%`, top: `${heart.top}%`, animationDelay: `${heart.delay}s`, animationDuration: `${heart.duration}s` }}
-        >
-          <svg width={heart.size} height={heart.size} viewBox="0 0 24 24" fill="currentColor" className="text-pink-400" style={{ opacity: heart.opacity }}>
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-          </svg>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// AdminLogin inlined to avoid production module resolution issues
-function AdminLogin() {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const { toast } = useToast();
-
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("admin-manage-users", {
-        body: { action: "admin_login", email: loginEmail, password: loginPassword },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (data?.sessionToken) {
-        localStorage.setItem("bloxcity_admin_session", data.sessionToken);
-        toast({ title: "Login successful!" });
-        window.location.href = "/dashboard";
-      }
-    } catch (error: any) {
-      toast({ title: error.message || "Login failed", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-card border border-border rounded-xl overflow-hidden">
-        <div className="p-6 text-center border-b border-border">
-          <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <Shield className="w-6 h-6 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">BLOX City Admin</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to access the admin dashboard</p>
-        </div>
-
-        <div className="p-6">
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="login-email">Email</Label>
-              <Input
-                id="login-email"
-                type="email"
-                placeholder="admin@example.com"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
 import NotFound from "./pages/NotFound";
-
-// Check if we're on the admin domain
-const isAdminDomain = (): boolean => {
-  const hostname = window.location.hostname;
-  return hostname === 'admin.bloxcity.net' || hostname.startsWith('admin.');
-};
 
 // Inline error pages
 function Error403() {
@@ -1237,7 +1119,7 @@ function GameDetail() {
   useEffect(() => { if (gameId) { fetchGame(); fetchComments(); } }, [gameId]);
   useEffect(() => { if (forumUser && gameId) { checkFavorite(); checkAdmin(); } }, [forumUser, gameId]);
 
-  const checkAdmin = async () => { if (!forumUser) return; const { data } = await supabase.from('admin_accounts').select('id').eq('forum_user_id', forumUser.id).eq('is_active', true).maybeSingle(); setIsAdmin(!!data); };
+  const checkAdmin = async () => { if (!forumUser) return; const { data } = await supabase.rpc("has_role", { _user_id: forumUser.user_id, _role: "admin" }); setIsAdmin(!!data); };
   const fetchGame = async () => { if (!gameId) return; const { data } = await supabase.from("forum_games").select("*, creator:forum_users!forum_games_creator_id_fkey (id, username, avatar_url)").eq("id", gameId).single(); setGame(data); if (data) setEditForm({ title: data.title, description: data.description || "", category: data.category }); setLoading(false); };
   const fetchComments = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_comments").select("*, author:forum_users!forum_game_comments_author_id_fkey (id, username, avatar_url)").eq("game_id", gameId).eq("is_deleted", false).order("created_at", { ascending: false }); setComments(data || []); };
   const checkFavorite = async () => { if (!forumUser || !gameId) return; const { data } = await supabase.from("forum_game_favorites").select("id").eq("game_id", gameId).eq("forum_user_id", forumUser.id).single(); setIsFavorited(!!data); };
@@ -1293,7 +1175,7 @@ function GameView() {
   useEffect(() => { if (gameId) { fetchGame(); fetchComments(); fetchServers(); } }, [gameId]);
   useEffect(() => { if (forumUser && gameId) { checkFavorite(); checkAdmin(); } }, [forumUser, gameId]);
 
-  const checkAdmin = async () => { if (!forumUser) return; const { data } = await supabase.from('admin_accounts').select('id').eq('forum_user_id', forumUser.id).eq('is_active', true).maybeSingle(); setIsAdmin(!!data); };
+  const checkAdmin = async () => { if (!forumUser) return; const { data } = await supabase.rpc("has_role", { _user_id: forumUser.user_id, _role: "admin" }); setIsAdmin(!!data); };
   const fetchGame = async () => { if (!gameId) return; const { data } = await supabase.from("forum_games").select("*, creator:forum_users!forum_games_creator_id_fkey (id, username, avatar_url)").eq("id", gameId).single(); setGame(data); if (data) setEditForm({ title: data.title, description: data.description || "", category: data.category }); setLoading(false); };
   const fetchComments = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_comments").select("*, author:forum_users!forum_game_comments_author_id_fkey (id, username, avatar_url)").eq("game_id", gameId).eq("is_deleted", false).order("created_at", { ascending: false }); setComments(data || []); };
   const fetchServers = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_servers").select("*").eq("game_id", gameId).eq("is_active", true).order("created_at", { ascending: false }); setServers(data || []); };
@@ -2521,29 +2403,22 @@ function ForumLeaderboard() {
 // Inline Notes component with Terms, Privacy, Updates, and Team tabs
 function Notes() {
   const [activeTab, setActiveTab] = useState('terms');
-  const [staff, setStaff] = useState<Array<{ id: string; serial_id: number; username: string; avatar_url: string | null; is_verified: boolean; membership_tier: string | null; avatar_effect: string | null; level: number; xp: number; role: 'owner' | 'admin' | 'moderator'; display_name: string | null }>>([]);
+  const [staff, setStaff] = useState<Array<{ id: string; serial_id: number; username: string; avatar_url: string | null; is_verified: boolean; membership_tier: string | null; avatar_effect: string | null; level: number; xp: number; role: 'admin' | 'moderator' }>>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
 
   useEffect(() => {
     const fetchStaff = async () => {
-      // Use secure RPC to fetch staff list (same as ForumStaff page)
-      const { data, error } = await supabase.rpc('get_staff_list');
-      if (error || !data) {
-        setStaff([]);
-        setLoadingStaff(false);
-        return;
+      const { data: roles } = await supabase.from('user_roles').select('user_id, role').in('role', ['admin', 'moderator']);
+      if (!roles || roles.length === 0) { setLoadingStaff(false); return; }
+      const userIds = roles.map(r => r.user_id);
+      const { data: forumUsers } = await supabase.from('forum_users').select('id, serial_id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp').in('user_id', userIds);
+      if (forumUsers) {
+        const staffWithRoles = forumUsers.map(user => {
+          const role = roles.find(r => r.user_id === user.user_id)?.role;
+          return { ...user, role: role as 'admin' | 'moderator' };
+        }).sort((a, b) => (a.role === 'admin' && b.role !== 'admin') ? -1 : (a.role !== 'admin' && b.role === 'admin') ? 1 : 0);
+        setStaff(staffWithRoles);
       }
-      const staffList = (data as any[])
-        .map((row) => ({
-          ...row,
-          role: row.role || 'moderator',
-          display_name: row.display_name ?? null,
-        }))
-        .sort((a, b) => {
-          const rolePriority: Record<string, number> = { owner: 0, admin: 1, moderator: 2 };
-          return (rolePriority[a.role] ?? 3) - (rolePriority[b.role] ?? 3);
-        });
-      setStaff(staffList as any);
       setLoadingStaff(false);
     };
     fetchStaff();
@@ -2671,14 +2546,14 @@ function Notes() {
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--bc-text))' }}><span className="w-2 h-2 rounded-full bg-red-500" />Administrators</h2>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      {staff.filter(s => ['admin', 'owner'].includes(s.role) && s.username.toLowerCase() !== 'blox city').map(member => (
+                      {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
                         <Link key={member.id} to={`/${member.serial_id}/${member.username}/profile`} className="flex items-center gap-4 p-4 rounded-xl transition group" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
                           <UserAvatar avatarUrl={member.avatar_url} username={member.username} size="lg" effect={member.avatar_effect} membershipTier={member.membership_tier as any} />
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold" style={{ color: 'hsl(var(--bc-text))' }}>{member.username}</span>
                               {member.is_verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
-                              <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">{member.role === 'owner' ? 'Owner' : 'Admin'}</span>
+                              <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Admin</span>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               {member.membership_tier && <MembershipBadge tier={member.membership_tier as any} size="sm" />}
@@ -2833,116 +2708,87 @@ function Roadmap() {
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  // Check if we're on the admin domain BEFORE rendering routes
-  const adminDomain = isAdminDomain();
-
-  // Admin domain gets its own completely separate routing
-  if (adminDomain) {
-    return (
-      <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<AdminLogin />} />
-                <Route path="/dashboard" element={<Admin />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="*" element={<AdminLogin />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-    );
-  }
-
-  // Main site routing
-  return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <ValentinesHearts />
-          <BrowserRouter>
-            <Routes>
-              {/* Landing page for logged-out users (standalone, no ForumLayout) */}
-              <Route path="/landing" element={<LandingPage />} />
+const App = () => (
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Landing page for logged-out users (standalone, no ForumLayout) */}
+            <Route path="/landing" element={<LandingPage />} />
+            
+            {/* Main Routes with ForumLayout */}
+            <Route path="/" element={<ForumLayout />}>
+              <Route index element={<HomeOrLanding />} />
+              <Route path="forum" element={<ForumHome />} />
+              <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
+              <Route path="category/:slug" element={<ForumCategory />} />
+              <Route path="category/:slug/new" element={<ForumNewThread />} />
+              <Route path="thread/:threadId" element={<ForumThread />} />
               
-              {/* Main Routes with ForumLayout */}
-              <Route path="/" element={<ForumLayout />}>
-                <Route index element={<HomeOrLanding />} />
-                <Route path="forum" element={<ForumHome />} />
-                <Route path="forum/leaderboard" element={<ForumLeaderboard />} />
-                <Route path="category/:slug" element={<ForumCategory />} />
-                <Route path="category/:slug/new" element={<ForumNewThread />} />
-                <Route path="thread/:threadId" element={<ForumThread />} />
-                
-                {/* Settings routes with nested layout */}
-                <Route path="settings" element={<SettingsLayout />}>
-                  <Route index element={<ForumSettings />} />
-                  <Route path="privacy" element={<SettingsPrivacy />} />
-                  <Route path="security" element={<SettingsSecurity />} />
-                </Route>
-                <Route path=":serialId/:username/profile" element={<ForumUserProfile />} />
-                <Route path="messages" element={<ForumMessages />} />
-                <Route path="players" element={<ForumUsers />} />
-                <Route path="groups" element={<Groups />} />
-                <Route path="group/:slug" element={<GroupDetail />} />
-                <Route path="group/:slug/settings" element={<GroupSettings />} />
-                <Route path="staff" element={<ForumStaff />} />
-                <Route path="updates" element={<Updates />} />
-                <Route path="games" element={<Games />} />
-                <Route path="game/:id" element={<GameView />} />
-                <Route path="market" element={<Market />} />
-                <Route path="market/item/:id" element={<MarketItem />} />
-                <Route path="character" element={<Character />} />
-                <Route path="trading" element={<Trading />} />
-                <Route path="login" element={<ForumLogin />} />
-                <Route path="register" element={<ForumRegister />} />
-                <Route path="forgot-password" element={<ForumForgotPassword />} />
-                <Route path="reset-password" element={<ForumResetPassword />} />
-                <Route path="faq" element={<ForumFAQ />} />
-                <Route path="terms-of-service" element={<TermsOfService />} />
-                <Route path="privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="notes" element={<Notes />} />
-                <Route path="friends" element={<Friends />} />
-                <Route path="achievements" element={<Achievements />} />
-                <Route path="roadmap" element={<Roadmap />} />
-                <Route path="create" element={<Create />} />
-                <Route path="request" element={<Request />} />
-                <Route path="convert" element={<Convert />} />
-                <Route path="upgrades" element={<Upgrades />} />
-                <Route path="support" element={<Support />} />
-                <Route path="money" element={<Convert />} />
-                <Route path="accept-affiliate" element={<AcceptAffiliate />} />
-                <Route path="g0dfrey" element={<GodfreyPanel />} />
-                <Route path="jobs" element={<Jobs />} />
+              {/* Settings routes with nested layout */}
+              <Route path="settings" element={<SettingsLayout />}>
+                <Route index element={<ForumSettings />} />
+                <Route path="privacy" element={<SettingsPrivacy />} />
+                <Route path="security" element={<SettingsSecurity />} />
               </Route>
+              <Route path=":serialId/:username/profile" element={<ForumUserProfile />} />
+              <Route path="messages" element={<ForumMessages />} />
+              <Route path="players" element={<ForumUsers />} />
+              <Route path="groups" element={<Groups />} />
+              <Route path="group/:slug" element={<GroupDetail />} />
+              <Route path="group/:slug/settings" element={<GroupSettings />} />
+              <Route path="staff" element={<ForumStaff />} />
+              <Route path="updates" element={<Updates />} />
+              <Route path="games" element={<Games />} />
+              <Route path="game/:id" element={<GameView />} />
+              <Route path="market" element={<Market />} />
+              <Route path="market/item/:id" element={<MarketItem />} />
+              <Route path="character" element={<Character />} />
+              <Route path="trading" element={<Trading />} />
+              <Route path="login" element={<ForumLogin />} />
+              <Route path="register" element={<ForumRegister />} />
+              <Route path="forgot-password" element={<ForumForgotPassword />} />
+              <Route path="reset-password" element={<ForumResetPassword />} />
+              <Route path="faq" element={<ForumFAQ />} />
+              <Route path="terms-of-service" element={<TermsOfService />} />
+              <Route path="privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="notes" element={<Notes />} />
+              <Route path="friends" element={<Friends />} />
+              <Route path="achievements" element={<Achievements />} />
+              <Route path="roadmap" element={<Roadmap />} />
+              <Route path="create" element={<Create />} />
+              <Route path="request" element={<Request />} />
+              <Route path="convert" element={<Convert />} />
+              <Route path="upgrades" element={<Upgrades />} />
+              <Route path="support" element={<Support />} />
+              <Route path="money" element={<Convert />} />
+              <Route path="accept-affiliate" element={<AcceptAffiliate />} />
+              <Route path="g0dfrey" element={<GodfreyPanel />} />
+               <Route path="jobs" element={<Jobs />} />
+            </Route>
 
-              {/* Suspended page - outside ForumLayout */}
-              <Route path="/suspended" element={<SuspendedPage />} />
+            {/* Suspended page - outside ForumLayout */}
+            <Route path="/suspended" element={<SuspendedPage />} />
 
-              {/* Admin route on main site shows 404 */}
-              <Route path="/admin" element={<NotFound />} />
-              
-              {/* Error pages */}
-              <Route path="/error/403" element={<Error403 />} />
-              <Route path="/error/419" element={<Error419 />} />
-              <Route path="/error/500" element={<Error500 />} />
-              <Route path="/feature-disabled" element={<FeatureDisabled />} />
-              
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
-  );
-};
+            {/* Admin Route - outside ForumLayout */}
+            <Route path="/admin" element={<Admin />} />
+            
+            {/* Error pages */}
+            <Route path="/error/403" element={<Error403 />} />
+            <Route path="/error/419" element={<Error419 />} />
+            <Route path="/error/500" element={<Error500 />} />
+            <Route path="/feature-disabled" element={<FeatureDisabled />} />
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
+);
 
 export default App;

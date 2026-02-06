@@ -9,26 +9,6 @@ import UserAvatar from '@/components/forum/UserAvatar';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import { getRelativeTime } from '@/lib/timeUtils';
 
-function StaffBadge({ role, size = 'sm' }: { role: string | null | undefined; size?: 'sm' | 'md' }) {
-  if (!role) return null;
-  const normalized = role.toLowerCase();
-  const label = normalized === 'owner' ? 'Owner' : normalized === 'admin' ? 'Admin' : 'Mod';
-  const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5 gap-0.5' : 'text-xs px-2 py-1 gap-1';
-  const iconSize = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
-  const colorClasses =
-    normalized === 'moderator'
-      ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
-      : 'bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]';
-
-  return (
-    <span className={`inline-flex items-center font-semibold rounded ${sizeClasses} ${colorClasses}`}>
-      <Shield className={iconSize} />
-      {label}
-    </span>
-  );
-}
-
-
 // Character limits
 const CHAR_LIMITS = {
   reply: 10000,
@@ -59,7 +39,7 @@ interface Post {
     membership_tier?: string | null;
     xp?: number;
   };
-  staff_role?: string | null; // 'owner' | 'admin' | 'moderator' | null
+  is_staff?: boolean;
 }
 
 interface Thread {
@@ -149,11 +129,15 @@ export default function ForumThread() {
             .eq('id', post.author_id)
             .single();
           
-          // Get staff role via secure RPC
-          let staffRole: string | null = null;
+          // Check if author is staff
+          let isStaff = false;
           if (author?.user_id) {
-            const { data: role } = await supabase.rpc('get_staff_role', { _user_id: author.user_id });
-            staffRole = (role as string | null) ?? null;
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', author.user_id)
+              .in('role', ['admin', 'moderator']);
+            isStaff = (roles?.length || 0) > 0;
           }
           
           let quotedPost = undefined;
@@ -173,7 +157,7 @@ export default function ForumThread() {
             }
           }
 
-          return { ...post, author, quoted_post: quotedPost, staff_role: staffRole };
+          return { ...post, author, quoted_post: quotedPost, is_staff: isStaff };
         })
       );
       setPosts(postsWithAuthors as unknown as Post[]);
@@ -497,7 +481,7 @@ export default function ForumThread() {
                           <Quote className="w-4 h-4" />
                         </button>
                       )}
-                      {forumUser && post.author.id !== forumUser.id && !post.staff_role && (
+                      {forumUser && post.author.id !== forumUser.id && !post.is_staff && (
                         <button className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition" title="Report">
                           <Flag className="w-4 h-4" />
                         </button>
@@ -509,7 +493,7 @@ export default function ForumThread() {
                       <div className="md:w-40 flex-shrink-0 text-center">
                         {/* Online indicator + username */}
                         <div className="flex items-center justify-center gap-1 mb-2">
-                          <div className={`w-2 h-2 rounded-full ${post.staff_role ? 'bg-[hsl(var(--bc-accent))]' : 'bg-[hsl(var(--bc-text-muted))]'}`} />
+                          <div className={`w-2 h-2 rounded-full ${post.is_staff ? 'bg-[hsl(var(--bc-accent))]' : 'bg-[hsl(var(--bc-text-muted))]'}`} />
                           <Link 
                             to={`/id/${post.author.username}/profile`}
                             className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition truncate"
@@ -530,15 +514,16 @@ export default function ForumThread() {
                         </Link>
 
                         {/* Staff/Membership Badge */}
-                        {post.staff_role && ['owner', 'admin', 'moderator'].includes(post.staff_role) ? (
-                          <div className="mb-2">
-                            <StaffBadge role={post.staff_role} size="md" />
+                        {post.is_staff && (
+                          <div className="inline-block bg-[hsl(var(--bc-accent))] text-white text-xs font-bold px-3 py-1 rounded mb-2">
+                            Admin
                           </div>
-                        ) : post.author.membership_tier ? (
+                        )}
+                        {!post.is_staff && post.author.membership_tier && (
                           <div className="mb-2">
                             <MembershipBadge tier={post.author.membership_tier as any} size="sm" />
                           </div>
-                        ) : null}
+                        )}
 
                         {/* Stats */}
                         <div className="text-xs text-[hsl(var(--bc-text-muted))] space-y-1 mt-2">

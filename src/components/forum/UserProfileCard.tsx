@@ -6,30 +6,8 @@ import VerifiedBadge from './VerifiedBadge';
 import UserAvatar from './UserAvatar';
 import UserLevelBadge from './UserLevelBadge';
 
-function StaffBadge({ role, size = 'sm' }: { role: string | null | undefined; size?: 'sm' | 'md' }) {
-  if (!role) return null;
-  const normalized = role.toLowerCase();
-  const label = normalized === 'owner' ? 'Owner' : normalized === 'admin' ? 'Admin' : 'Mod';
-  const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5 gap-0.5' : 'text-xs px-2 py-1 gap-1';
-  const iconSize = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
-  const colorClasses =
-    normalized === 'moderator'
-      ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
-      : 'bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]';
-
-  return (
-    <span className={`inline-flex items-center font-semibold rounded ${sizeClasses} ${colorClasses}`}>
-      <Shield className={iconSize} />
-      {label}
-    </span>
-  );
-}
-
-
-
 interface ForumUserProfile {
   id: string;
-  user_id: string;
   username: string;
   avatar_url: string | null;
   created_at: string;
@@ -65,7 +43,6 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
   const [pinnedThreads, setPinnedThreads] = useState<PinnedThread[]>([]);
   const [recentThreads, setRecentThreads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [staffRole, setStaffRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -80,12 +57,6 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
 
     if (userData) {
       setProfile(userData as ForumUserProfile);
-      
-      // Fetch staff role via secure RPC
-      if (userData.user_id) {
-        const { data: role } = await supabase.rpc('get_staff_role', { _user_id: userData.user_id });
-        setStaffRole((role as string | null) ?? null);
-      }
       
       // Fetch pinned threads
       const { data: pinned } = await supabase
@@ -164,7 +135,6 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
               <span className="font-semibold text-[hsl(var(--bc-text))] truncate">{profile.username}</span>
               {profile.is_verified && <VerifiedBadge size="md" />}
               <UserLevelBadge level={profile.level} size="sm" />
-              <StaffBadge role={staffRole} size="sm" />
             </div>
             <div className="flex items-center gap-1 text-xs text-[hsl(var(--bc-text-muted))]">
               <Calendar className="w-3 h-3" />

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  User, Calendar, MessageSquare, MessageCircle, Ban, Loader2,
+import { 
+  User, Calendar, MessageSquare, MessageCircle, Ban, Loader2, 
   Clock, Users, MoreVertical, Flag, Award, Frown, Rocket, Medal,
   UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart, UserMinus,
   Send, Crown, BadgeCheck
@@ -27,20 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
-function StaffBadge({ role, size = 'sm' }: { role: string | null | undefined; size?: 'sm' | 'md' }) {
-  if (!role) return null;
-  const normalized = role.toLowerCase();
-  const label = normalized === 'owner' ? 'Owner' : normalized === 'admin' ? 'Admin' : 'Mod';
-  const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1';
-  const colorClasses =
-    normalized === 'moderator'
-      ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
-      : 'bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]';
-
-  return <span className={`inline-flex items-center font-semibold rounded ${sizeClasses} ${colorClasses}`}>{label}</span>;
-}
-
 
 interface ProfileData {
   id: string;
@@ -139,9 +125,6 @@ export default function ForumUserProfile() {
   const [hideAffiliates, setHideAffiliates] = useState(false);
   const [affiliatedUsers, setAffiliatedUsers] = useState<AffiliateUser[]>([]);
 
-  // Staff role for the profile being viewed (owner/admin/mod)
-  const [profileStaffRole, setProfileStaffRole] = useState<string | null>(null);
-
   const isOwnProfile = forumUser?.serial_id === parseInt(serialId || '0') || 
                        forumUser?.username?.toLowerCase() === username?.toLowerCase();
 
@@ -199,16 +182,7 @@ export default function ForumUserProfile() {
 
     setProfile(userData as ProfileData);
 
-    // Resolve staff role (via security definer RPC) for the profile being viewed
-    if ((userData as any).user_id) {
-      const { data: staffRole } = await supabase.rpc('get_staff_role', {
-        _user_id: (userData as any).user_id,
-      });
-      setProfileStaffRole((staffRole as string | null) ?? null);
-    } else {
-      setProfileStaffRole(null);
-    }
-
+    // Check if blocked
     if (forumUser && forumUser.id !== userData.id) {
       const { data: blockData } = await supabase
         .from('forum_blocked_users')
@@ -586,18 +560,6 @@ export default function ForumUserProfile() {
         </DialogContent>
       </Dialog>
 
-      {/* Cover Photo Banner */}
-      {profile.cover_url && (
-        <div className="relative w-full h-40 md:h-56 -mt-6 mb-4 overflow-hidden rounded-b-xl">
-          <img 
-            src={profile.cover_url} 
-            alt={`${profile.username}'s cover`}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--bc-bg-light))]/80 to-transparent" />
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 py-6">
         {/* Left Sidebar */}
         <div className="md:col-span-4 lg:col-span-3 space-y-4">
@@ -605,15 +567,14 @@ export default function ForumUserProfile() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div>
-                 <div className="flex items-center gap-1.5 font-semibold text-xl text-[hsl(var(--bc-text))]">
-                   {profile.username}
-                   <VerificationBadge 
-                     forumUserId={profile.id}
-                     isVerified={profile.is_verified}
-                     size="md"
-                   />
-                   <StaffBadge role={profileStaffRole} size="md" />
-                 </div>
+                <div className="flex items-center gap-1.5 font-semibold text-xl text-[hsl(var(--bc-text))]">
+                  {profile.username}
+                  <VerificationBadge 
+                    forumUserId={profile.id}
+                    isVerified={profile.is_verified}
+                    size="md"
+                  />
+                </div>
                 <div className="text-sm text-[hsl(var(--bc-text-muted))]">
                   @{profile.username}
                 </div>

@@ -9,7 +9,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,11 +38,23 @@ const Auth = () => {
     setError("");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`,
+          },
+        });
+        if (error) throw error;
+        setError("Check your email to confirm your account!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+      }
     } catch (err: any) {
       setError(err.message || "An error occurred");
     }
@@ -106,9 +118,21 @@ const Auth = () => {
                   Please wait...
                 </>
               ) : (
-                "Sign In"
+                isSignUp ? "Sign Up" : "Sign In"
               )}
             </button>
+
+            <p className="text-center text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+              {isSignUp ? "Already have an account?" : "Need an account?"}{" "}
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="font-medium hover:underline"
+                style={{ color: 'hsl(var(--bc-primary))' }}
+              >
+                {isSignUp ? "Sign In" : "Sign Up"}
+              </button>
+            </p>
 
             <a 
               href="/" 

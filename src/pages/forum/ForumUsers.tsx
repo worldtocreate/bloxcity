@@ -8,19 +8,6 @@ import MembershipBadge from '@/components/forum/MembershipBadge';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { getRelativeTime } from '@/lib/timeUtils';
 
-function StaffBadge({ role, size = 'sm' }: { role: string | null | undefined; size?: 'sm' | 'md' }) {
-  if (!role) return null;
-  const normalized = role.toLowerCase();
-  const label = normalized === 'owner' ? 'Owner' : normalized === 'admin' ? 'Admin' : 'Mod';
-  const sizeClasses = size === 'sm' ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1';
-  const colorClasses =
-    normalized === 'moderator'
-      ? 'bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
-      : 'bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]';
-
-  return <span className={`inline-flex items-center font-semibold rounded ${sizeClasses} ${colorClasses}`}>{label}</span>;
-}
-
 interface UserListItem {
   id: string;
   serial_id: number;
@@ -34,7 +21,8 @@ interface UserListItem {
   user_id: string;
   bio: string | null;
   last_seen_at?: string | null;
-  staff_role?: string | null; // 'owner' | 'admin' | 'moderator' | null
+  is_admin?: boolean;
+  is_moderator?: boolean;
 }
 
 const USERS_PER_PAGE = 20;
@@ -83,30 +71,25 @@ export default function ForumUsers() {
     const { data: usersData } = await usersQuery;
 
     if (usersData) {
-      // Resolve staff roles via secure RPC (avoids direct admin_accounts access)
-      const roleEntries = await Promise.all(
-        usersData.map(async (u) => {
-          const { data } = await supabase.rpc('get_staff_role', { _user_id: u.user_id });
-          return [u.id, (data as string | null) ?? null] as const;
-        })
-      );
-      const roleMap = new Map(roleEntries);
+      const userIds = usersData.map(u => u.user_id);
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
 
       const ONLINE_THRESHOLD_MS = 3 * 60 * 1000;
       const now = Date.now();
       const isOnline = (lastSeen: string | null | undefined) => {
         if (!lastSeen) return false;
         const t = new Date(lastSeen).getTime();
-        return Number.isFinite(t) && now - t <= ONLINE_THRESHOLD_MS;
+        return Number.isFinite(t) && (now - t) <= ONLINE_THRESHOLD_MS;
       };
 
-      const usersWithRoles = usersData.map((user) => {
-        const staffRole = roleMap.get(user.id);
-        return {
-          ...user,
-          staff_role: staffRole ?? null,
-        };
-      });
+      const usersWithRoles = usersData.map(user => ({
+        ...user,
+        is_admin: roles?.some(r => r.user_id === user.user_id && r.role === 'admin'),
+        is_moderator: roles?.some(r => r.user_id === user.user_id && r.role === 'moderator')
+      }));
 
       usersWithRoles.sort((a: any, b: any) => {
         const aOnline = isOnline(a.last_seen_at);
@@ -116,7 +99,7 @@ export default function ForumUsers() {
         const bSeen = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
         return bSeen - aSeen;
       });
-
+      
       setUsers(usersWithRoles);
     }
     setLoading(false);
@@ -198,7 +181,12 @@ export default function ForumUsers() {
                           {user.username}
                         </span>
                         <VerificationBadge size="sm" forumUserId={user.id} isVerified={user.is_verified} />
-                        <StaffBadge role={user.staff_role} size="sm" />
+                        {user.is_admin && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-[hsla(var(--bc-accent),0.15)] text-[hsl(var(--bc-accent))] rounded-full">Admin</span>
+                        )}
+                        {user.is_moderator && !user.is_admin && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))] rounded-full">Mod</span>
+                        )}
                       </div>
                       <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
                         <span className="italic">@</span>{user.username}

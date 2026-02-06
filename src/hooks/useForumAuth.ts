@@ -44,17 +44,19 @@ export function useForumAuth() {
     let isMounted = true;
 
     const fetchUserData = async (authUser: User) => {
-      // Check admin role via admin_accounts system
-      const { data: isAdminAccount } = await supabase.rpc('is_admin_account', {
-        _user_id: authUser.id
+      // Check admin role
+      const { data: hasAdminRole } = await supabase.rpc('has_role', {
+        _user_id: authUser.id,
+        _role: 'admin'
       });
-      if (isMounted) setIsAdmin(isAdminAccount === true);
+      if (isMounted) setIsAdmin(hasAdminRole === true);
 
-      // Check moderator role via admin_accounts system
-      const { data: isModAccount } = await supabase.rpc('is_moderator_account', {
-        _user_id: authUser.id
+      // Check moderator role
+      const { data: hasModRole } = await supabase.rpc('has_role', {
+        _user_id: authUser.id,
+        _role: 'moderator'
       });
-      if (isMounted) setIsModerator(isModAccount === true);
+      if (isMounted) setIsModerator(hasModRole === true);
 
       // Fetch forum user
       const { data: forumData } = await supabase

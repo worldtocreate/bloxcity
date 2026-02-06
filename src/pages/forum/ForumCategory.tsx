@@ -85,21 +85,29 @@ export default function ForumCategory() {
             .eq('id', thread.author_id)
             .single();
           
-          // Check if author is staff via secure RPC
+          // Check if author is staff
           let isStaff = false;
           if (author?.user_id) {
-            const { data: role } = await supabase.rpc('get_staff_role', { _user_id: author.user_id });
-            isStaff = !!role;
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', author.user_id)
+              .in('role', ['admin', 'moderator']);
+            isStaff = (roles?.length || 0) > 0;
           }
 
           const { data: lastPoster } = thread.last_post_by 
-            ? await supabase.from('forum_users').select('id, username, user_id').eq('id', thread.last_post_by).single()
+            ? await supabase.from('forum_users').select('username, user_id').eq('id', thread.last_post_by).single()
             : { data: null };
 
           let lastPosterIsStaff = false;
           if (lastPoster?.user_id) {
-            const { data: role } = await supabase.rpc('get_staff_role', { _user_id: lastPoster.user_id });
-            lastPosterIsStaff = !!role;
+            const { data: roles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', lastPoster.user_id)
+              .in('role', ['admin', 'moderator']);
+            lastPosterIsStaff = (roles?.length || 0) > 0;
           }
 
           return { 

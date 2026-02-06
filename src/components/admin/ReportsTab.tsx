@@ -76,6 +76,7 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
       return;
     }
 
+    // Get the forum user id
     const { data: forumUser } = await supabase
       .from('forum_users')
       .select('id')
@@ -115,13 +116,13 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 text-xs font-medium rounded-full">Pending</span>;
+        return <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 text-xs rounded-full">Pending</span>;
       case 'actioned':
-        return <span className="px-2.5 py-1 bg-green-500/10 text-green-400 text-xs font-medium rounded-full">Actioned</span>;
+        return <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs rounded-full">Actioned</span>;
       case 'dismissed':
-        return <span className="px-2.5 py-1 bg-gray-500/10 text-gray-400 text-xs font-medium rounded-full">Dismissed</span>;
+        return <span className="px-2 py-0.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 text-xs rounded-full">Dismissed</span>;
       case 'reviewed':
-        return <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 text-xs font-medium rounded-full">Reviewed</span>;
+        return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded-full">Reviewed</span>;
       default:
         return null;
     }
@@ -142,7 +143,7 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -150,27 +151,30 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-white">Reports</h2>
-          <p className="text-sm text-gray-500 mt-1">Review and manage user reports</p>
-        </div>
+        <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          Reports
+        </h2>
         <div className="flex gap-2">
           <button
             onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               filter === 'pending'
-                ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
-                : 'bg-[#0f0f18] border border-white/5 text-gray-400 hover:text-white hover:border-white/10'
+                ? 'bg-blue-600 text-white'
+                : darkMode
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             Pending
           </button>
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
               filter === 'all'
-                ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
-                : 'bg-[#0f0f18] border border-white/5 text-gray-400 hover:text-white hover:border-white/10'
+                ? 'bg-blue-600 text-white'
+                : darkMode
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             All
@@ -179,48 +183,48 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
       </div>
 
       {reports.length === 0 ? (
-        <div className="text-center py-16 bg-[#0f0f18] border border-white/5 rounded-2xl">
-          <Flag className="w-12 h-12 mx-auto mb-4 text-gray-600" />
-          <p className="text-gray-400">
+        <div className={`text-center py-12 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'} rounded-xl`}>
+          <Flag className={`w-12 h-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+          <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
             {filter === 'pending' ? 'No pending reports' : 'No reports found'}
           </p>
         </div>
       ) : (
-        <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="divide-y divide-white/5">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
             {reports.map(report => (
-              <div key={report.id} className="p-5 hover:bg-white/[0.02] transition">
+              <div key={report.id} className="p-4">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-white/5 text-gray-400">
+                  <div className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                     {getTypeIcon(report.reported_type)}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="font-medium text-white">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                         {report.reported_type.charAt(0).toUpperCase() + report.reported_type.slice(1)} Report
                       </span>
                       {getStatusBadge(report.status)}
                     </div>
                     
-                    <p className="text-sm text-gray-300 mb-2">
-                      <span className="text-gray-500">Reason:</span> {report.reason}
+                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                      <strong>Reason:</strong> {report.reason}
                     </p>
                     
                     {report.details && (
-                      <p className="text-sm text-gray-400 mb-2">
-                        <span className="text-gray-500">Details:</span> {report.details}
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+                        <strong>Details:</strong> {report.details}
                       </p>
                     )}
                     
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>Reported by: <span className="text-gray-400">{report.reporter?.username || 'Unknown'}</span></span>
+                    <div className={`flex items-center gap-4 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      <span>Reported by: {report.reporter?.username || 'Unknown'}</span>
                       <span>{formatDate(report.created_at)}</span>
                       {getViewLink(report.reported_type, report.reported_id) && (
                         <Link 
                           to={getViewLink(report.reported_type, report.reported_id)!}
                           target="_blank"
-                          className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition"
+                          className="flex items-center gap-1 text-blue-500 hover:underline"
                         >
                           <ExternalLink className="w-3 h-3" />
                           View
@@ -229,9 +233,9 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
                     </div>
 
                     {report.action_taken && (
-                      <div className="text-sm mt-3 p-3 rounded-xl bg-white/5 text-gray-300">
-                        <span className="text-gray-500">Action taken:</span> {report.action_taken}
-                      </div>
+                      <p className={`text-sm mt-2 p-2 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                        <strong>Action taken:</strong> {report.action_taken}
+                      </p>
                     )}
                   </div>
 
@@ -240,7 +244,7 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
                       <button
                         onClick={() => handleAction(report.id, 'actioned', 'Content reviewed and action taken')}
                         disabled={processing === report.id}
-                        className="p-2.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 rounded-xl transition"
+                        className="p-2 bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 rounded-lg transition"
                         title="Take Action"
                       >
                         {processing === report.id ? (
@@ -252,7 +256,7 @@ export default function ReportsTab({ darkMode }: ReportsTabProps) {
                       <button
                         onClick={() => handleAction(report.id, 'dismissed', 'No violation found')}
                         disabled={processing === report.id}
-                        className="p-2.5 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white rounded-xl transition"
+                        className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 rounded-lg transition"
                         title="Dismiss"
                       >
                         <X className="w-4 h-4" />
