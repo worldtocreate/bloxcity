@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_accounts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_name: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          last_login_at: string | null
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_name?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_activity_logs: {
         Row: {
           action: string
@@ -67,6 +111,44 @@ export type Database = {
           role?: string
         }
         Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          admin_account_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          session_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_account_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          session_token: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_account_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          session_token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_sessions_admin_account_id_fkey"
+            columns: ["admin_account_id"]
+            isOneToOne: false
+            referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_settings: {
         Row: {
@@ -3282,6 +3364,7 @@ export type Database = {
       claim_daily_coins: { Args: never; Returns: number }
       claim_daily_login_xp: { Args: never; Returns: number }
       claim_random_reward: { Args: never; Returns: Json }
+      cleanup_expired_admin_sessions: { Args: never; Returns: undefined }
       click_ad: {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
@@ -3345,6 +3428,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      verify_admin_session: {
+        Args: { p_session_token: string }
+        Returns: string
       }
       verify_maintenance_password: {
         Args: { p_password: string }
