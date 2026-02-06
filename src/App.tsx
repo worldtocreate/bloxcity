@@ -1017,15 +1017,23 @@ function LandingPage() {
 
 // Wrapper that shows Landing for guests, Dashboard for logged-in users
 function HomeOrLanding() {
-  const { forumUser, loading } = useForumAuth();
+  const { user, forumUser, loading } = useForumAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !forumUser) {
-      // Redirect to landing page if not logged in
+    if (loading) return;
+    
+    // If user has auth session but no forum profile, redirect to register to complete signup
+    if (user && !forumUser) {
+      navigate('/register', { replace: true });
+      return;
+    }
+    
+    // If no auth session at all, redirect to landing page
+    if (!user && !forumUser) {
       navigate('/landing', { replace: true });
     }
-  }, [loading, forumUser, navigate]);
+  }, [loading, user, forumUser, navigate]);
 
   if (loading) {
     return (
@@ -1035,7 +1043,7 @@ function HomeOrLanding() {
     );
   }
 
-  // If logged in, show dashboard within ForumLayout
+  // If logged in with forum profile, show dashboard
   if (forumUser) {
     return <ForumDashboard />;
   }
