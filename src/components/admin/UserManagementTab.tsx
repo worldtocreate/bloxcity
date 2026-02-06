@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, RotateCcw, Lock, Unlock, Ban, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { Trash2, RotateCcw, Lock, Unlock, Ban, Loader2, Search, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PurgedUsername {
@@ -31,7 +31,6 @@ export default function UserManagementTab() {
   const [purging, setPurging] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Account action modal
   const [showAccountModal, setShowAccountModal] = useState<{ user: ForumUserItem; action: 'suspend' | 'lock' | 'disable' } | null>(null);
   const [accountReason, setAccountReason] = useState('');
   const [suspendDuration, setSuspendDuration] = useState('7');
@@ -83,7 +82,6 @@ export default function UserManagementTab() {
     try {
       const currentUser = (await supabase.auth.getUser()).data.user;
       
-      // Insert into purged_usernames (for forum accounts, no reservation_id)
       const { error: purgeError } = await supabase
         .from('purged_usernames')
         .insert({
@@ -95,11 +93,9 @@ export default function UserManagementTab() {
 
       if (purgeError) throw purgeError;
 
-      // Generate a random replacement username
       const randomSuffix = Math.random().toString(36).substring(2, 10);
       const purgedUsername = `purged_${randomSuffix}`;
 
-      // Update the forum user's username to a purged placeholder
       const { error: updateError } = await supabase
         .from('forum_users')
         .update({ 
@@ -110,7 +106,7 @@ export default function UserManagementTab() {
 
       if (updateError) throw updateError;
 
-      toast.success(`Username "${selectedReservation.username}" purged and replaced with "${purgedUsername}"`);
+      toast.success(`Username "${selectedReservation.username}" purged`);
       setSelectedReservation(null);
       setPurgeReason('');
       setSearchQuery('');
@@ -208,23 +204,23 @@ export default function UserManagementTab() {
   return (
     <div className="space-y-6">
       {/* Section Tabs */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2">
         <button
           onClick={() => setActiveSection('purge')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+          className={`px-4 py-2.5 rounded-xl text-sm font-medium transition ${
             activeSection === 'purge'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
+              : 'bg-[#0f0f18] border border-white/5 text-gray-400 hover:text-white hover:border-white/10'
           }`}
         >
           Purge Usernames
         </button>
         <button
           onClick={() => setActiveSection('accounts')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+          className={`px-4 py-2.5 rounded-xl text-sm font-medium transition ${
             activeSection === 'accounts'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/20'
+              : 'bg-[#0f0f18] border border-white/5 text-gray-400 hover:text-white hover:border-white/10'
           }`}
         >
           Account Management
@@ -234,36 +230,38 @@ export default function UserManagementTab() {
       {activeSection === 'purge' ? (
         <div className="space-y-6">
           {/* Purge Form */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Purge a Forum Username</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Search for a forum account username to purge. This will replace their username with a random placeholder and record the purge.
-            </p>
+          <div className="bg-[#0f0f18] border border-white/5 rounded-2xl p-6 space-y-4">
+            <div>
+              <h3 className="font-semibold text-white">Purge a Forum Username</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Search for a forum account username to purge. This will replace their username with a random placeholder.
+              </p>
+            </div>
             
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Enter forum username to purge..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50"
                 />
               </div>
               <button
                 onClick={handleSearchForumUser}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20"
               >
                 Search
               </button>
             </div>
 
             {selectedReservation && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                  <span className="font-medium text-amber-800">
+                  <AlertTriangle className="w-5 h-5 text-amber-400" />
+                  <span className="font-medium text-amber-300">
                     Found: {selectedReservation.username}
                   </span>
                 </div>
@@ -271,14 +269,14 @@ export default function UserManagementTab() {
                   value={purgeReason}
                   onChange={(e) => setPurgeReason(e.target.value)}
                   placeholder="Reason for purging (optional)..."
-                  className="w-full px-3 py-2 border border-amber-300 rounded-lg"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500"
                   rows={2}
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={handlePurge}
                     disabled={purging}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg"
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-600 text-white rounded-xl font-medium"
                   >
                     {purging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     Purge Username
@@ -288,7 +286,7 @@ export default function UserManagementTab() {
                       setSelectedReservation(null);
                       setPurgeReason('');
                     }}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl"
                   >
                     Cancel
                   </button>
@@ -298,37 +296,37 @@ export default function UserManagementTab() {
           </div>
 
           {/* Purged List */}
-          <div className="bg-white rounded-lg border overflow-hidden">
-            <div className="p-4 border-b bg-gray-50">
-              <h3 className="font-semibold text-gray-900">Purged Usernames</h3>
+          <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-white/5">
+              <h3 className="font-semibold text-white">Purged Usernames</h3>
             </div>
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
               </div>
             ) : purgedUsernames.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No purged usernames</div>
+              <div className="text-center py-12 text-gray-500">No purged usernames</div>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-white/5">
                 {purgedUsernames.map((purged) => (
                   <div key={purged.id} className="p-4 flex items-center justify-between">
                     <div>
-                      <span className="font-medium">{purged.username}</span>
-                      <span className="text-sm text-gray-500 ml-2">
+                      <span className="font-medium text-white">{purged.username}</span>
+                      <span className="text-sm text-gray-500 ml-3">
                         {new Date(purged.purged_at).toLocaleDateString()}
                       </span>
                       {purged.reason && (
-                        <p className="text-sm text-gray-600">{purged.reason}</p>
+                        <p className="text-sm text-gray-400 mt-1">{purged.reason}</p>
                       )}
                       {purged.reverted_at && (
-                        <span className="text-xs text-green-600">Reverted</span>
+                        <span className="text-xs text-green-400 mt-1 block">Reverted</span>
                       )}
                     </div>
                     {!purged.reverted_at && (
                       <button
                         onClick={() => handleRevert(purged)}
                         disabled={actionLoading === purged.id}
-                        className="flex items-center gap-1 px-3 py-1 text-sm bg-green-100 hover:bg-green-200 text-green-700 rounded-lg"
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg"
                       >
                         {actionLoading === purged.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -348,40 +346,40 @@ export default function UserManagementTab() {
         <div className="space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search users..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+              className="w-full pl-10 pr-4 py-2.5 bg-[#0f0f18] border border-white/5 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50"
             />
           </div>
 
           {/* Users List */}
-          <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="bg-[#0f0f18] border border-white/5 rounded-2xl overflow-hidden">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
               </div>
             ) : (
-              <div className="divide-y">
+              <div className="divide-y divide-white/5">
                 {filteredUsers.map((user) => (
-                  <div key={user.id} className="p-4 flex items-center justify-between">
+                  <div key={user.id} className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition">
                     <div className="flex items-center gap-3">
                       {user.avatar_url ? (
-                        <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                        <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-xl" />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-gray-200" />
+                        <div className="w-10 h-10 rounded-xl bg-white/5" />
                       )}
                       <div>
-                        <span className="font-medium">{user.username}</span>
-                        <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium text-white">{user.username}</span>
+                        <div className="flex items-center gap-2 mt-1">
                           {user.is_suspended && (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded">Suspended</span>
+                            <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-xs rounded-full">Suspended</span>
                           )}
                           {user.is_locked && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded">Locked</span>
+                            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-xs rounded-full">Locked</span>
                           )}
                         </div>
                       </div>
@@ -391,8 +389,8 @@ export default function UserManagementTab() {
                         onClick={() => setShowAccountModal({ user, action: 'lock' })}
                         className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg ${
                           user.is_locked
-                            ? 'bg-green-100 hover:bg-green-200 text-green-700'
-                            : 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+                            ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400'
+                            : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400'
                         }`}
                       >
                         {user.is_locked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
@@ -401,7 +399,7 @@ export default function UserManagementTab() {
                       {user.is_suspended ? (
                         <button
                           onClick={() => setShowAccountModal({ user, action: 'disable' })}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-100 hover:bg-green-200 text-green-700 rounded-lg"
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg"
                         >
                           <Unlock className="w-4 h-4" />
                           Unsuspend
@@ -409,7 +407,7 @@ export default function UserManagementTab() {
                       ) : (
                         <button
                           onClick={() => setShowAccountModal({ user, action: 'suspend' })}
-                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg"
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg"
                         >
                           <Ban className="w-4 h-4" />
                           Suspend
@@ -426,41 +424,47 @@ export default function UserManagementTab() {
 
       {/* Account Action Modal */}
       {showAccountModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-4">
-            <h3 className="text-lg font-semibold">
-              {showAccountModal.action === 'suspend' && 'Suspend Account'}
-              {showAccountModal.action === 'lock' && (showAccountModal.user.is_locked ? 'Unlock Account' : 'Lock Account')}
-              {showAccountModal.action === 'disable' && 'Remove Suspension'}
-            </h3>
-            <p className="text-gray-600">
-              User: <strong>{showAccountModal.user.username}</strong>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#12121a] border border-white/10 rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                {showAccountModal.action === 'suspend' && 'Suspend Account'}
+                {showAccountModal.action === 'lock' && (showAccountModal.user.is_locked ? 'Unlock Account' : 'Lock Account')}
+                {showAccountModal.action === 'disable' && 'Remove Suspension'}
+              </h3>
+              <button onClick={() => setShowAccountModal(null)} className="text-gray-500 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-400">
+              User: <strong className="text-white">{showAccountModal.user.username}</strong>
             </p>
 
             {showAccountModal.action === 'suspend' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Duration</label>
                   <select
                     value={suspendDuration}
                     onChange={(e) => setSuspendDuration(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500/50"
                   >
                     <option value="1">1 day</option>
-                    <option value="7">1 week</option>
-                    <option value="30">1 month</option>
-                    <option value="90">3 months</option>
+                    <option value="3">3 days</option>
+                    <option value="7">7 days</option>
+                    <option value="14">14 days</option>
+                    <option value="30">30 days</option>
                     <option value="permanent">Permanent</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Reason</label>
                   <textarea
                     value={accountReason}
                     onChange={(e) => setAccountReason(e.target.value)}
                     placeholder="Reason for suspension..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    rows={2}
+                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50"
+                    rows={3}
                   />
                 </div>
               </>
@@ -468,35 +472,36 @@ export default function UserManagementTab() {
 
             {showAccountModal.action === 'lock' && !showAccountModal.user.is_locked && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">Reason</label>
                 <textarea
                   value={accountReason}
                   onChange={(e) => setAccountReason(e.target.value)}
                   placeholder="Reason for locking..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  rows={2}
+                  className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50"
+                  rows={3}
                 />
               </div>
             )}
 
-            <div className="flex gap-3 justify-end pt-2">
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={() => {
-                  setShowAccountModal(null);
-                  setAccountReason('');
-                }}
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
+                onClick={() => setShowAccountModal(null)}
+                className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAccountAction}
                 disabled={actionLoading === showAccountModal.user.id}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg"
+                className={`flex-1 px-4 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 ${
+                  showAccountModal.action === 'suspend'
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : showAccountModal.action === 'disable' || showAccountModal.user.is_locked
+                      ? 'bg-green-500 hover:bg-green-600 text-white'
+                      : 'bg-amber-500 hover:bg-amber-600 text-white'
+                }`}
               >
-                {actionLoading === showAccountModal.user.id && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                )}
+                {actionLoading === showAccountModal.user.id && <Loader2 className="w-4 h-4 animate-spin" />}
                 Confirm
               </button>
             </div>

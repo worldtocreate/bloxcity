@@ -1998,6 +1998,7 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [darkMode, setDarkMode] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Legacy user state for backwards compatibility with some components
   const [user, setUser] = useState<User | null>(null);
@@ -2467,20 +2468,23 @@ const Admin = () => {
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-500';
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className="min-h-screen bg-[#05050a]">
       <AdminTabs 
         activeTab={activeTab} 
         onTabChange={setActiveTab}
         darkMode={darkMode}
+        mobileOpen={mobileMenuOpen}
+        onMobileClose={() => setMobileMenuOpen(false)}
       >
+        <AdminHeader 
+          user={user} 
+          onLogout={handleLogout} 
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
+          onMobileMenuToggle={() => setMobileMenuOpen(true)}
+        />
         <div className="p-4 lg:p-6">
-          <AdminHeader 
-            user={user} 
-            onLogout={handleLogout} 
-            darkMode={darkMode}
-            onToggleDarkMode={() => setDarkMode(!darkMode)}
-          />
-          <div className="mt-6">
+          <div className="max-w-[1600px] mx-auto">
         {/* Dashboard Tab */}
         {activeTab === "dashboard" && <DashboardTab darkMode={darkMode} />}
         
