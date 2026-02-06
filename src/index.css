@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hind:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 @tailwind base;
 @tailwind components;
@@ -3260,4 +3262,416 @@ textarea.bc-input {
   .games-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ========================================
+   TOPBAR COMPONENT - Exact Reference Design
+======================================== */
+.topbar {
+  background: #0288d1;
+  color: #fff;
+  padding-left: 8px;
+  padding-right: 8px;
+  width: 100%;
+  height: 61px;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1030;
+  user-select: none;
+}
+
+.topbar-sidebar-toggler {
+  font-size: 30px;
+  height: 61px;
+  line-height: 61px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0 15px;
+  color: #fff;
+}
+
+.topbar-logo {
+  display: inline-flex;
+  align-items: center;
+  font-size: 18px;
+  padding: 0;
+  white-space: nowrap;
+  margin-right: 5px;
+}
+
+.topbar-logo img {
+  width: 50px;
+  height: auto;
+}
+
+.topbar-logo.topbar-logo-mobile {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 0;
+}
+
+.topbar-logo.topbar-logo-mobile img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 7px;
+}
+
+.topbar-link {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  height: 61px;
+  line-height: 61px;
+  padding: 0 15px;
+  transition: background-color 0.3s;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.topbar-link.active,
+.topbar-link:hover {
+  background-color: #027abc;
+}
+
+.topbar-link .icon::before {
+  color: inherit !important;
+}
+
+.topbar-left {
+  float: left;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.topbar-right {
+  float: right;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.topbar-push {
+  height: 100px;
+}
+
+.topbar-mobile {
+  height: 100%;
+}
+
+.topbar-desktop {
+  height: 100%;
+}
+
+/* Dropdown Content */
+.dropdown-content {
+  background: #fff;
+  margin: 0;
+  display: block;
+  min-width: 100px;
+  overflow-y: auto;
+  position: absolute;
+  z-index: 100;
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+  list-style: none;
+  padding: 0;
+  top: 100%;
+  right: 0;
+}
+
+.dropdown-content .dropdown-item {
+  color: #777;
+  font-size: 14px;
+  min-height: 50px;
+  line-height: 24px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.dropdown-content .dropdown-item a,
+.dropdown-content .dropdown-item button {
+  color: #777;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  padding: 14px 16px;
+  display: block;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.dropdown-content .dropdown-item:hover {
+  background: #ededed;
+}
+
+.dropdown-content.navbar-more-dropdown {
+  left: 0;
+  right: auto;
+}
+
+.dropdown-content.navbar-user-dropdown {
+  margin-right: 0;
+  right: 0;
+}
+
+/* ========================================
+   SIDEBAR COMPONENT - Exact Reference Design
+======================================== */
+.sidebar {
+  background-color: #fff;
+  border-right: 1px solid #ccc;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 200px;
+  z-index: 10;
+  overflow-y: auto;
+}
+
+.sidebar-inner {
+  margin-top: 65px;
+}
+
+.sidebar-divider {
+  background: #eee;
+  margin: 15px 0;
+  height: 1px;
+  width: 100%;
+}
+
+.sidebar-items {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.sidebar-items .item a {
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #777;
+  font-weight: 500;
+  line-height: 1.5;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.sidebar-items .item a:hover {
+  background-color: #ededed;
+  text-decoration: none;
+  transition: 0.35s;
+}
+
+.sidebar-items .item a i,
+.sidebar-items .item a span,
+.sidebar-items .item a .sidebar-icon {
+  vertical-align: middle;
+}
+
+.sidebar-items .item a .sidebar-icon {
+  font-size: 21px;
+  width: 25px;
+  flex-shrink: 0;
+}
+
+/* Material Icons for sidebar */
+.icon {
+  font-family: "Material Icons";
+  font-weight: normal;
+  font-style: normal;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+.icon.icon-coins::before {
+  color: #f2c11b;
+  content: "copyright";
+}
+
+.icon.icon-cash::before {
+  color: #15bf6b;
+  content: "monetization_on";
+}
+
+.icon.icon-friends::before {
+  content: "person_add";
+}
+
+.icon.icon-inbox::before {
+  content: "message";
+}
+
+.icon.icon-staff::before {
+  content: "gavel";
+}
+
+/* ========================================
+   CONTAINER - Reference Design
+======================================== */
+.container {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  padding: 25px;
+}
+
+/* ========================================
+   FORM INPUTS - Reference Design
+======================================== */
+.form-input {
+  background: #fff !important;
+  color: #333;
+  border: 1px solid #ccc !important;
+  border-radius: 2px;
+  padding: 6px 12px;
+  margin-bottom: 0;
+  width: 100%;
+  height: 35px;
+  box-sizing: border-box;
+  box-shadow: none !important;
+}
+
+.form-input:not(:last-child) {
+  margin-bottom: 15px;
+}
+
+.form-input:disabled {
+  background: #f2f2f2 !important;
+  opacity: 0.5;
+}
+
+.form-label {
+  color: #626262;
+  font-size: 16px;
+}
+
+.form-error {
+  color: #ed3737;
+  margin-top: -10px;
+  margin-bottom: 15px;
+}
+
+/* ========================================
+   BUTTONS - Reference Design
+======================================== */
+.button {
+  font-weight: 500;
+  border: 0;
+  border-radius: 2px;
+  padding: 8px;
+  outline: none;
+  margin: 0;
+  cursor: pointer;
+}
+
+.button:disabled,
+.button.disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.button.button-block {
+  display: block;
+  width: 100%;
+}
+
+.button.button-blue {
+  background: #2196f3;
+  color: #fff;
+  border-bottom: 1px solid #207fC9;
+}
+
+.button.button-blue:hover {
+  background: #207fC9;
+}
+
+.button.button-green {
+  background: #21b523;
+  color: #fff;
+  border-bottom: 1px solid #008000;
+}
+
+.button.button-green:hover {
+  background: #008000;
+}
+
+.button.button-red {
+  background: #ed3737;
+  color: #fff;
+  border-bottom: 1px solid #da3333;
+}
+
+.button.button-red:hover {
+  background: #da3333;
+}
+
+.button.button-gray {
+  background: #5b6069;
+  color: #fff;
+  border-bottom: 1px solid #4d525a;
+}
+
+.button.button-gray:hover {
+  background: #4d525a;
+}
+
+/* ========================================
+   ALERT COMPONENT - Reference Design
+======================================== */
+.alert {
+  font-size: 16px;
+  padding: 10px 10px;
+  margin-bottom: 25px;
+  border-radius: 5px;
+}
+
+.alert.alert-error {
+  background: #ed3737;
+  color: #fff;
+}
+
+.alert.alert-success {
+  background: #008000;
+  color: #fff;
+}
+
+.alert.alert-warning {
+  background: #fa7b00;
+  color: #fff;
+}
+
+/* ========================================
+   SITE BANNER - Reference Design
+======================================== */
+.site-banner {
+  background: #455a64;
+  color: #fff;
+  font-size: 18px;
+  text-align: center;
+  padding: 15px 0;
+  margin-top: -39px;
+  margin-bottom: 40px;
+}
+
+.site-banner a {
+  color: #fff;
 }
