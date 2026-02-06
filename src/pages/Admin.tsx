@@ -1839,13 +1839,15 @@ import {
 } from "@/components/admin/types";
 
 const Admin = () => {
+  const [adminSession, setAdminSession] = useState<{ id: string; email: string; displayName: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Legacy user state for backwards compatibility with some components
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [pinAuthenticated, setPinAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
-  const [darkMode, setDarkMode] = useState(false);
   
   // Reservations state
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -1902,49 +1904,51 @@ const Admin = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const ADMIN_SESSION_KEY = 'bloxcity_admin_session';
+    
+    const checkAdminSession = async () => {
+      const sessionToken = localStorage.getItem(ADMIN_SESSION_KEY);
       
-      if (!session) {
-        navigate("/auth");
+      if (!sessionToken) {
+        // Redirect to admin login on admin domain
+        if (window.location.hostname === 'admin.bloxcity.net' || window.location.hostname.startsWith('admin.')) {
+          navigate("/");
+        } else {
+          navigate("/");
+        }
         return;
       }
 
-      setUser(session.user);
+      try {
+        const { data, error } = await supabase.functions.invoke('admin-auth', {
+          body: { action: 'verify', sessionToken }
+        });
 
-      const { data: hasAdminRole, error } = await supabase.rpc('has_role', {
-        _user_id: session.user.id,
-        _role: 'admin'
-      });
+        if (error || !data?.valid) {
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+          navigate("/");
+          return;
+        }
 
-      if (error) {
-        console.error("Error checking admin role:", error);
-        setIsAdmin(false);
-      } else {
-        setIsAdmin(hasAdminRole === true);
+        setAdminSession(data.admin);
+        setIsAdmin(true);
+        setIsModerator(true);
+        
+        // Create a mock user object for backwards compatibility
+        setUser({
+          id: data.admin.id,
+          email: data.admin.email,
+        } as User);
+      } catch {
+        localStorage.removeItem(ADMIN_SESSION_KEY);
+        navigate("/");
+        return;
       }
-
-      // Check moderator role
-      const { data: hasModRole } = await supabase.rpc('has_role', {
-        _user_id: session.user.id,
-        _role: 'moderator'
-      });
-      setIsModerator(hasModRole === true);
 
       setLoading(false);
     };
 
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate("/auth");
-      } else {
-        setUser(session.user);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkAdminSession();
   }, [navigate]);
 
   useEffect(() => {
@@ -2197,7 +2201,14 @@ const Admin = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    const ADMIN_SESSION_KEY = 'bloxcity_admin_session';
+    const sessionToken = localStorage.getItem(ADMIN_SESSION_KEY);
+    if (sessionToken) {
+      await supabase.functions.invoke('admin-auth', {
+        body: { action: 'logout', sessionToken }
+      });
+    }
+    localStorage.removeItem(ADMIN_SESSION_KEY);
     navigate("/");
   };
 
@@ -2288,16 +2299,8 @@ const Admin = () => {
     );
   }
 
-  // Show PIN gate if not authenticated
-  if (!pinAuthenticated && user) {
-    return (
-      <AdminPinGate
-        userId={user.id}
-        onAuthenticated={() => setPinAuthenticated(true)}
-        darkMode={darkMode}
-      />
-    );
-  }
+  // Session authentication is handled in the useEffect above
+  // No PIN gate needed - admin domain uses separate session auth
 
   const activeSubscribers = subscribers.filter(s => s.is_active).length;
 

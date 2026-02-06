@@ -22,8 +22,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useForumAuth } from "@/hooks/useForumAuth";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
+
+// Check if we're on the admin domain
+const isAdminDomain = (): boolean => {
+  const hostname = window.location.hostname;
+  return hostname === 'admin.bloxcity.net' || hostname.startsWith('admin.');
+};
 
 // Inline error pages
 function Error403() {
@@ -2773,8 +2780,16 @@ const App = () => (
             {/* Suspended page - outside ForumLayout */}
             <Route path="/suspended" element={<SuspendedPage />} />
 
-            {/* Admin Route - outside ForumLayout */}
-            <Route path="/admin" element={<Admin />} />
+            {/* Admin Routes - domain-based */}
+            {isAdminDomain() ? (
+              <>
+                <Route path="/" element={<AdminLogin />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<AdminLogin />} />
+              </>
+            ) : (
+              <Route path="/admin" element={<NotFound />} />
+            )}
             
             {/* Error pages */}
             <Route path="/error/403" element={<Error403 />} />
