@@ -49,6 +49,10 @@ export default function ImageCropper({
     setCrop(centerAspectCrop(width, height, aspectRatio));
   }, [aspectRatio]);
 
+  // Detect if the original image is a PNG (for transparency support)
+  const isPngImage = imageUrl.toLowerCase().includes('.png') || 
+    imageUrl.startsWith('data:image/png');
+
   const getCroppedImg = async (): Promise<Blob | null> => {
     const image = imgRef.current;
     if (!image || !completedCrop) return null;
@@ -66,6 +70,7 @@ export default function ImageCropper({
     canvas.width = outputWidth;
     canvas.height = outputHeight;
 
+    // Keep canvas transparent for PNGs, don't fill with any background
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(
       image,
@@ -79,8 +84,12 @@ export default function ImageCropper({
       outputHeight
     );
 
+    // Use PNG format to preserve transparency, JPEG for others
+    const mimeType = isPngImage ? 'image/png' : 'image/jpeg';
+    const quality = isPngImage ? undefined : 0.9;
+
     return new Promise((resolve) => {
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9);
+      canvas.toBlob((blob) => resolve(blob), mimeType, quality);
     });
   };
 
