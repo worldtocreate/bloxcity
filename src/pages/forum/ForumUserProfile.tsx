@@ -13,6 +13,7 @@ import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import FriendButton from '@/components/forum/FriendButton';
 import MembershipBadge from '@/components/forum/MembershipBadge';
+import StaffBadge from '@/components/forum/StaffBadge';
 import ReportButton from '@/components/forum/ReportButton';
 import {
   DropdownMenu,
@@ -586,17 +587,7 @@ export default function ForumUserProfile() {
                      isVerified={profile.is_verified}
                      size="md"
                    />
-                   {profileStaffRole && ['owner', 'admin', 'moderator'].includes(profileStaffRole) && (
-                     <span
-                       className={
-                         profileStaffRole === 'moderator'
-                           ? 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))]'
-                           : 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-[hsla(var(--bc-error),0.15)] text-[hsl(var(--bc-error))]'
-                       }
-                     >
-                       {profileStaffRole === 'owner' ? 'Owner' : profileStaffRole === 'admin' ? 'Admin' : 'Mod'}
-                     </span>
-                   )}
+                   <StaffBadge role={profileStaffRole} size="md" />
                  </div>
                 <div className="text-sm text-[hsl(var(--bc-text-muted))]">
                   @{profile.username}

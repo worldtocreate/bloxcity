@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import UserAvatar from '@/components/forum/UserAvatar';
 import MembershipBadge from '@/components/forum/MembershipBadge';
+import StaffBadge from '@/components/forum/StaffBadge';
 import { getRelativeTime } from '@/lib/timeUtils';
 
 // Character limits
@@ -39,7 +40,7 @@ interface Post {
     membership_tier?: string | null;
     xp?: number;
   };
-  is_staff?: boolean;
+  staff_role?: string | null; // 'owner' | 'admin' | 'moderator' | null
 }
 
 interface Thread {
@@ -129,11 +130,11 @@ export default function ForumThread() {
             .eq('id', post.author_id)
             .single();
           
-          // Check if author is staff via secure RPC
-          let isStaff = false;
+          // Get staff role via secure RPC
+          let staffRole: string | null = null;
           if (author?.user_id) {
             const { data: role } = await supabase.rpc('get_staff_role', { _user_id: author.user_id });
-            isStaff = !!role;
+            staffRole = (role as string | null) ?? null;
           }
           
           let quotedPost = undefined;
@@ -153,7 +154,7 @@ export default function ForumThread() {
             }
           }
 
-          return { ...post, author, quoted_post: quotedPost, is_staff: isStaff };
+          return { ...post, author, quoted_post: quotedPost, staff_role: staffRole };
         })
       );
       setPosts(postsWithAuthors as unknown as Post[]);
@@ -477,7 +478,7 @@ export default function ForumThread() {
                           <Quote className="w-4 h-4" />
                         </button>
                       )}
-                      {forumUser && post.author.id !== forumUser.id && !post.is_staff && (
+                      {forumUser && post.author.id !== forumUser.id && !post.staff_role && (
                         <button className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition" title="Report">
                           <Flag className="w-4 h-4" />
                         </button>
@@ -489,7 +490,7 @@ export default function ForumThread() {
                       <div className="md:w-40 flex-shrink-0 text-center">
                         {/* Online indicator + username */}
                         <div className="flex items-center justify-center gap-1 mb-2">
-                          <div className={`w-2 h-2 rounded-full ${post.is_staff ? 'bg-[hsl(var(--bc-accent))]' : 'bg-[hsl(var(--bc-text-muted))]'}`} />
+                          <div className={`w-2 h-2 rounded-full ${post.staff_role ? 'bg-[hsl(var(--bc-accent))]' : 'bg-[hsl(var(--bc-text-muted))]'}`} />
                           <Link 
                             to={`/id/${post.author.username}/profile`}
                             className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition truncate"
@@ -510,16 +511,15 @@ export default function ForumThread() {
                         </Link>
 
                         {/* Staff/Membership Badge */}
-                        {post.is_staff && (
-                          <div className="inline-block bg-[hsl(var(--bc-accent))] text-white text-xs font-bold px-3 py-1 rounded mb-2">
-                            Admin
+                        {post.staff_role && ['owner', 'admin', 'moderator'].includes(post.staff_role) ? (
+                          <div className="mb-2">
+                            <StaffBadge role={post.staff_role} size="md" />
                           </div>
-                        )}
-                        {!post.is_staff && post.author.membership_tier && (
+                        ) : post.author.membership_tier ? (
                           <div className="mb-2">
                             <MembershipBadge tier={post.author.membership_tier as any} size="sm" />
                           </div>
-                        )}
+                        ) : null}
 
                         {/* Stats */}
                         <div className="text-xs text-[hsl(var(--bc-text-muted))] space-y-1 mt-2">

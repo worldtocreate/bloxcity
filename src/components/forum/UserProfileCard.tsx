@@ -5,9 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import VerifiedBadge from './VerifiedBadge';
 import UserAvatar from './UserAvatar';
 import UserLevelBadge from './UserLevelBadge';
+import StaffBadge from './StaffBadge';
 
 interface ForumUserProfile {
   id: string;
+  user_id: string;
   username: string;
   avatar_url: string | null;
   created_at: string;
@@ -43,6 +45,7 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
   const [pinnedThreads, setPinnedThreads] = useState<PinnedThread[]>([]);
   const [recentThreads, setRecentThreads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [staffRole, setStaffRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -57,6 +60,12 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
 
     if (userData) {
       setProfile(userData as ForumUserProfile);
+      
+      // Fetch staff role via secure RPC
+      if (userData.user_id) {
+        const { data: role } = await supabase.rpc('get_staff_role', { _user_id: userData.user_id });
+        setStaffRole((role as string | null) ?? null);
+      }
       
       // Fetch pinned threads
       const { data: pinned } = await supabase
@@ -135,6 +144,7 @@ export default function UserProfileCard({ username, onClose, currentUserId, isAd
               <span className="font-semibold text-[hsl(var(--bc-text))] truncate">{profile.username}</span>
               {profile.is_verified && <VerifiedBadge size="md" />}
               <UserLevelBadge level={profile.level} size="sm" />
+              <StaffBadge role={staffRole} size="sm" />
             </div>
             <div className="flex items-center gap-1 text-xs text-[hsl(var(--bc-text-muted))]">
               <Calendar className="w-3 h-3" />
