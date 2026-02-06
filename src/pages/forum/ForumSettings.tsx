@@ -96,15 +96,19 @@ export default function ForumSettings() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
   const [pendingAvatar, setPendingAvatar] = useState<AvatarRequest | null>(null);
   const [pendingCover, setPendingCover] = useState<CoverRequest | null>(null);
   const [clearingAvatar, setClearingAvatar] = useState(false);
   const [clearingCover, setClearingCover] = useState(false);
+  const [clearingBackground, setClearingBackground] = useState(false);
+  const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
   
   // Image cropper
   const [cropperImage, setCropperImage] = useState<string | null>(null);
-  const [cropperType, setCropperType] = useState<'avatar' | 'cover'>('avatar');
+  const [cropperType, setCropperType] = useState<'avatar' | 'cover' | 'background'>('avatar');
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const backgroundInputRef = useRef<HTMLInputElement>(null);
   
   // Privacy settings
   const [allowDms, setAllowDms] = useState(true);
@@ -172,6 +176,7 @@ export default function ForumSettings() {
       setSocialDiscord((forumUser as any).social_discord || '');
       setSocialX((forumUser as any).social_x || '');
       setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
+      setCustomBackgroundUrl((forumUser as any).custom_background_url || null);
       
       const userDob = (forumUser as any).date_of_birth;
       if (userDob) {
@@ -508,6 +513,24 @@ export default function ForumSettings() {
     if (coverInputRef.current) coverInputRef.current.value = '';
   };
 
+  const handleBackgroundSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !forumUser || !user) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Background image must be less than 5MB');
+      return;
+    }
+    const imageUrl = URL.createObjectURL(file);
+    setCropperImage(imageUrl);
+    setCropperType('background');
+    setPendingFile(file);
+    if (backgroundInputRef.current) backgroundInputRef.current.value = '';
+  };
+
   const handleCropComplete = async (croppedBlob: Blob) => {
     if (!forumUser || !user) return;
     setCropperImage(null);
@@ -538,7 +561,7 @@ export default function ForumSettings() {
         toast.error('Failed to upload avatar');
       }
       setUploadingAvatar(false);
-    } else {
+    } else if (cropperType === 'cover') {
       setUploadingCover(true);
       try {
         const filePath = `covers/${user.id}/${Date.now()}.jpg`;
@@ -564,8 +587,49 @@ export default function ForumSettings() {
         toast.error('Failed to upload cover');
       }
       setUploadingCover(false);
+    } else if (cropperType === 'background') {
+      setUploadingBackground(true);
+      try {
+        const filePath = `backgrounds/${user.id}/${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('forum-avatars')
+          .upload(filePath, croppedBlob, { upsert: true, contentType: 'image/jpeg' });
+        if (uploadError) {
+          toast.error('Failed to upload background');
+          setUploadingBackground(false);
+          return;
+        }
+        const { data: urlData } = supabase.storage.from('forum-avatars').getPublicUrl(filePath);
+        // Custom backgrounds don't need review - they're only visible to the user
+        const { error: updateError } = await supabase
+          .from('forum_users')
+          .update({ custom_background_url: urlData.publicUrl })
+          .eq('id', forumUser.id);
+        if (updateError) {
+          toast.error('Failed to save background');
+        } else {
+          toast.success('Custom background set!');
+          setCustomBackgroundUrl(urlData.publicUrl);
+        }
+      } catch (err) {
+        toast.error('Failed to upload background');
+      }
+      setUploadingBackground(false);
     }
     setPendingFile(null);
+  };
+
+  const handleClearBackground = async () => {
+    if (!forumUser) return;
+    setClearingBackground(true);
+    const { error } = await supabase.from('forum_users').update({ custom_background_url: null }).eq('id', forumUser.id);
+    if (error) {
+      toast.error('Failed to clear background');
+    } else {
+      toast.success('Background cleared!');
+      setCustomBackgroundUrl(null);
+    }
+    setClearingBackground(false);
   };
 
   const handleCropCancel = () => {
@@ -1065,6 +1129,46 @@ export default function ForumSettings() {
             {(forumUser as any).cover_url && (
               <button onClick={handleClearCover} disabled={clearingCover} className="text-xs text-red-500 hover:text-red-600">
                 {clearingCover ? 'Clearing...' : 'Remove'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Site Background */}
+      <div className="card card-body">
+        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4">Custom Site Background</h3>
+        
+        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 mb-4">
+          <p className="text-sm text-purple-700 dark:text-purple-300">
+            <strong>Personal Background:</strong> This background is only visible to you while browsing the site. Other users will not see your custom background.
+          </p>
+        </div>
+
+        <div className="flex items-start gap-4">
+          {customBackgroundUrl ? (
+            <div className="w-40 h-24 rounded-lg overflow-hidden bg-[hsl(var(--bc-bg-light))]">
+              <img src={customBackgroundUrl} alt="Background" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="w-40 h-24 rounded-lg bg-[hsl(var(--bc-bg-light))] flex items-center justify-center border-2 border-dashed border-[hsl(var(--bc-border))]">
+              <ImageIcon className="w-8 h-8 text-[hsl(var(--bc-text-muted))]" />
+            </div>
+          )}
+          
+          <div className="flex flex-col gap-2">
+            <input ref={backgroundInputRef} type="file" accept="image/*" onChange={handleBackgroundSelect} className="hidden" />
+            <button
+              onClick={() => backgroundInputRef.current?.click()}
+              disabled={uploadingBackground}
+              className="btn btn-primary btn-sm"
+            >
+              {uploadingBackground ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              {uploadingBackground ? 'Uploading...' : customBackgroundUrl ? 'Change' : 'Upload'}
+            </button>
+            {customBackgroundUrl && (
+              <button onClick={handleClearBackground} disabled={clearingBackground} className="text-xs text-red-500 hover:text-red-600">
+                {clearingBackground ? 'Clearing...' : 'Remove'}
               </button>
             )}
           </div>

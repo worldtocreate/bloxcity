@@ -3190,6 +3190,7 @@ export type Database = {
           coins: number | null
           cover_url: string | null
           created_at: string | null
+          custom_background_url: string | null
           date_of_birth: string | null
           display_name: string | null
           dm_encryption_pin_hash: string | null
@@ -3257,6 +3258,7 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
+          custom_background_url?: string | null
           date_of_birth?: string | null
           display_name?: string | null
           dm_encryption_pin_hash?: string | null
@@ -3324,6 +3326,7 @@ export type Database = {
           coins?: number | null
           cover_url?: string | null
           created_at?: string | null
+          custom_background_url?: string | null
           date_of_birth?: string | null
           display_name?: string | null
           dm_encryption_pin_hash?: string | null

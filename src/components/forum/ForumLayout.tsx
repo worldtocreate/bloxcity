@@ -342,6 +342,9 @@ export default function ForumLayout() {
   // Valentine's theme tracking
   const [valentinesThemeClaimed, setValentinesThemeClaimed] = useState(false);
   const [userCreatedAt, setUserCreatedAt] = useState<string | null>(null);
+  
+  // Custom background (only visible to logged-in user)
+  const [customBackgroundUrl, setCustomBackgroundUrl] = useState<string | null>(null);
 
   // Track online status
   useOnlineStatus(forumUser?.id || null);
@@ -417,7 +420,7 @@ export default function ForumLayout() {
     if (!forumUser) return;
     const { data } = await supabase
       .from('forum_users')
-      .select('has_valentines_theme, selected_theme, created_at')
+      .select('has_valentines_theme, selected_theme, created_at, custom_background_url')
       .eq('id', forumUser.id)
       .single();
     
@@ -425,6 +428,7 @@ export default function ForumLayout() {
       setValentinesThemeClaimed(data.has_valentines_theme || false);
       setUserCreatedAt(data.created_at);
       setHasValentinesTheme(data.has_valentines_theme || false);
+      setCustomBackgroundUrl(data.custom_background_url || null);
       
       // Apply saved theme
       if (data.selected_theme === 'valentines' && data.has_valentines_theme) {
@@ -645,7 +649,15 @@ export default function ForumLayout() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]">
+      <div 
+        className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]"
+        style={customBackgroundUrl ? {
+          backgroundImage: `url(${customBackgroundUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        } : undefined}
+      >
         <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
         
         <div className="flex-1 flex flex-col min-w-0">
