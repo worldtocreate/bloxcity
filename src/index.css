@@ -3374,10 +3374,11 @@ textarea.bc-input {
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  overflow-x: auto;
 }
 
-/* Mobile/tablet: show mobile topbar, hide desktop */
-@media (max-width: 1023px) {
+/* Only show mobile topbar on very small screens (under 480px) */
+@media (max-width: 479px) {
   .topbar-mobile {
     display: flex !important;
   }
