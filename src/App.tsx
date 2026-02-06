@@ -2489,22 +2489,29 @@ function ForumLeaderboard() {
 // Inline Notes component with Terms, Privacy, Updates, and Team tabs
 function Notes() {
   const [activeTab, setActiveTab] = useState('terms');
-  const [staff, setStaff] = useState<Array<{ id: string; serial_id: number; username: string; avatar_url: string | null; is_verified: boolean; membership_tier: string | null; avatar_effect: string | null; level: number; xp: number; role: 'admin' | 'moderator' }>>([]);
+  const [staff, setStaff] = useState<Array<{ id: string; serial_id: number; username: string; avatar_url: string | null; is_verified: boolean; membership_tier: string | null; avatar_effect: string | null; level: number; xp: number; role: 'owner' | 'admin' | 'moderator'; display_name: string | null }>>([]);
   const [loadingStaff, setLoadingStaff] = useState(true);
 
   useEffect(() => {
     const fetchStaff = async () => {
-      const { data: roles } = await supabase.from('user_roles').select('user_id, role').in('role', ['admin', 'moderator']);
-      if (!roles || roles.length === 0) { setLoadingStaff(false); return; }
-      const userIds = roles.map(r => r.user_id);
-      const { data: forumUsers } = await supabase.from('forum_users').select('id, serial_id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp').in('user_id', userIds);
-      if (forumUsers) {
-        const staffWithRoles = forumUsers.map(user => {
-          const role = roles.find(r => r.user_id === user.user_id)?.role;
-          return { ...user, role: role as 'admin' | 'moderator' };
-        }).sort((a, b) => (a.role === 'admin' && b.role !== 'admin') ? -1 : (a.role !== 'admin' && b.role === 'admin') ? 1 : 0);
-        setStaff(staffWithRoles);
+      // Use secure RPC to fetch staff list (same as ForumStaff page)
+      const { data, error } = await supabase.rpc('get_staff_list');
+      if (error || !data) {
+        setStaff([]);
+        setLoadingStaff(false);
+        return;
       }
+      const staffList = (data as any[])
+        .map((row) => ({
+          ...row,
+          role: row.role || 'moderator',
+          display_name: row.display_name ?? null,
+        }))
+        .sort((a, b) => {
+          const rolePriority: Record<string, number> = { owner: 0, admin: 1, moderator: 2 };
+          return (rolePriority[a.role] ?? 3) - (rolePriority[b.role] ?? 3);
+        });
+      setStaff(staffList as any);
       setLoadingStaff(false);
     };
     fetchStaff();
@@ -2632,14 +2639,14 @@ function Notes() {
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: 'hsl(var(--bc-text))' }}><span className="w-2 h-2 rounded-full bg-red-500" />Administrators</h2>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
+                      {staff.filter(s => ['admin', 'owner'].includes(s.role) && s.username.toLowerCase() !== 'blox city').map(member => (
                         <Link key={member.id} to={`/${member.serial_id}/${member.username}/profile`} className="flex items-center gap-4 p-4 rounded-xl transition group" style={{ background: 'hsl(var(--bc-section-bg))', border: '1px solid hsl(var(--bc-section-border))' }}>
                           <UserAvatar avatarUrl={member.avatar_url} username={member.username} size="lg" effect={member.avatar_effect} membershipTier={member.membership_tier as any} />
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold" style={{ color: 'hsl(var(--bc-text))' }}>{member.username}</span>
                               {member.is_verified && <BadgeCheck className="w-4 h-4 text-blue-500" />}
-                              <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">Admin</span>
+                              <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">{member.role === 'owner' ? 'Owner' : 'Admin'}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
                               {member.membership_tier && <MembershipBadge tier={member.membership_tier as any} size="sm" />}
