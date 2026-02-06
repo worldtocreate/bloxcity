@@ -5,6 +5,7 @@ import { Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import UserAvatar from '@/components/forum/UserAvatar';
 import { VerificationBadge } from '@/components/forum/VerifiedBadge';
 import MembershipBadge from '@/components/forum/MembershipBadge';
+import StaffBadge from '@/components/forum/StaffBadge';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { getRelativeTime } from '@/lib/timeUtils';
 
@@ -21,8 +22,7 @@ interface UserListItem {
   user_id: string;
   bio: string | null;
   last_seen_at?: string | null;
-  is_admin?: boolean;
-  is_moderator?: boolean;
+  staff_role?: string | null; // 'owner' | 'admin' | 'moderator' | null
 }
 
 const USERS_PER_PAGE = 20;
@@ -92,8 +92,7 @@ export default function ForumUsers() {
         const staffRole = roleMap.get(user.id);
         return {
           ...user,
-          is_admin: staffRole === 'owner' || staffRole === 'admin',
-          is_moderator: staffRole === 'moderator',
+          staff_role: staffRole ?? null,
         };
       });
 
@@ -187,12 +186,7 @@ export default function ForumUsers() {
                           {user.username}
                         </span>
                         <VerificationBadge size="sm" forumUserId={user.id} isVerified={user.is_verified} />
-                        {user.is_admin && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-[hsla(var(--bc-accent),0.15)] text-[hsl(var(--bc-accent))] rounded-full">Admin</span>
-                        )}
-                        {user.is_moderator && !user.is_admin && (
-                          <span className="px-2 py-0.5 text-xs font-medium bg-[hsla(var(--bc-primary),0.15)] text-[hsl(var(--bc-primary))] rounded-full">Mod</span>
-                        )}
+                        <StaffBadge role={user.staff_role} size="sm" />
                       </div>
                       <div className="text-xs text-[hsl(var(--bc-text-muted))] mb-1">
                         <span className="italic">@</span>{user.username}
