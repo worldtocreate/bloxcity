@@ -59,11 +59,13 @@ export type Database = {
           created_by: string | null
           display_name: string | null
           email: string
+          forum_user_id: string | null
           id: string
           is_active: boolean | null
           is_first_admin: boolean | null
           last_login_at: string | null
           password_hash: string
+          staff_role: string | null
           updated_at: string
         }
         Insert: {
@@ -71,11 +73,13 @@ export type Database = {
           created_by?: string | null
           display_name?: string | null
           email: string
+          forum_user_id?: string | null
           id?: string
           is_active?: boolean | null
           is_first_admin?: boolean | null
           last_login_at?: string | null
           password_hash: string
+          staff_role?: string | null
           updated_at?: string
         }
         Update: {
@@ -83,11 +87,13 @@ export type Database = {
           created_by?: string | null
           display_name?: string | null
           email?: string
+          forum_user_id?: string | null
           id?: string
           is_active?: boolean | null
           is_first_admin?: boolean | null
           last_login_at?: string | null
           password_hash?: string
+          staff_role?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -96,6 +102,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "admin_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_accounts_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
             referencedColumns: ["id"]
           },
         ]
@@ -3422,6 +3435,7 @@ export type Database = {
       }
       get_maintenance_status: { Args: never; Returns: Json }
       get_reservation_count: { Args: never; Returns: number }
+      get_staff_role: { Args: { _user_id: string }; Returns: string }
       has_gold_checkmark: { Args: { _forum_user_id: string }; Returns: boolean }
       has_pending_verification_request: {
         Args: { _forum_user_id: string }
@@ -3434,6 +3448,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_account: { Args: { _user_id: string }; Returns: boolean }
+      is_moderator_account: { Args: { _user_id: string }; Returns: boolean }
       is_user_affiliate: { Args: { _forum_user_id: string }; Returns: boolean }
       process_referral: {
         Args: {

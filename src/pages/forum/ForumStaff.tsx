@@ -18,7 +18,8 @@ interface StaffMember {
   avatar_effect: string | null;
   level: number;
   xp: number;
-  role: 'admin' | 'moderator';
+  role: string;
+  display_name: string | null;
 }
 
 export default function ForumStaff() {
@@ -31,36 +32,52 @@ export default function ForumStaff() {
   }, []);
 
   const fetchStaff = async () => {
-    // Get all users with admin or moderator roles
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('user_id, role')
-      .in('role', ['admin', 'moderator']);
+    // Get all active admin accounts with their linked forum users
+    const { data: adminAccounts } = await supabase
+      .from('admin_accounts')
+      .select(`
+        id,
+        display_name,
+        staff_role,
+        forum_user_id,
+        is_active
+      `)
+      .eq('is_active', true)
+      .in('staff_role', ['admin', 'owner', 'moderator']);
 
-    if (!roles || roles.length === 0) {
+    if (!adminAccounts || adminAccounts.length === 0) {
       setLoading(false);
       return;
     }
 
-    // Get forum user info for each staff member
-    const userIds = roles.map(r => r.user_id);
+    // Get forum user info for linked accounts
+    const forumUserIds = adminAccounts
+      .filter(a => a.forum_user_id)
+      .map(a => a.forum_user_id);
+
     const { data: forumUsers } = await supabase
       .from('forum_users')
-      .select('id, serial_id, user_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp')
-      .in('user_id', userIds);
+      .select('id, serial_id, username, avatar_url, is_verified, membership_tier, avatar_effect, level, xp')
+      .in('id', forumUserIds);
 
-    if (forumUsers) {
-      const staffWithRoles = forumUsers.map(user => {
-        const role = roles.find(r => r.user_id === user.user_id)?.role;
-        return { ...user, role: role as 'admin' | 'moderator' };
-      }).sort((a, b) => {
-        // Sort admins first
-        if (a.role === 'admin' && b.role !== 'admin') return -1;
-        if (a.role !== 'admin' && b.role === 'admin') return 1;
-        return 0;
+    // Build staff list
+    const staffList: StaffMember[] = adminAccounts
+      .filter(account => account.forum_user_id && forumUsers?.find(fu => fu.id === account.forum_user_id))
+      .map(account => {
+        const forumUser = forumUsers!.find(fu => fu.id === account.forum_user_id)!;
+        return {
+          ...forumUser,
+          role: account.staff_role || 'moderator',
+          display_name: account.display_name
+        };
+      })
+      .sort((a, b) => {
+        // Sort by role priority: owner > admin > moderator
+        const rolePriority: Record<string, number> = { owner: 0, admin: 1, moderator: 2 };
+        return (rolePriority[a.role] ?? 3) - (rolePriority[b.role] ?? 3);
       });
-      setStaff(staffWithRoles);
-    }
+
+    setStaff(staffList);
     setLoading(false);
   };
 
@@ -142,7 +159,7 @@ export default function ForumStaff() {
                   Administrators
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  {staff.filter(s => s.role === 'admin' && s.username.toLowerCase() !== 'blox city').map(member => (
+                  {staff.filter(s => ['admin', 'owner'].includes(s.role) && s.username.toLowerCase() !== 'blox city').map(member => (
                     <Link
                       key={member.id}
                       to={`/${member.serial_id}/${member.username}/profile`}
@@ -162,7 +179,7 @@ export default function ForumStaff() {
                           </span>
                           {member.is_verified && <VerifiedBadge size="sm" />}
                           <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full">
-                            Admin
+                            {member.role === 'owner' ? 'Owner' : 'Admin'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
