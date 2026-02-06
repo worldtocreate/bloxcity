@@ -214,7 +214,9 @@ export default function ForumRegister() {
         body: { 
           action: 'verify',
           username: trimmedUsername,
-          email: email.trim(),
+          // If the user already has an auth session, their email will (and should) already exist.
+          // In that case we only need to validate the username.
+          email: existingAuthUser ? undefined : email.trim(),
           recaptchaToken
         }
       });
