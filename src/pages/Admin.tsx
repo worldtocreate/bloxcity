@@ -53,6 +53,8 @@ const AdminAccountsTabInline = ({ darkMode, isFirstAdmin }: { darkMode: boolean;
   const [newEmail, setNewEmail] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [newForumUsername, setNewForumUsername] = useState("");
+  const [newStaffRole, setNewStaffRole] = useState<"admin" | "moderator">("admin");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
@@ -96,9 +98,20 @@ const AdminAccountsTabInline = ({ darkMode, isFirstAdmin }: { darkMode: boolean;
     if (!newEmail.trim() || !newPassword.trim()) { toast({ title: "Email and password required", variant: "destructive" }); return; }
     setCreating(true);
     const sessionToken = localStorage.getItem("bloxcity_admin_session");
-    const { data, error } = await supabase.functions.invoke("admin-manage-users", { body: { action: "create_admin_account", sessionToken, email: newEmail.trim(), displayName: newDisplayName.trim() || null, tempPassword: newPassword, permissions: selectedPermissions } });
+    const { data, error } = await supabase.functions.invoke("admin-manage-users", { 
+      body: { 
+        action: "create_admin_account", 
+        sessionToken, 
+        email: newEmail.trim(), 
+        displayName: newDisplayName.trim() || null, 
+        tempPassword: newPassword, 
+        permissions: selectedPermissions,
+        forumUsername: newForumUsername.trim() || null,
+        staffRole: newStaffRole
+      } 
+    });
     if (error || data?.error) toast({ title: error?.message || data?.error, variant: "destructive" });
-    else { toast({ title: "Admin created and email sent!" }); setShowCreateModal(false); setNewEmail(""); setNewDisplayName(""); setNewPassword(""); setSelectedPermissions([]); fetchAdmins(); }
+    else { toast({ title: "Admin created and email sent!" }); setShowCreateModal(false); setNewEmail(""); setNewDisplayName(""); setNewPassword(""); setNewForumUsername(""); setNewStaffRole("admin"); setSelectedPermissions([]); fetchAdmins(); }
     setCreating(false);
   };
 
@@ -149,11 +162,18 @@ const AdminAccountsTabInline = ({ darkMode, isFirstAdmin }: { darkMode: boolean;
       </Card>
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`${cardClass} border rounded-xl p-6 max-w-lg w-full`}>
+          <div className={`${cardClass} border rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto`}>
             <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Create Admin Account</h2>
             <div className="space-y-4">
               <div><label className={`text-sm ${mutedClass}`}>Email *</label><Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="admin@example.com" className={inputClass} /></div>
               <div><label className={`text-sm ${mutedClass}`}>Display Name</label><Input value={newDisplayName} onChange={(e) => setNewDisplayName(e.target.value)} placeholder="John Doe" className={inputClass} /></div>
+              <div><label className={`text-sm ${mutedClass}`}>Forum Username (for staff page)</label><Input value={newForumUsername} onChange={(e) => setNewForumUsername(e.target.value)} placeholder="Link to forum account" className={inputClass} /></div>
+              <div><label className={`text-sm ${mutedClass}`}>Staff Role</label>
+                <select value={newStaffRole} onChange={(e) => setNewStaffRole(e.target.value as "admin" | "moderator")} className={`w-full px-3 py-2 rounded-md border ${inputClass}`}>
+                  <option value="admin">Administrator</option>
+                  <option value="moderator">Moderator</option>
+                </select>
+              </div>
               <div><label className={`text-sm ${mutedClass}`}>Password *</label><div className="flex gap-2"><Input type={showPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={`flex-1 ${inputClass}`} /><Button variant="outline" onClick={generatePassword}>Generate</Button></div></div>
               <div><label className={`text-sm ${mutedClass}`}>Permissions</label><div className="grid grid-cols-2 gap-2 border rounded-lg p-3 max-h-40 overflow-y-auto">{PERMS.map((perm) => (<label key={perm.id} className={`flex items-center gap-2 text-sm cursor-pointer ${textClass}`}><input type="checkbox" checked={selectedPermissions.includes(perm.id)} onChange={() => setSelectedPermissions(prev => prev.includes(perm.id) ? prev.filter(p => p !== perm.id) : [...prev, perm.id])} />{perm.label}</label>))}</div></div>
               <div className="flex gap-3 pt-4"><Button variant="outline" onClick={() => setShowCreateModal(false)} className="flex-1">Cancel</Button><Button onClick={handleCreate} disabled={creating} className="flex-1">{creating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : <>Create & Email</>}</Button></div>

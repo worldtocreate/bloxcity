@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { targetUserId, role, email, requestId, forumUserId, requestType, approved, reason } = body;
+    const { targetUserId, role, email, requestId, forumUserId, requestType, approved, reason, staffRole, forumUsername } = body;
 
     // ========== SEND VERIFICATION REQUEST EMAIL ==========
     if (action === "send_verification_email") {
@@ -723,6 +723,20 @@ Deno.serve(async (req) => {
 
       const passwordHash = await hashAdminPassword(tempPassword);
 
+      // Optionally link to a forum user if forumUsername is provided
+      let linkedForumUserId = null;
+      if (body.forumUsername) {
+        const { data: forumUser } = await supabaseAdmin
+          .from("forum_users")
+          .select("id")
+          .ilike("username", body.forumUsername.trim())
+          .maybeSingle();
+        
+        if (forumUser) {
+          linkedForumUserId = forumUser.id;
+        }
+      }
+
       // Create the admin account
       const { data: newAdmin, error: createError } = await supabaseAdmin
         .from("admin_accounts")
@@ -732,6 +746,8 @@ Deno.serve(async (req) => {
           display_name: displayName || null,
           is_active: true,
           created_by: creatorAdmin.id,
+          staff_role: body.staffRole || 'admin',
+          forum_user_id: linkedForumUserId,
         })
         .select("id")
         .single();
