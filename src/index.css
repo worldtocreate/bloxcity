@@ -3364,10 +3364,27 @@ textarea.bc-input {
 
 .topbar-mobile {
   height: 100%;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .topbar-desktop {
-  height: 100%;
+  display: none !important;
+}
+
+/* Desktop: show desktop topbar, hide mobile */
+@media (min-width: 1024px) {
+  .topbar-mobile {
+    display: none !important;
+  }
+  
+  .topbar-desktop {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+  }
 }
 
 /* Dropdown Content */
