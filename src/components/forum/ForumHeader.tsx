@@ -77,8 +77,8 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
   return (
     <>
       <nav className="topbar">
-        {/* Mobile View */}
-        <div className="topbar-mobile lg:hidden flex items-center justify-between h-full">
+        {/* Mobile View - Only visible below 1024px */}
+        <div className="topbar-mobile" style={{ display: 'none' }}>
           <button 
             onClick={handleToggleSidebar}
             className="topbar-sidebar-toggler"
@@ -139,8 +139,8 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
           </div>
         </div>
 
-        {/* Desktop View */}
-        <div className="topbar-desktop hidden lg:flex items-center justify-between h-full">
+        {/* Desktop View - Always visible, full navigation */}
+        <div className="topbar-desktop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
           <div className="topbar-left flex items-center">
             <Link to={user ? "/" : "/landing"} className="topbar-logo">
               <img src={bloxcityLogo} alt="BLOX City" style={{ height: 50 }} />
