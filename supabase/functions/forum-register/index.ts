@@ -221,34 +221,20 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Check email limit if email is provided
-      if (email) {
-        const trimmedEmail = email.trim().toLowerCase();
-        const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-        
-        if (authUsers) {
-          const matchingUsers = authUsers.users.filter(
-            (u) => u.email?.toLowerCase() === trimmedEmail
-          );
-          
-          if (matchingUsers.length >= MAX_ACCOUNTS_PER_EMAIL) {
-            return new Response(
-              JSON.stringify({ error: 'Email usage limit exceeded. You can only create up to 5 accounts with the same email.' }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
-        }
-      }
-
-      // Check username availability
+      // Check username availability with fresh database query
       if (username) {
-        const { data: existingUser } = await supabaseAdmin
+        const trimmedUsername = username.trim();
+        
+        // Direct query to check if username exists (case-insensitive)
+        const { data: existingUsers, error: usernameError } = await supabaseAdmin
           .from('forum_users')
           .select('id')
-         .ilike('username', username)
-          .single();
+          .ilike('username', trimmedUsername);
 
-        if (existingUser) {
+        if (usernameError) {
+          console.error('Username check error:', usernameError);
+          // Don't block on query errors, let it proceed
+        } else if (existingUsers && existingUsers.length > 0) {
           return new Response(
             JSON.stringify({ error: 'Username is already taken' }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -256,24 +242,29 @@ Deno.serve(async (req) => {
         }
 
         // Check for profanity in username
-        const profanityCheck = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/forum-check-profanity`,
-          {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
-            },
-            body: JSON.stringify({ content: username })
-          }
-        );
-
-        const profanityResult = await profanityCheck.json();
-        if (profanityResult.hasProfanity) {
-          return new Response(
-            JSON.stringify({ error: 'Username contains inappropriate content' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        try {
+          const profanityCheck = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/forum-check-profanity`,
+            {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`
+              },
+              body: JSON.stringify({ content: trimmedUsername })
+            }
           );
+
+          const profanityResult = await profanityCheck.json();
+          if (profanityResult.hasProfanity) {
+            return new Response(
+              JSON.stringify({ error: 'Username contains inappropriate content' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (profanityErr) {
+          console.error('Profanity check error:', profanityErr);
+          // Don't block registration on profanity check failure
         }
       }
 

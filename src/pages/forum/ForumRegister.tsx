@@ -277,7 +277,13 @@ export default function ForumRegister() {
         }).select('id').single();
 
         if (profileError) {
-          setError('Username may already be taken');
+          console.error('Profile creation error:', profileError);
+          // Check if it's a duplicate username constraint violation
+          if (profileError.code === '23505') {
+            setError('Username is already taken. Please choose a different one.');
+          } else {
+            setError(profileError.message || 'Failed to create profile. Please try again.');
+          }
           setLoading(false);
           return;
         }
@@ -309,7 +315,12 @@ export default function ForumRegister() {
       }).select('id').single();
 
       if (profileError) {
-        setError('Username may already be taken');
+        console.error('Profile creation error:', profileError);
+        if (profileError.code === '23505') {
+          setError('Username is already taken. Please choose a different one.');
+        } else {
+          setError(profileError.message || 'Failed to create profile. Please try again.');
+        }
         setLoading(false);
         return;
       }
