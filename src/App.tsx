@@ -2313,17 +2313,26 @@ function MarketItem() {
   const itemId = params ? params[1] : undefined;
   const { forumUser } = useForumAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
   const [isFavorited, setIsFavorited] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [resaleListings, setResaleListings] = useState<any[]>([]);
+  const [ownsItem, setOwnsItem] = useState(false);
+  const [ownedCopies, setOwnedCopies] = useState<any[]>([]);
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [sellPrice, setSellPrice] = useState('');
+  const [selectedCopyId, setSelectedCopyId] = useState<string>('');
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [purchaseType, setPurchaseType] = useState<'official' | 'reseller'>('official');
+  const [selectedResellerId, setSelectedResellerId] = useState<string>('');
 
   const CATEGORY_NAMES: Record<string, string> = {
     'hats': 'Hat',
     'faces': 'Face',
-    'gear': 'Gear',
+    'gear': 'Gadget',
     'shirts': 'Shirt',
     't-shirts': 'T-Shirt',
     'pants': 'Pants',
@@ -2354,12 +2363,27 @@ function MarketItem() {
     if (data?.is_limited) {
       const { data: resales } = await supabase
         .from('user_inventory')
-        .select('*, owner:forum_user_id(username, avatar_url)')
+        .select('*, owner:forum_user_id(id, username, avatar_url, is_verified)')
         .eq('item_id', itemId)
         .eq('is_for_sale', true)
         .order('sale_price_coins', { ascending: true })
         .limit(10);
       setResaleListings(resales || []);
+    }
+    
+    // Check if current user owns this item
+    if (forumUser && data) {
+      const { data: inventory } = await supabase
+        .from('user_inventory')
+        .select('*')
+        .eq('forum_user_id', forumUser.id)
+        .eq('item_id', itemId);
+      
+      if (inventory && inventory.length > 0) {
+        setOwnsItem(true);
+        setOwnedCopies(inventory.filter(i => !i.is_for_sale));
+        if (inventory.length > 0) setSelectedCopyId(inventory[0].id);
+      }
     }
     
     setLoading(false);
@@ -2380,6 +2404,7 @@ function MarketItem() {
       toast({ title: 'Purchase failed', description: error.message, variant: 'destructive' });
     } else if (data && typeof data === 'object' && 'success' in data && data.success) {
       toast({ title: 'Purchase successful!', description: `You now own ${item.name}` });
+      setShowPurchaseModal(false);
       fetchItem();
     } else {
       const errMsg = data && typeof data === 'object' && 'error' in data ? String(data.error) : 'Unknown error';
@@ -2388,8 +2413,73 @@ function MarketItem() {
     setPurchasing(false);
   };
 
+  const handlePurchaseResale = async (inventoryId: string) => {
+    if (!forumUser) {
+      toast({ title: 'Please log in to purchase', variant: 'destructive' });
+      return;
+    }
+    setPurchasing(true);
+    const { data, error } = await supabase.rpc('purchase_resale_item', {
+      p_inventory_id: inventoryId,
+      p_use_coins: true
+    });
+    
+    if (error) {
+      toast({ title: 'Purchase failed', description: error.message, variant: 'destructive' });
+    } else if (data && typeof data === 'object' && 'success' in data && data.success) {
+      toast({ title: 'Purchase successful!' });
+      setShowPurchaseModal(false);
+      fetchItem();
+    } else {
+      const errMsg = data && typeof data === 'object' && 'error' in data ? String(data.error) : 'Unknown error';
+      toast({ title: 'Purchase failed', description: errMsg, variant: 'destructive' });
+    }
+    setPurchasing(false);
+  };
+
+  const handleListForSale = async () => {
+    if (!selectedCopyId || !sellPrice) {
+      toast({ title: 'Please select a copy and enter a price', variant: 'destructive' });
+      return;
+    }
+    const price = parseInt(sellPrice);
+    if (isNaN(price) || price <= 0) {
+      toast({ title: 'Invalid price', variant: 'destructive' });
+      return;
+    }
+    
+    const { error } = await supabase
+      .from('user_inventory')
+      .update({ is_for_sale: true, sale_price_coins: price })
+      .eq('id', selectedCopyId);
+    
+    if (error) {
+      toast({ title: 'Failed to list item', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Item listed for sale!' });
+      setShowSellModal(false);
+      setSellPrice('');
+      fetchItem();
+    }
+  };
+
+  const handleRemoveFromSale = async (inventoryId: string) => {
+    const { error } = await supabase
+      .from('user_inventory')
+      .update({ is_for_sale: false, sale_price_coins: null, sale_price_cash: null })
+      .eq('id', inventoryId);
+    
+    if (error) {
+      toast({ title: 'Failed to remove listing', variant: 'destructive' });
+    } else {
+      toast({ title: 'Listing removed' });
+      fetchItem();
+    }
+  };
+
   const formatNumber = (num: number) => num >= 1000 ? `${(num / 1000).toFixed(1)}K` : String(num);
   const formatPrice = (price: number) => price?.toLocaleString() || '0';
+  const formatDate = (date: string) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   if (loading) {
     return (
@@ -2411,102 +2501,293 @@ function MarketItem() {
     );
   }
 
+  const isLimitedSoldOut = item.is_limited && item.limited_stock && (item.limited_sold >= item.limited_stock);
+  const canPurchaseOfficial = item.is_on_sale && !isLimitedSoldOut && (!ownsItem || item.category === 'crates');
+
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
-      <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <Link to="/market" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] transition-colors">
-            ← Back to Market
-          </Link>
+      {/* Purchase Confirmation Modal */}
+      {showPurchaseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--bc-border))]">
+              <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Confirm Purchase</h3>
+              <button onClick={() => setShowPurchaseModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[hsl(var(--bc-bg))]">
+                <span className="text-[hsl(var(--bc-text-muted))]">×</span>
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                Are you sure you want to buy <span className="font-semibold text-[hsl(var(--bc-text))]">{item.name}</span> for{' '}
+                <span className="text-green-500 font-semibold">
+                  {item.payment_type === 'cash' ? `$${formatPrice(item.price_cash)}` : `${formatPrice(item.price_coins)} Coins`}
+                </span>?
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--bc-border))]">
+              <Button onClick={handlePurchase} disabled={purchasing} className="bg-green-500 hover:bg-green-600 text-white">
+                {purchasing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Buy Now
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Sell Modal */}
+      {showSellModal && item.is_limited && ownedCopies.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--bc-border))]">
+              <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Sell</h3>
+              <button onClick={() => setShowSellModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[hsl(var(--bc-bg))]">
+                <span className="text-[hsl(var(--bc-text-muted))]">×</span>
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Which Copy</label>
+                  <select 
+                    value={selectedCopyId} 
+                    onChange={(e) => setSelectedCopyId(e.target.value)}
+                    className="w-full mt-1 h-9 px-3 text-sm border border-[hsl(var(--bc-border))] rounded-lg bg-[hsl(var(--bc-bg))] text-[hsl(var(--bc-text))]"
+                  >
+                    {ownedCopies.map(copy => (
+                      <option key={copy.id} value={copy.id}>Copy #{copy.serial_number || '?'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Price (Coins)</label>
+                  <Input 
+                    type="number" 
+                    value={sellPrice} 
+                    onChange={(e) => setSellPrice(e.target.value)} 
+                    placeholder="Price"
+                    className="mt-1 h-9"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--bc-border))]">
+              <Button onClick={handleListForSale} className="bg-green-500 hover:bg-green-600 text-white">
+                Sell
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-64 aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="grid lg:grid-cols-12 gap-6">
+          {/* Left Column - Image & Stats */}
+          <div className="lg:col-span-5 space-y-4">
+            {/* Item Image Card */}
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+              <div className="relative p-4">
+                {/* Badges */}
+                <div className="absolute top-3 left-3 space-y-1 z-10">
+                  {item.is_limited && (
+                    <>
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-purple-500 text-white text-xs font-semibold">
+                        ⭐ Rare
+                      </span>
+                      <div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-white text-xs font-semibold ${isLimitedSoldOut ? 'bg-red-500' : 'bg-red-500'}`}>
+                          {isLimitedSoldOut ? 'SOLD OUT' : `${item.limited_stock - (item.limited_sold || 0)} LEFT`}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                {/* Item thumbnail */}
+                <div className="aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/10 to-transparent rounded-lg flex items-center justify-center">
                   {item.thumbnail_url ? (
                     <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-contain" />
                   ) : (
-                    <Gamepad2 className="w-24 h-24 text-[hsl(var(--bc-primary))]/40" />
+                    <Gamepad2 className="w-32 h-32 text-[hsl(var(--bc-primary))]/30" />
                   )}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        {item.is_limited && <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500 text-white text-xs">Limited</span>}
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-[hsl(var(--bc-primary))]/10 text-[hsl(var(--bc-primary))] text-xs">{CATEGORY_NAMES[item.category] || item.category}</span>
-                      </div>
-                      <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{item.name}</h1>
-                      <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <span className="text-[hsl(var(--bc-primary))]">BLOX City</span></p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="icon" onClick={() => setIsFavorited(!isFavorited)} className={isFavorited ? "text-red-500 border-red-500" : ""}>♥</Button>
-                    </div>
+              </div>
+              
+              {/* Owned banner */}
+              {ownsItem && (
+                <div className="flex items-center justify-center gap-2 bg-green-500 text-white text-sm font-semibold py-2">
+                  🎉 Yahoo! You own this item.
+                </div>
+              )}
+            </div>
+
+            {/* Statistics Card */}
+            <div>
+              <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Statistics</h3>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Date Created</div>
+                    <div className="font-semibold text-[hsl(var(--bc-text))]">{formatDate(item.created_at)}</div>
                   </div>
-                  {item.description && <p className="text-[hsl(var(--bc-text-muted))] mt-4">{item.description}</p>}
-                  <div className="flex flex-wrap gap-6 mt-6 text-sm">
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Type</span><p className="font-semibold text-[hsl(var(--bc-text))]">{CATEGORY_NAMES[item.category] || item.category}</p></div>
-                    <div>
-                      <span className="text-[hsl(var(--bc-text-muted))]">Price</span>
-                      <p className="font-bold text-xl text-[hsl(var(--bc-primary))] flex items-center gap-1">
-                        {item.payment_type === 'cash' ? (
-                          <><DollarSign className="w-5 h-5 text-green-500" />{formatPrice(item.price_cash)}</>
-                        ) : (
-                          <><Coins className="w-5 h-5 text-yellow-500" />{formatPrice(item.price_coins)}</>
-                        )}
-                      </p>
-                    </div>
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Favorites</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.favorites_count || 0)}</p></div>
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Sales</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales_count || 0)}</p></div>
-                    {item.is_limited && item.limited_stock && (
-                      <div><span className="text-[hsl(var(--bc-text-muted))]">Stock</span><p className="font-semibold text-[hsl(var(--bc-text))]">{item.limited_stock - (item.limited_sold || 0)} / {item.limited_stock}</p></div>
-                    )}
+                  <div>
+                    <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Last Updated</div>
+                    <div className="font-semibold text-[hsl(var(--bc-text))]">{formatDate(item.updated_at)}</div>
                   </div>
-                  {item.is_on_sale && (
-                    <Button onClick={handlePurchase} disabled={purchasing} className="mt-6 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90">
-                      {purchasing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Purchasing...</> : 'Buy Now'}
-                    </Button>
-                  )}
+                  <div>
+                    <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Type</div>
+                    <div className="font-semibold text-[hsl(var(--bc-text))]">{CATEGORY_NAMES[item.category] || item.category}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Owners</div>
+                    <div className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales_count || 0)}</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Comments</h2>
-              <div className="flex gap-3 mb-6">
-                <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write a comment..." className="bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]" />
-                <Button onClick={() => setComment("")}>Send</Button>
+
+            {/* Private Sellers - only for sold out limiteds */}
+            {item.is_limited && isLimitedSoldOut && (
+              <div>
+                <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Private Sellers</h3>
+                <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl">
+                  {resaleListings.length === 0 ? (
+                    <p className="p-4 text-center text-[hsl(var(--bc-text-muted))]">No one is currently reselling this item.</p>
+                  ) : (
+                    <div className="divide-y divide-[hsl(var(--bc-border))]">
+                      {resaleListings.map((listing) => (
+                        <div key={listing.id} className="flex items-center gap-4 p-4">
+                          <div className="flex items-center gap-2 flex-1">
+                            <div className="w-12 h-12 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center overflow-hidden">
+                              {listing.owner?.avatar_url ? (
+                                <img src={listing.owner.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-lg font-bold text-[hsl(var(--bc-text-muted))]">
+                                  {listing.owner?.username?.[0]?.toUpperCase() || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-semibold text-[hsl(var(--bc-text))]">{listing.owner?.username}</span>
+                                {listing.owner?.is_verified && (
+                                  <BadgeCheck className="w-4 h-4 text-green-500" />
+                                )}
+                              </div>
+                              <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                                Serial #{listing.serial_number || '?'}
+                              </div>
+                            </div>
+                          </div>
+                          {forumUser?.id !== listing.forum_user_id ? (
+                            <Button 
+                              onClick={() => handlePurchaseResale(listing.id)}
+                              disabled={purchasing}
+                              className="bg-green-500 hover:bg-green-600 text-white text-sm"
+                            >
+                              <DollarSign className="w-4 h-4 mr-1" />
+                              {formatPrice(listing.sale_price_coins)}
+                            </Button>
+                          ) : (
+                            <Button 
+                              onClick={() => handleRemoveFromSale(listing.id)}
+                              variant="destructive"
+                              size="sm"
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No comments yet. Be the first!</div>
+            )}
+          </div>
+
+          {/* Right Column - Info */}
+          <div className="lg:col-span-7 space-y-4">
+            {/* Main Info Card */}
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <h1 className="text-3xl font-semibold text-[hsl(var(--bc-text))]">{item.name}</h1>
+              </div>
+              
+              {/* Creator */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">By</span>
+                <Link to="/market" className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]">
+                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+                    <span className="font-bold text-[hsl(var(--bc-primary))]">BC</span>
+                  </div>
+                  <span>BLOX City</span>
+                </Link>
+              </div>
+
+              {/* Purchase section */}
+              {canPurchaseOfficial && (
+                <>
+                  <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">
+                    Purchase For
+                  </div>
+                  <Button 
+                    onClick={() => setShowPurchaseModal(true)}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white mb-4"
+                  >
+                    {item.price_coins === 0 && item.price_cash === 0 ? (
+                      'Take for Free'
+                    ) : item.payment_type === 'cash' ? (
+                      <>Buy for <DollarSign className="w-4 h-4 mx-1" /> {formatPrice(item.price_cash)}</>
+                    ) : (
+                      <>Buy for <Coins className="w-4 h-4 mx-1 text-yellow-300" /> {formatPrice(item.price_coins)}</>
+                    )}
+                  </Button>
+                </>
+              )}
+
+              {/* Sell button for owned limiteds */}
+              {item.is_limited && isLimitedSoldOut && ownsItem && ownedCopies.length > 0 && (
+                <>
+                  <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">or</div>
+                  <Button 
+                    onClick={() => setShowSellModal(true)}
+                    className="w-full bg-green-500 hover:bg-green-600 text-white"
+                  >
+                    Sell Item
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Description</h3>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+                <p className="text-sm text-[hsl(var(--bc-text))]">
+                  {item.description || <span className="text-[hsl(var(--bc-text-muted))]">This item does not have a description.</span>}
+                </p>
+              </div>
+            </div>
+
+            {/* Comments section */}
+            <div>
+              <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Comments</h3>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+                <div className="flex gap-3 mb-4">
+                  <Input 
+                    value={comment} 
+                    onChange={(e) => setComment(e.target.value)} 
+                    placeholder="Write a comment..." 
+                    className="bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]" 
+                  />
+                  <Button onClick={() => setComment("")}>Send</Button>
+                </div>
+                <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">
+                  No comments yet. Be the first!
+                </div>
+              </div>
             </div>
           </div>
-          {item.is_limited && (
-            <div>
-              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 sticky top-4">
-                <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Private Sellers</h2>
-                {resaleListings.length === 0 ? (
-                  <p className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No sellers yet</p>
-                ) : (
-                  <div className="space-y-3">
-                    {resaleListings.map((listing) => (
-                      <div key={listing.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--bc-bg))] border border-[hsl(var(--bc-border))]">
-                        <div>
-                          <span className="font-medium text-[hsl(var(--bc-text))]">{listing.owner?.username}</span>
-                          <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{listing.serial_number || '?'}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-4 h-4 text-yellow-500" />{formatPrice(listing.sale_price_coins)}</p>
-                          <Button size="sm" variant="outline" className="mt-1 text-xs h-7">Buy</Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
