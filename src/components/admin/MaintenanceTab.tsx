@@ -81,20 +81,32 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   };
 
   const handleSave = async () => {
-    // Only require password for global maintenance mode, not page-specific
-    if (!settings.password && settings.enabled) {
-      toast.error('Please set a password before enabling global maintenance mode');
-      return;
+    // Only require password for global maintenance mode when enabling it
+    if (settings.enabled && !settings.password) {
+      // Check if password was previously set
+      const { data: existingSettings } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'maintenance_mode')
+        .single();
+      
+      const hasExistingPassword = existingSettings?.value && 
+        (existingSettings.value as Record<string, unknown>).password_hash;
+      
+      if (!hasExistingPassword) {
+        toast.error('Please set a password before enabling global maintenance mode');
+        return;
+      }
     }
     
     setSaving(true);
 
-    // Save global maintenance settings (only if password provided or mode enabled)
+    // Save global maintenance settings only if enabling/password provided
     if (settings.enabled || settings.password) {
       const { error } = await supabase.rpc('save_maintenance_settings', {
         p_enabled: settings.enabled,
         p_message: settings.message,
-        p_password: settings.password || 'admin123'
+        p_password: settings.password || null
       });
 
       if (error) {
