@@ -14,6 +14,7 @@ import UserAvatar from '@/components/forum/UserAvatar';
 import FriendButton from '@/components/forum/FriendButton';
 import MembershipBadge from '@/components/forum/MembershipBadge';
 import ReportButton from '@/components/forum/ReportButton';
+import { Package } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1047,10 +1048,16 @@ export default function ForumUserProfile() {
           </div>
 
           {/* Inventory Section */}
-          <div className="text-xl font-semibold text-[hsl(var(--bc-text))]">Inventory</div>
+          <div className="flex items-center justify-between">
+            <div className="text-xl font-semibold text-[hsl(var(--bc-text))]">Inventory</div>
+            {isOwnProfile && <Link to="/inventory" className="bc-btn bc-btn-secondary bc-btn-sm">View All</Link>}
+          </div>
           <div className="bc-card p-4">
-            <div className="text-center py-6 text-[hsl(var(--bc-text-muted))]">
-              Inventory coming soon...
+            <div className="text-center py-8">
+              <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-2" />
+              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                {isOwnProfile ? "Your inventory is empty" : `${profile.username} doesn't have any items yet`}
+              </p>
             </div>
           </div>
         </div>

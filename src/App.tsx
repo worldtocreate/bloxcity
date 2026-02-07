@@ -399,29 +399,52 @@ function MarketItemDetailInline() {
   );
 }
 
-function InventoryInline() {
+// Inline Inventory component
+function InventoryPage() {
+  const { forumUser } = useOutletContext<{ forumUser: any }>();
+  if (!forumUser) return <Navigate to="/login" replace />;
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
-        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Inventory</h1>
-        <p className="text-[hsl(var(--bc-text-muted))] mb-6">Inventory view is being finalized.</p>
-        <Link to="/market" className="text-[hsl(var(--bc-primary))] hover:underline">Browse Market</Link>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">My Inventory</h1>
+          <p className="text-[hsl(var(--bc-text-muted))]">View and manage your items</p>
+        </div>
+        <Link to="/trading" className="bc-btn bc-btn-primary gap-2"><ArrowRightLeft className="w-4 h-4" />Trade Items</Link>
+      </div>
+      <div className="bc-card p-6 text-center">
+        <Package className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Your inventory is empty</h3>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-4">Visit the Market to purchase items!</p>
+        <Link to="/market" className="bc-btn bc-btn-primary">Browse Market</Link>
       </div>
     </div>
   );
 }
 
-function TradingPageInline() {
+// Inline Trading component  
+function TradingPageComponent() {
+  const { forumUser } = useOutletContext<{ forumUser: any }>();
+  if (!forumUser) return <Navigate to="/login" replace />;
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
-        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Trading</h1>
-        <p className="text-[hsl(var(--bc-text-muted))] mb-6">Trading is being finalized.</p>
-        <Link to="/friends" className="text-[hsl(var(--bc-primary))] hover:underline">Go to Friends</Link>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Trading</h1>
+          <p className="text-[hsl(var(--bc-text-muted))]">Trade items with your friends</p>
+        </div>
+        <Link to="/inventory" className="bc-btn bc-btn-secondary gap-2"><Package className="w-4 h-4" />My Inventory</Link>
+      </div>
+      <div className="bc-card p-6 text-center">
+        <ArrowRightLeft className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">No trades yet</h3>
+        <p className="text-[hsl(var(--bc-text-muted))]">Visit a friend's profile to initiate a trade</p>
       </div>
     </div>
   );
 }
+
+import { Package } from "lucide-react";
 
 // Inline Jobs component
 import { Briefcase, MapPin, Clock, Building2, Send } from "lucide-react";
@@ -2782,8 +2805,8 @@ const App = () => (
               <Route path="market" element={<Market />} />
               <Route path="market/item/:id" element={<MarketItemDetailInline />} />
               <Route path="character" element={<Character />} />
-              <Route path="trading" element={<TradingPageInline />} />
-              <Route path="inventory" element={<InventoryInline />} />
+              <Route path="trading" element={<TradingPageComponent />} />
+              <Route path="inventory" element={<InventoryPage />} />
               <Route path="login" element={<ForumLogin />} />
               <Route path="register" element={<ForumRegister />} />
               <Route path="forgot-password" element={<ForumForgotPassword />} />
