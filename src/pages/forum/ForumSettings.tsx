@@ -894,6 +894,63 @@ export default function ForumSettings() {
           </div>
         </div>
       </div>
+
+      {/* Cover Photo */}
+      <div className="card card-body">
+        <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4">Cover Photo</h3>
+        
+        <div className="flex items-start gap-4">
+          {(forumUser as any).cover_url ? (
+            <div className="w-40 h-20 rounded-lg overflow-hidden bg-[hsl(var(--bc-bg-light))]">
+              <img src={(forumUser as any).cover_url} alt="Cover" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <div className="w-40 h-20 rounded-lg bg-[hsl(var(--bc-bg-light))] flex items-center justify-center border-2 border-dashed border-[hsl(var(--bc-border))]">
+              <ImageIcon className="w-8 h-8 text-[hsl(var(--bc-text-muted))]" />
+            </div>
+          )}
+          
+          <div className="flex flex-col gap-2">
+            <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" />
+            {pendingCover?.status === 'pending' ? (
+              <span className="text-sm text-yellow-600 flex items-center gap-1">
+                <Clock className="w-4 h-4" /> Pending review
+              </span>
+            ) : pendingCover?.status === 'denied' ? (
+              <div className="space-y-1">
+                <span className="text-sm text-red-600 flex items-center gap-1">
+                  <X className="w-4 h-4" /> Denied
+                </span>
+                {pendingCover.denial_reason && (
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))]">Reason: {pendingCover.denial_reason}</p>
+                )}
+                <button
+                  onClick={() => coverInputRef.current?.click()}
+                  disabled={uploadingCover}
+                  className="btn btn-primary btn-sm"
+                >
+                  {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {uploadingCover ? 'Uploading...' : 'Try Again'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => coverInputRef.current?.click()}
+                disabled={uploadingCover}
+                className="btn btn-primary btn-sm"
+              >
+                {uploadingCover ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploadingCover ? 'Uploading...' : (forumUser as any).cover_url ? 'Change' : 'Upload'}
+              </button>
+            )}
+            {(forumUser as any).cover_url && (
+              <button onClick={handleClearCover} disabled={clearingCover} className="text-xs text-red-500 hover:text-red-600">
+                {clearingCover ? 'Clearing...' : 'Remove'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 
