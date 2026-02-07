@@ -9,25 +9,59 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Search, Heart, Clock,
-  Shirt, Sparkles, Crown, Palette, Box,
-  Grid3X3, List, Coins, Loader2, DollarSign, Wrench
+  ChevronDown, Plus, Box,
+  Grid3X3, List, Coins, Loader2, DollarSign,
+  Crown, Palette, Wrench, Sparkles, Shirt
 } from 'lucide-react';
 
-// Categories for the market
-const CATEGORIES = [
-  { id: 'all', name: 'All Items', icon: Grid3X3 },
-  { id: 'hats', name: 'Hats', icon: Crown },
-  { id: 'faces', name: 'Faces', icon: Palette },
-  { id: 'gear', name: 'Gear', icon: Wrench },
-  { id: 'accessories', name: 'Accessories', icon: Sparkles },
-  { id: 't-shirts', name: 'T-Shirts', icon: Shirt },
-  { id: 'shirts', name: 'Shirts', icon: Shirt },
-  { id: 'pants', name: 'Pants', icon: Box },
-  { id: 'bundles', name: 'Bundles', icon: Sparkles },
+// Collapsible categories matching blade template
+const CATEGORY_SECTIONS = [
+  {
+    id: 'crates',
+    name: 'Crates',
+    isCollapsible: false,
+    items: []
+  },
+  {
+    id: 'accessories',
+    name: 'Accessories',
+    isCollapsible: true,
+    items: [
+      { id: 'hats', name: 'Hats', icon: Crown },
+      { id: 'gear', name: 'Gadgets', icon: Wrench },
+    ]
+  },
+  {
+    id: 'clothing',
+    name: 'Clothing',
+    isCollapsible: true,
+    items: [
+      { id: 'shirts', name: 'Shirts', icon: Shirt },
+      { id: 'pants', name: 'Pants', icon: Box },
+    ]
+  },
+  {
+    id: 'body',
+    name: 'Body',
+    isCollapsible: true,
+    items: [
+      { id: 'faces', name: 'Faces', icon: Palette },
+      { id: 'heads', name: 'Heads', icon: Box },
+      { id: 'body-parts', name: 'Body Parts', icon: Box },
+    ]
+  },
+  {
+    id: 'other',
+    name: 'Other',
+    isCollapsible: true,
+    items: [
+      { id: 'bundles', name: 'Bundle', icon: Sparkles },
+    ]
+  },
 ];
 
 const SORT_OPTIONS = [
-  { id: 'relevance', name: 'Relevance' },
+  { id: 'relevance', name: 'Advanced Sorting...' },
   { id: 'best-selling', name: 'Best Selling' },
   { id: 'recently-updated', name: 'Recently Updated' },
   { id: 'price-low', name: 'Price (Low to High)' },
@@ -74,7 +108,6 @@ function useMarketplaceItems(category: string) {
         .order('created_at', { ascending: false });
 
       if (category && category !== 'all') {
-        // Supabase types narrow category to a literal union; runtime values are validated by our UI.
         query = query.eq('category', category as any);
       }
 
@@ -92,6 +125,36 @@ function useMarketplaceItems(category: string) {
   }, [category]);
 
   return { items, loading };
+}
+
+// Collapsible section component
+function CollapsibleSection({ 
+  title, 
+  children, 
+  defaultOpen = false 
+}: { 
+  title: string; 
+  children: React.ReactNode; 
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg))] hover:text-[hsl(var(--bc-text))] transition-colors"
+      >
+        <span>{title}</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <div className="ml-2 mt-1 space-y-1">
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Market() {
@@ -142,108 +205,134 @@ export default function Market() {
     setSearchParams(params);
   };
 
+  const getCategoryItemCount = (catId: string) => {
+    if (catId === 'all') return items.length;
+    return items.filter(i => i.category === catId).length;
+  };
+
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
-      {/* Header */}
-      <div className="bg-[hsl(var(--bc-bg-card))] border-b border-[hsl(var(--bc-border))]">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Market</h1>
-              <p className="text-[hsl(var(--bc-text-muted))]">
-                Browse and buy items for your character
-              </p>
-            </div>
-            
-            {/* Search */}
-            <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto">
-              <div className="relative flex-1 md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search market..."
-                  className="pl-10 bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]"
-                />
-              </div>
-              <Button type="submit" className="bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90">
-                Search
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex gap-6">
-          {/* Sidebar Categories */}
-          <div className="hidden lg:block w-56 flex-shrink-0">
-            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 sticky top-4">
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-3">Categories</h3>
+          {/* Sidebar Categories - matching blade template structure */}
+          <div className="hidden lg:block w-52 flex-shrink-0">
+            <div className="sticky top-4">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="text-2xl font-semibold text-[hsl(var(--bc-text))]">Market</h2>
+                <Link
+                  to="/create"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors"
+                  title="Create"
+                >
+                  <Plus className="w-4 h-4" />
+                </Link>
+              </div>
+              
               <nav className="space-y-1">
-                {CATEGORIES.map((cat) => {
-                  const Icon = cat.icon;
-                  const isActive = selectedCategory === cat.id;
-                  const count = cat.id === 'all' ? items.length : items.filter(i => i.category === cat.id).length;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => handleCategoryChange(cat.id)}
-                      className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                        isActive 
-                          ? 'bg-[hsl(var(--bc-primary))] text-white' 
-                          : 'text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg))] hover:text-[hsl(var(--bc-text))]'
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <Icon className="w-4 h-4" />
-                        {cat.name}
-                      </span>
-                      <span className="text-xs opacity-70">({count})</span>
-                    </button>
-                  );
-                })}
+                {/* All Items */}
+                <button
+                  onClick={() => handleCategoryChange('all')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedCategory === 'all'
+                      ? 'bg-[hsl(var(--bc-primary))] text-white'
+                      : 'text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-card))] hover:text-[hsl(var(--bc-text))]'
+                  }`}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                  All Items
+                </button>
+
+                {/* Crates - Non-collapsible */}
+                <button
+                  onClick={() => handleCategoryChange('crates')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedCategory === 'crates'
+                      ? 'bg-[hsl(var(--bc-primary))] text-white'
+                      : 'text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-card))] hover:text-[hsl(var(--bc-text))]'
+                  }`}
+                >
+                  Crates
+                </button>
+
+                {/* Collapsible sections */}
+                {CATEGORY_SECTIONS.filter(s => s.isCollapsible).map(section => (
+                  <CollapsibleSection key={section.id} title={section.name}>
+                    {section.items.map(item => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => handleCategoryChange(item.id)}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                            selectedCategory === item.id
+                              ? 'bg-[hsl(var(--bc-primary))] text-white'
+                              : 'text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-card))] hover:text-[hsl(var(--bc-text))]'
+                          }`}
+                        >
+                          {item.name}
+                        </button>
+                      );
+                    })}
+                  </CollapsibleSection>
+                ))}
               </nav>
             </div>
           </div>
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {/* Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[hsl(var(--bc-text-muted))]">
-                  {sortedItems.length} results
-                </span>
-              </div>
+            {/* Header with search - matching blade template */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+              <h3 className="text-xl font-semibold text-[hsl(var(--bc-text))]">
+                Recent Items
+              </h3>
               
-              <div className="flex items-center gap-3">
-                {/* Sort */}
+              <form onSubmit={handleSearch} className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full sm:w-48 h-9 text-sm bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]"
+                />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 text-sm border border-[hsl(var(--bc-border))] rounded-lg bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text))]"
+                  className="h-9 px-3 text-sm border border-[hsl(var(--bc-border))] rounded-lg bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text))]"
                 >
                   {SORT_OPTIONS.map(opt => (
                     <option key={opt.id} value={opt.id}>{opt.name}</option>
                   ))}
                 </select>
+                <Button type="submit" size="sm" className="bg-green-500 hover:bg-green-600 text-white h-9">
+                  Search
+                </Button>
+                <Link 
+                  to="/upgrade"
+                  className="h-9 px-4 inline-flex items-center justify-center rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+                >
+                  Buy Currency
+                </Link>
+              </form>
+            </div>
 
-                {/* View toggle */}
-                <div className="flex border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 ${viewMode === 'grid' ? 'bg-[hsl(var(--bc-primary))] text-white' : 'bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text-muted))]'}`}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 ${viewMode === 'list' ? 'bg-[hsl(var(--bc-primary))] text-white' : 'bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text-muted))]'}`}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+            {/* View toggle */}
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-[hsl(var(--bc-text-muted))]">
+                {sortedItems.length} results
+              </span>
+              <div className="flex border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 ${viewMode === 'grid' ? 'bg-[hsl(var(--bc-primary))] text-white' : 'bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text-muted))]'}`}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 ${viewMode === 'list' ? 'bg-[hsl(var(--bc-primary))] text-white' : 'bg-[hsl(var(--bc-bg-card))] text-[hsl(var(--bc-text-muted))]'}`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -279,7 +368,7 @@ export default function Market() {
                           <div className="absolute top-2 left-2">
                             <Badge className="bg-amber-500 text-white text-xs">
                               <Clock className="w-3 h-3 mr-1" />
-                              Limited
+                              Rare
                             </Badge>
                           </div>
                         )}
@@ -343,11 +432,11 @@ export default function Market() {
                               {item.name}
                             </h3>
                             {item.is_limited && (
-                              <Badge className="bg-amber-500 text-white text-xs">Limited</Badge>
+                              <Badge className="bg-amber-500 text-white text-xs">Rare</Badge>
                             )}
                           </div>
                           <p className="text-sm text-[hsl(var(--bc-text-muted))]">
-                            By BLOX City • {CATEGORIES.find(c => c.id === item.category)?.name}
+                            By BLOX City
                           </p>
                         </div>
 
