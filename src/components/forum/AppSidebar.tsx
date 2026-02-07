@@ -49,15 +49,15 @@ const mainNavItems = [
   { title: 'Players', url: '/players', icon: Users },
   { title: 'Groups', url: '/groups', icon: UsersRound },
   { title: 'Games', url: '/games', icon: Gamepad2 },
+  { title: 'Market', url: '/market', icon: Store },
+  { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
   { title: 'Achievements', url: '/achievements', icon: Award },
   { title: 'Roadmap', url: '/roadmap', icon: Map },
-   { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
+  { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
 ];
 
 const comingSoonItems = [
-  { title: 'Market', url: '/market', icon: Store },
   { title: 'Character', url: '/character', icon: User },
-  { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
 ];
 
 export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {

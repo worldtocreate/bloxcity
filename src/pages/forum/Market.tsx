@@ -81,6 +81,7 @@ function formatPrice(price: number): string {
 
 type MarketplaceItem = {
   id: string;
+  serial_id: number;
   name: string;
   category: string;
   created_at: string;
@@ -94,6 +95,11 @@ type MarketplaceItem = {
   is_on_sale: boolean;
 };
 
+function getItemUrl(item: MarketplaceItem): string {
+  const slug = item.name.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return `/item/${item.serial_id}/${slug}`;
+}
+
 function useMarketplaceItems(category: string) {
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,7 +111,7 @@ function useMarketplaceItems(category: string) {
       setLoading(true);
       let query = supabase
         .from('marketplace_items')
-        .select('id,name,category,created_at,is_limited,thumbnail_url,favorites_count,sales_count,payment_type,price_coins,price_cash,is_on_sale')
+        .select('id,serial_id,name,category,created_at,is_limited,thumbnail_url,favorites_count,sales_count,payment_type,price_coins,price_cash,is_on_sale')
         .order('created_at', { ascending: false });
 
       if (category && category !== 'all') {
@@ -346,7 +352,7 @@ export default function Market() {
                 {sortedItems.map((item) => (
                   <Link 
                     key={item.id} 
-                    to={`/market/item/${item.id}`}
+                    to={getItemUrl(item)}
                     className="group"
                   >
                     <Card className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))] overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all hover:shadow-lg">
@@ -421,7 +427,7 @@ export default function Market() {
                 {sortedItems.map((item) => (
                   <Link 
                     key={item.id} 
-                    to={`/market/item/${item.id}`}
+                    to={getItemUrl(item)}
                     className="block"
                   >
                     <Card className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] transition-all">

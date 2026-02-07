@@ -1457,8 +1457,13 @@ function GameDetail() {
 
 // Inline GameView component (game detail page with servers and comments)
 function GameView() {
-  const params = window.location.pathname.match(/\/game\/([^\/]+)/);
-  const gameId = params ? params[1] : undefined;
+  // Support both /game/:serialId/:slug and /game/:id formats
+  const newFormat = window.location.pathname.match(/\/game\/(\d+)\/([^\/]+)/);
+  const oldFormat = window.location.pathname.match(/\/game\/([^\/]+)/);
+  
+  const serialIdParam = newFormat ? parseInt(newFormat[1]) : null;
+  const uuidParam = (!newFormat && oldFormat) ? oldFormat[1] : null;
+  
   const { forumUser, loading: authLoading } = useForumAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -1476,18 +1481,39 @@ function GameView() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
 
-  useEffect(() => { if (gameId) { fetchGame(); fetchComments(); fetchServers(); } }, [gameId]);
-  useEffect(() => { if (forumUser && gameId) { checkFavorite(); checkAdmin(); } }, [forumUser, gameId]);
+  useEffect(() => { if (serialIdParam || uuidParam) { fetchGame(); } }, [serialIdParam, uuidParam]);
+  useEffect(() => { if (forumUser && game) { checkFavorite(); checkAdmin(); } }, [forumUser, game]);
 
   const checkAdmin = async () => { if (!forumUser) return; const { data } = await supabase.rpc("has_role", { _user_id: forumUser.user_id, _role: "admin" }); setIsAdmin(!!data); };
-  const fetchGame = async () => { if (!gameId) return; const { data } = await supabase.from("forum_games").select("*, creator:forum_users!forum_games_creator_id_fkey (id, username, avatar_url)").eq("id", gameId).single(); setGame(data); if (data) setEditForm({ title: data.title, description: data.description || "", category: data.category }); setLoading(false); };
-  const fetchComments = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_comments").select("*, author:forum_users!forum_game_comments_author_id_fkey (id, username, avatar_url)").eq("game_id", gameId).eq("is_deleted", false).order("created_at", { ascending: false }); setComments(data || []); };
-  const fetchServers = async () => { if (!gameId) return; const { data } = await supabase.from("forum_game_servers").select("*").eq("game_id", gameId).eq("is_active", true).order("created_at", { ascending: false }); setServers(data || []); };
-  const checkFavorite = async () => { if (!forumUser || !gameId) return; const { data } = await supabase.from("forum_game_favorites").select("id").eq("game_id", gameId).eq("forum_user_id", forumUser.id).single(); setIsFavorited(!!data); };
-  const toggleFavorite = async () => { if (!forumUser || !gameId) { toast({ title: "Please login to favorite", variant: "destructive" }); return; } if (isFavorited) { await supabase.from("forum_game_favorites").delete().eq("game_id", gameId).eq("forum_user_id", forumUser.id); setIsFavorited(false); } else { await supabase.from("forum_game_favorites").insert({ game_id: gameId, forum_user_id: forumUser.id }); setIsFavorited(true); } };
+  const fetchGame = async () => { 
+    if (!serialIdParam && !uuidParam) return; 
+    let query = supabase.from("forum_games").select("*, creator:forum_users!forum_games_creator_id_fkey (id, serial_id, username, avatar_url)");
+    if (serialIdParam) {
+      query = query.eq("serial_id", serialIdParam);
+    } else if (uuidParam) {
+      query = query.eq("id", uuidParam);
+    }
+    const { data } = await query.single(); 
+    setGame(data); 
+    if (data) {
+      setEditForm({ title: data.title, description: data.description || "", category: data.category }); 
+      // Redirect to canonical URL if using old format
+      if (uuidParam && data.serial_id) {
+        const slug = data.title.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+        navigate(`/game/${data.serial_id}/${slug}`, { replace: true });
+      }
+      fetchComments(data.id); 
+      fetchServers(data.id);
+    }
+    setLoading(false); 
+  };
+  const fetchComments = async (gameId: string) => { if (!gameId) return; const { data } = await supabase.from("forum_game_comments").select("*, author:forum_users!forum_game_comments_author_id_fkey (id, serial_id, username, avatar_url)").eq("game_id", gameId).eq("is_deleted", false).order("created_at", { ascending: false }); setComments(data || []); };
+  const fetchServers = async (gameId: string) => { if (!gameId) return; const { data } = await supabase.from("forum_game_servers").select("*").eq("game_id", gameId).eq("is_active", true).order("created_at", { ascending: false }); setServers(data || []); };
+  const checkFavorite = async () => { if (!forumUser || !game) return; const { data } = await supabase.from("forum_game_favorites").select("id").eq("game_id", game.id).eq("forum_user_id", forumUser.id).single(); setIsFavorited(!!data); };
+  const toggleFavorite = async () => { if (!forumUser || !game) { toast({ title: "Please login to favorite", variant: "destructive" }); return; } if (isFavorited) { await supabase.from("forum_game_favorites").delete().eq("game_id", game.id).eq("forum_user_id", forumUser.id); setIsFavorited(false); } else { await supabase.from("forum_game_favorites").insert({ game_id: game.id, forum_user_id: forumUser.id }); setIsFavorited(true); } };
   const handleSaveEdit = async () => { if (!game) return; const { error } = await supabase.from("forum_games").update({ title: editForm.title, description: editForm.description || null, category: editForm.category }).eq("id", game.id); if (error) toast({ title: "Error", variant: "destructive" }); else { toast({ title: "Game updated" }); setIsEditing(false); fetchGame(); } };
-  const handleSubmitComment = async () => { if (!forumUser || !gameId || !newComment.trim()) return; setSubmittingComment(true); await supabase.from("forum_game_comments").insert({ game_id: gameId, author_id: forumUser.id, content: newComment.trim() }); setNewComment(""); fetchComments(); setSubmittingComment(false); };
-  const handleDeleteComment = async (commentId: string) => { await supabase.from("forum_game_comments").update({ is_deleted: true, deleted_by: forumUser?.id, deleted_at: new Date().toISOString() }).eq("id", commentId); fetchComments(); };
+  const handleSubmitComment = async () => { if (!forumUser || !game || !newComment.trim()) return; setSubmittingComment(true); await supabase.from("forum_game_comments").insert({ game_id: game.id, author_id: forumUser.id, content: newComment.trim() }); setNewComment(""); fetchComments(game.id); setSubmittingComment(false); };
+  const handleDeleteComment = async (commentId: string) => { await supabase.from("forum_game_comments").update({ is_deleted: true, deleted_by: forumUser?.id, deleted_at: new Date().toISOString() }).eq("id", commentId); if (game) fetchComments(game.id); };
   const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !game) return;
@@ -2429,8 +2455,13 @@ function ForumResetPassword() {
 
 // Inline MarketItem component to avoid module persistence issues
 function MarketItem() {
-  const params = window.location.pathname.match(/\/market\/item\/([^\/]+)/);
-  const itemId = params ? params[1] : undefined;
+  // Support both /item/:serialId/:slug and /market/item/:id formats
+  const newFormat = window.location.pathname.match(/\/item\/(\d+)\/([^\/]+)/);
+  const oldFormat = window.location.pathname.match(/\/market\/item\/([^\/]+)/);
+  
+  const serialIdParam = newFormat ? parseInt(newFormat[1]) : null;
+  const uuidParam = oldFormat ? oldFormat[1] : null;
+  
   const { forumUser } = useForumAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -2452,6 +2483,10 @@ function MarketItem() {
   const [purchaseType, setPurchaseType] = useState<'official' | 'reseller'>('official');
   const [selectedResellerId, setSelectedResellerId] = useState<string>('');
   const [bloxCityProfile, setBloxCityProfile] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [saving, setSaving] = useState(false);
 
   const CATEGORY_NAMES: Record<string, string> = {
     'hats': 'Hat',
@@ -2465,19 +2500,18 @@ function MarketItem() {
   };
 
   useEffect(() => {
-    if (itemId) {
+    if (serialIdParam || uuidParam) {
       fetchItem();
-      fetchComments();
     }
-  }, [itemId]);
+  }, [serialIdParam, uuidParam]);
 
-  const fetchComments = async () => {
-    if (!itemId) return;
+  const fetchComments = async (itemUuid: string) => {
+    if (!itemUuid) return;
     setCommentsLoading(true);
     const { data } = await supabase
       .from('marketplace_item_comments')
       .select('*, author:forum_user_id(id, serial_id, username, avatar_url, is_verified, membership_tier)')
-      .eq('item_id', itemId)
+      .eq('item_id', itemUuid)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -2490,7 +2524,7 @@ function MarketItem() {
       toast({ title: 'Please log in to comment', variant: 'destructive' });
       return;
     }
-    if (!comment.trim()) {
+    if (!comment.trim() || !item) {
       toast({ title: 'Please enter a comment', variant: 'destructive' });
       return;
     }
@@ -2498,7 +2532,7 @@ function MarketItem() {
     const { error } = await supabase
       .from('marketplace_item_comments')
       .insert({
-        item_id: itemId,
+        item_id: item.id,
         forum_user_id: forumUser.id,
         content: comment.trim()
       });
@@ -2507,27 +2541,48 @@ function MarketItem() {
     } else {
       toast({ title: 'Comment posted!' });
       setComment('');
-      fetchComments();
+      fetchComments(item.id);
     }
     setSubmittingComment(false);
   };
 
   const fetchItem = async () => {
-    if (!itemId) return;
+    if (!serialIdParam && !uuidParam) return;
     setLoading(true);
     setOwnsItem(false);
     setOwnedCopies([]);
     
-    const { data, error } = await supabase
-      .from('marketplace_items')
-      .select('*')
-      .eq('id', itemId)
-      .single();
+    let query = supabase.from('marketplace_items').select('*');
+    
+    if (serialIdParam) {
+      query = query.eq('serial_id', serialIdParam);
+    } else if (uuidParam) {
+      query = query.eq('id', uuidParam);
+    }
+    
+    const { data, error } = await query.single();
     
     if (error) {
       console.error('Error fetching item:', error);
-    } else {
-      setItem(data);
+      setLoading(false);
+      return;
+    }
+    
+    setItem(data);
+    
+    // Redirect to canonical URL if using old format
+    if (uuidParam && data?.serial_id) {
+      const slug = data.name.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+      navigate(`/item/${data.serial_id}/${slug}`, { replace: true });
+    }
+    
+    // Fetch comments
+    fetchComments(data.id);
+    
+    // Check if current user is admin
+    if (forumUser) {
+      const { data: adminCheck } = await supabase.rpc('is_admin_user', { _user_id: forumUser.user_id });
+      setIsAdmin(!!adminCheck);
     }
     
     // Fetch BLOX City profile for creator display
@@ -2552,7 +2607,7 @@ function MarketItem() {
       const { data: resales } = await supabase
         .from('user_inventory')
         .select('*, owner:forum_user_id(id, username, avatar_url, is_verified)')
-        .eq('item_id', itemId)
+        .eq('item_id', data.id)
         .eq('is_for_sale', true)
         .order('sale_price_coins', { ascending: true })
         .limit(10);
@@ -2565,7 +2620,7 @@ function MarketItem() {
         .from('user_inventory')
         .select('*')
         .eq('forum_user_id', forumUser.id)
-        .eq('item_id', itemId);
+        .eq('item_id', data.id);
       
       if (inventory && inventory.length > 0) {
         setOwnsItem(true);
@@ -2575,6 +2630,34 @@ function MarketItem() {
     }
     
     setLoading(false);
+  };
+
+  const handleSaveItem = async () => {
+    if (!item || !isAdmin) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from('marketplace_items')
+      .update({
+        name: editForm.name,
+        description: editForm.description,
+        is_on_sale: editForm.is_on_sale,
+        is_limited: editForm.is_limited,
+        limited_stock: editForm.is_limited ? editForm.limited_stock : null,
+        offsale_at: editForm.offsale_at || null,
+        price_coins: parseInt(editForm.price_coins) || 0,
+        price_cash: parseInt(editForm.price_cash) || 0,
+        payment_type: editForm.payment_type,
+      })
+      .eq('id', item.id);
+    
+    if (error) {
+      toast({ title: 'Failed to save', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Item updated!' });
+      setShowEditModal(false);
+      fetchItem();
+    }
+    setSaving(false);
   };
 
   const handlePurchase = async () => {
@@ -2695,6 +2778,37 @@ function MarketItem() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
+      {/* Admin Edit Modal */}
+      {showEditModal && isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--bc-border))]">
+              <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Edit Item</h3>
+              <button onClick={() => setShowEditModal(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[hsl(var(--bc-bg))]">×</button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div><Label>Name</Label><Input value={editForm.name || ''} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="mt-1" /></div>
+              <div><Label>Description</Label><Textarea value={editForm.description || ''} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className="mt-1" rows={3} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Price (Coins)</Label><Input type="number" value={editForm.price_coins || 0} onChange={(e) => setEditForm({ ...editForm, price_coins: e.target.value })} className="mt-1" /></div>
+                <div><Label>Price (Cash)</Label><Input type="number" value={editForm.price_cash || 0} onChange={(e) => setEditForm({ ...editForm, price_cash: e.target.value })} className="mt-1" /></div>
+              </div>
+              <div><Label>Payment Type</Label><select value={editForm.payment_type || 'coins'} onChange={(e) => setEditForm({ ...editForm, payment_type: e.target.value })} className="w-full mt-1 h-9 px-3 border border-[hsl(var(--bc-border))] rounded-lg bg-[hsl(var(--bc-bg))] text-[hsl(var(--bc-text))]"><option value="coins">Coins Only</option><option value="cash">Cash Only</option><option value="both">Both</option></select></div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={editForm.is_on_sale ?? true} onChange={(e) => setEditForm({ ...editForm, is_on_sale: e.target.checked })} /> On Sale</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={editForm.is_limited ?? false} onChange={(e) => setEditForm({ ...editForm, is_limited: e.target.checked })} /> Limited</label>
+              </div>
+              {editForm.is_limited && <div><Label>Stock Limit</Label><Input type="number" value={editForm.limited_stock || ''} onChange={(e) => setEditForm({ ...editForm, limited_stock: e.target.value })} className="mt-1" /></div>}
+              <div><Label>Offsale At (optional)</Label><Input type="datetime-local" value={editForm.offsale_at ? new Date(editForm.offsale_at).toISOString().slice(0, 16) : ''} onChange={(e) => setEditForm({ ...editForm, offsale_at: e.target.value })} className="mt-1" /></div>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--bc-border))]">
+              <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
+              <Button onClick={handleSaveItem} disabled={saving}>{saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Save</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Purchase Confirmation Modal */}
       {showPurchaseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -2900,6 +3014,11 @@ function MarketItem() {
             <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <h1 className="text-3xl font-semibold text-[hsl(var(--bc-text))]">{item.name}</h1>
+                {isAdmin && (
+                  <Button variant="outline" size="sm" onClick={() => { setEditForm({ ...item }); setShowEditModal(true); }}>
+                    Edit Item
+                  </Button>
+                )}
               </div>
 
               {/* Creator */}
@@ -3541,8 +3660,10 @@ const App = () => (
               <Route path="staff" element={<ForumStaff />} />
               <Route path="updates" element={<Updates />} />
               <Route path="games" element={<Games />} />
+              <Route path="game/:serialId/:slug" element={<GameView />} />
               <Route path="game/:id" element={<GameView />} />
               <Route path="market" element={<Market />} />
+              <Route path="item/:serialId/:slug" element={<MarketItem />} />
               <Route path="market/item/:id" element={<MarketItem />} />
               <Route path="character" element={<Character />} />
               <Route path="trading" element={<TradingPageComponent />} />
