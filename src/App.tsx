@@ -375,7 +375,7 @@ import Games from "./pages/forum/Games";
 // GameDetail inlined below
 import Market from "./pages/forum/Market";
 import Character from "./pages/forum/Character";
-// Marketplace + trading pages are inlined below to avoid module resolution issues
+import Trading from "./pages/forum/Trading";
 // Players page removed - using ForumUsers at /players instead
 import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
@@ -3697,7 +3697,7 @@ const App = () => (
               <Route path="item/:serialId/:slug" element={<MarketItem />} />
               <Route path="market/item/:id" element={<MarketItem />} />
               <Route path="character" element={<Character />} />
-              <Route path="trading" element={<TradingPageComponent />} />
+              <Route path="trading" element={<Trading />} />
               <Route path="inventory" element={<InventoryPage />} />
               <Route path="login" element={<ForumLogin />} />
               <Route path="register" element={<ForumRegister />} />
