@@ -35,47 +35,75 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as THREE from 'three';
 
 // Inline 3D Model component for thumbnail rendering
-function Model3D({ modelUrl, textureUrl }: { modelUrl: string; textureUrl: string | null }) {
+function Model3D({ modelUrl, textureUrl, onModelReady }: { modelUrl: string; textureUrl: string | null; onModelReady?: () => void }) {
   const obj = useLoader(OBJLoader, modelUrl);
   const texture = textureUrl ? useLoader(THREE.TextureLoader, textureUrl) : null;
+  const readyRef = useRef(false);
 
   useEffect(() => {
+    // Clone the object to avoid mutations
+    const clonedObj = obj.clone(true);
+    
     if (texture) {
       texture.flipY = false;
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
+      texture.needsUpdate = true;
     }
+    
     obj.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.material = texture 
-          ? new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide })
-          : new THREE.MeshStandardMaterial({ color: 0x888888, side: THREE.DoubleSide });
+        const material = new THREE.MeshStandardMaterial({ 
+          map: texture || null, 
+          side: THREE.DoubleSide,
+          color: texture ? 0xffffff : 0x888888
+        });
+        child.material = material;
+        if (texture) {
+          material.needsUpdate = true;
+        }
       }
     });
-  }, [obj, texture]);
+    
+    // Notify that model is ready after a short delay to ensure material is applied
+    if (!readyRef.current && onModelReady) {
+      readyRef.current = true;
+      setTimeout(() => onModelReady(), 100);
+    }
+  }, [obj, texture, onModelReady]);
 
   useEffect(() => {
     const box = new THREE.Box3().setFromObject(obj);
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 2 / maxDim;
-    obj.scale.setScalar(scale);
-    const center = box.getCenter(new THREE.Vector3());
-    obj.position.sub(center.multiplyScalar(scale));
+    if (maxDim > 0) {
+      const scale = 2 / maxDim;
+      obj.scale.setScalar(scale);
+      const center = box.getCenter(new THREE.Vector3());
+      obj.position.sub(center.multiplyScalar(scale));
+    }
   }, [obj]);
 
   return <primitive object={obj} />;
 }
 
-function SceneCapture3D({ onCapture }: { onCapture: (dataUrl: string) => void }) {
+function SceneCapture3D({ onCapture, isModelReady }: { onCapture: (dataUrl: string) => void; isModelReady: boolean }) {
   const capturedRef = useRef(false);
+  const frameCountRef = useRef(0);
+  
   useFrame(({ gl, scene, camera }) => {
-    if (!capturedRef.current) {
-      setTimeout(() => {
+    frameCountRef.current++;
+    
+    // Wait for model to be ready AND at least 60 frames (about 1 second at 60fps)
+    if (!capturedRef.current && isModelReady && frameCountRef.current > 60) {
+      capturedRef.current = true;
+      // Force render and capture
+      gl.render(scene, camera);
+      requestAnimationFrame(() => {
         gl.render(scene, camera);
-        onCapture(gl.domElement.toDataURL('image/png'));
-        capturedRef.current = true;
-      }, 800);
+        const dataUrl = gl.domElement.toDataURL('image/png');
+        onCapture(dataUrl);
+      });
     }
   });
   return null;
@@ -88,10 +116,43 @@ function ItemThumbnailRenderer({ modelUrl, textureUrl, onThumbnailGenerated, siz
   size?: number;
 }) {
   const [loading, setLoading] = useState(true);
-  const handleRender = (dataUrl: string) => {
-    setLoading(false);
-    onThumbnailGenerated(dataUrl);
+  const [modelReady, setModelReady] = useState(false);
+  
+  const handleModelReady = () => {
+    setModelReady(true);
   };
+  
+  const handleRender = (dataUrl: string) => {
+    // Check if the image is not blank (has actual content)
+    const img = document.createElement('img');
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+        
+        // Check if image has non-transparent content
+        let hasContent = false;
+        for (let i = 0; i < pixels.length; i += 4) {
+          if (pixels[i + 3] > 10 && (pixels[i] !== 0 || pixels[i + 1] !== 0 || pixels[i + 2] !== 0)) {
+            hasContent = true;
+            break;
+          }
+        }
+        
+        if (hasContent) {
+          setLoading(false);
+          onThumbnailGenerated(dataUrl);
+        }
+      }
+    };
+    img.src = dataUrl;
+  };
+  
   return (
     <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800" style={{ width: size, height: size }}>
       {loading && (
@@ -102,14 +163,22 @@ function ItemThumbnailRenderer({ modelUrl, textureUrl, onThumbnailGenerated, siz
           </div>
         </div>
       )}
-      <Canvas camera={{ position: [0, 0, 4], fov: 45 }} gl={{ preserveDrawingBuffer: true, antialias: true }}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
+      <Canvas 
+        camera={{ position: [0, 1.5, 4], fov: 45 }} 
+        gl={{ preserveDrawingBuffer: true, antialias: true, alpha: false }}
+        style={{ background: '#f0f8ff' }}
+      >
+        <color attach="background" args={['#f0f8ff']} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[10, 10, 5]} intensity={1.2} />
+        <directionalLight position={[-10, -5, -5]} intensity={0.4} />
         <Suspense fallback={null}>
-          <Center><Model3D modelUrl={modelUrl} textureUrl={textureUrl} /></Center>
+          <Center>
+            <Model3D modelUrl={modelUrl} textureUrl={textureUrl} onModelReady={handleModelReady} />
+          </Center>
         </Suspense>
-        <SceneCapture3D onCapture={handleRender} />
-        <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
+        <SceneCapture3D onCapture={handleRender} isModelReady={modelReady} />
+        <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={1} />
       </Canvas>
     </div>
   );
