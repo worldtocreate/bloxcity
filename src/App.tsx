@@ -395,6 +395,12 @@ function InventoryPage() {
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [showSellModal, setShowSellModal] = useState(false);
+  const [selectedInventoryId, setSelectedInventoryId] = useState<string>('');
+  const [sellPrice, setSellPrice] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
   useEffect(() => {
     if (forumUser) fetchInventory();
   }, [forumUser]);
@@ -404,11 +410,69 @@ function InventoryPage() {
     setLoading(true);
     const { data } = await supabase
       .from('user_inventory')
-      .select('*, item:item_id(id, name, thumbnail_url, category, is_limited)')
+      .select(
+        [
+          '*',
+          'item:item_id(id, name, thumbnail_url, category, is_limited, limited_stock, limited_sold, is_on_sale, offsale_at)',
+        ].join(', '),
+      )
       .eq('forum_user_id', forumUser.id)
       .order('acquired_at', { ascending: false });
     setInventory(data || []);
     setLoading(false);
+  };
+
+  const openListForSale = (inventoryId: string) => {
+    setSelectedInventoryId(inventoryId);
+    setSellPrice('');
+    setShowSellModal(true);
+  };
+
+  const listForSale = async () => {
+    const price = parseInt(sellPrice, 10);
+    if (!selectedInventoryId) return;
+    if (!Number.isFinite(price) || price <= 0) {
+      toast({ title: 'Enter a valid price', variant: 'destructive' });
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase
+      .from('user_inventory')
+      .update({ is_for_sale: true, sale_price_coins: price })
+      .eq('id', selectedInventoryId)
+      .eq('forum_user_id', forumUser?.id);
+
+    setSubmitting(false);
+
+    if (error) {
+      toast({ title: 'Failed to list item', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Item listed for sale!' });
+    setShowSellModal(false);
+    setSellPrice('');
+    setSelectedInventoryId('');
+    fetchInventory();
+  };
+
+  const removeListing = async (inventoryId: string) => {
+    setSubmitting(true);
+    const { error } = await supabase
+      .from('user_inventory')
+      .update({ is_for_sale: false, sale_price_coins: null, sale_price_cash: null })
+      .eq('id', inventoryId)
+      .eq('forum_user_id', forumUser?.id);
+    setSubmitting(false);
+
+    if (error) {
+      toast({ title: 'Failed to remove listing', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Listing removed' });
+    fetchInventory();
   };
 
   if (!forumUser) return <Navigate to="/login" replace />;
@@ -428,8 +492,56 @@ function InventoryPage() {
           <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">My Inventory</h1>
           <p className="text-[hsl(var(--bc-text-muted))]">View and manage your items ({inventory.length} items)</p>
         </div>
-        <Link to="/trading" className="bc-btn bc-btn-primary gap-2"><ArrowRightLeft className="w-4 h-4" />Trade Items</Link>
+        <Link to="/trading" className="bc-btn bc-btn-primary gap-2">
+          <ArrowRightLeft className="w-4 h-4" />Trade Items
+        </Link>
       </div>
+
+      {/* Sell Modal */}
+      {showSellModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--bc-border))]">
+              <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">List for sale</h3>
+              <button
+                onClick={() => setShowSellModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[hsl(var(--bc-bg))]"
+              >
+                <span className="text-[hsl(var(--bc-text-muted))]">×</span>
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-[hsl(var(--bc-text))]">Price (coins)</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowSellModal(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={listForSale} disabled={submitting}>
+                  {submitting ? 'Listing…' : 'List'}
+                </Button>
+              </div>
+              <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                Your listing will show up under Private Sellers on the item page.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {inventory.length === 0 ? (
         <div className="bc-card p-6 text-center">
           <Package className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
@@ -439,45 +551,82 @@ function InventoryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {inventory.map((inv) => (
-            <Link 
-              key={inv.id} 
-              to={`/market/item/${inv.item?.id}`}
-              className="bc-card overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all group"
-            >
-              <div className="aspect-square bg-[hsl(var(--bc-bg))] relative">
-                {inv.item?.thumbnail_url ? (
-                  <img src={inv.item.thumbnail_url} alt={inv.item.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))]/40" />
+          {inventory.map((inv) => {
+            const limitedStock = inv.item?.limited_stock ?? null;
+            const limitedSold = inv.item?.limited_sold ?? 0;
+            const isSoldOutLimited = !!inv.item?.is_limited && limitedStock !== null && limitedSold >= limitedStock;
+            const canListForSale = isSoldOutLimited && !inv.is_for_sale;
+
+            return (
+              <Link
+                key={inv.id}
+                to={`/market/item/${inv.item?.id}`}
+                className="bc-card overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all group"
+              >
+                <div className="aspect-square bg-[hsl(var(--bc-bg))] relative">
+                  {inv.item?.thumbnail_url ? (
+                    <img src={inv.item.thumbnail_url} alt={inv.item.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))]/40" />
+                    </div>
+                  )}
+                  {inv.item?.is_limited && (
+                    <div className="absolute top-2 left-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-amber-500 text-white text-xs font-semibold">
+                        Rare
+                      </span>
+                    </div>
+                  )}
+                  {inv.is_for_sale && (
+                    <div className="absolute top-2 right-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-500 text-white text-xs font-semibold">
+                        On Sale
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="p-3 space-y-2">
+                  <div>
+                    <h3 className="font-medium text-sm text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-primary))]">
+                      {inv.item?.name || 'Unknown Item'}
+                    </h3>
+                    {inv.serial_number && <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{inv.serial_number}</p>}
                   </div>
-                )}
-                {inv.item?.is_limited && (
-                  <div className="absolute top-2 left-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-amber-500 text-white text-xs font-semibold">
-                      Rare
-                    </span>
-                  </div>
-                )}
-                {inv.is_for_sale && (
-                  <div className="absolute top-2 right-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-500 text-white text-xs font-semibold">
-                      On Sale
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="p-3">
-                <h3 className="font-medium text-sm text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-primary))]">
-                  {inv.item?.name || 'Unknown Item'}
-                </h3>
-                {inv.serial_number && (
-                  <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{inv.serial_number}</p>
-                )}
-              </div>
-            </Link>
-          ))}
+
+                  {/* Actions (stop Link navigation) */}
+                  {canListForSale && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openListForSale(inv.id);
+                      }}
+                    >
+                      List for sale
+                    </Button>
+                  )}
+
+                  {inv.is_for_sale && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        removeListing(inv.id);
+                      }}
+                      disabled={submitting}
+                    >
+                      Remove listing
+                    </Button>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
