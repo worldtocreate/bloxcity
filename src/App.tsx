@@ -2615,7 +2615,8 @@ function MarketItem() {
   const [purchasing, setPurchasing] = useState(false);
   const [resaleListings, setResaleListings] = useState<any[]>([]);
   const [ownsItem, setOwnsItem] = useState(false);
-  const [ownedCopies, setOwnedCopies] = useState<any[]>([]);
+  const [ownedCopies, setOwnedCopies] = useState<any[]>([]); // Copies NOT for sale
+  const [listedCopies, setListedCopies] = useState<any[]>([]); // Copies already listed for sale
   const [showSellModal, setShowSellModal] = useState(false);
   const [sellPrice, setSellPrice] = useState('');
   const [selectedCopyId, setSelectedCopyId] = useState<string>('');
@@ -2691,6 +2692,7 @@ function MarketItem() {
     setLoading(true);
     setOwnsItem(false);
     setOwnedCopies([]);
+    setListedCopies([]);
     
     let query = supabase.from('marketplace_items').select('*');
     
@@ -2765,7 +2767,10 @@ function MarketItem() {
       if (inventory && inventory.length > 0) {
         setOwnsItem(true);
         setOwnedCopies(inventory.filter(i => !i.is_for_sale));
-        if (inventory.length > 0) setSelectedCopyId(inventory[0].id);
+        setListedCopies(inventory.filter(i => i.is_for_sale));
+        // Default to first unlisted copy, or first listed if all are listed
+        const firstUnlisted = inventory.find(i => !i.is_for_sale);
+        setSelectedCopyId(firstUnlisted?.id || inventory[0].id);
       }
     }
     
@@ -3217,10 +3222,11 @@ function MarketItem() {
                 </>
               )}
 
-              {/* Sell button for owned limiteds that are sold out */}
+              {/* Sell section for owned limiteds that are sold out */}
               {item.is_limited && isLimitedSoldOut && ownsItem && (
-                <>
-                  {ownedCopies.length > 0 ? (
+                <div className="space-y-3">
+                  {/* Show list for sale button if user has unlisted copies */}
+                  {ownedCopies.length > 0 && (
                     <>
                       {canPurchaseOfficial && <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">or</div>}
                       <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">
@@ -3229,17 +3235,34 @@ function MarketItem() {
                       <Button
                         onClick={() => setShowSellModal(true)}
                         variant="outline"
-                        className="w-full border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+                        className="w-full border-[hsl(var(--bc-green))] text-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))] hover:text-white"
                       >
                         List for Sale
                       </Button>
                     </>
-                  ) : (
+                  )}
+                  
+                  {/* Show info about already listed copies */}
+                  {listedCopies.length > 0 && (
                     <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                      <p className="text-sm text-amber-400 font-medium">Your copy is currently listed for sale</p>
+                      <p className="text-sm text-amber-400 font-medium mb-1">
+                        {listedCopies.length === 1 
+                          ? 'You have 1 copy listed for sale' 
+                          : `You have ${listedCopies.length} copies listed for sale`}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                        Check Private Sellers below to manage your listing
+                      </p>
                     </div>
                   )}
-                </>
+                  
+                  {/* If all copies are listed, show a different message */}
+                  {ownedCopies.length === 0 && listedCopies.length > 0 && (
+                    <p className="text-xs text-[hsl(var(--bc-text-muted))]">
+                      All your copies are currently listed for sale
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
