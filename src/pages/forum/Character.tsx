@@ -7,7 +7,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { User, Box, RefreshCw, X, Loader2, Wrench, Twitter, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Inline page maintenance hook
+// Inline page maintenance hook - uses secure RPC to avoid RLS issues
 function usePageMaintenance(pageKey: string) {
   const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -15,19 +15,18 @@ function usePageMaintenance(pageKey: string) {
   useEffect(() => {
     const checkMaintenance = async () => {
       try {
-        const { data, error } = await supabase
-          .from('admin_settings')
-          .select('value')
-          .eq('key', 'page_maintenance')
-          .single();
+        // Use the secure RPC function that bypasses RLS
+        const { data, error } = await supabase.rpc('get_page_maintenance_status');
 
         if (error) {
+          console.error('Maintenance check error:', error);
           setIsUnderMaintenance(false);
-        } else if (data?.value) {
-          const settings = data.value as Record<string, boolean>;
+        } else if (data) {
+          const settings = data as Record<string, boolean>;
           setIsUnderMaintenance(settings[pageKey] === true);
         }
       } catch (err) {
+        console.error('Maintenance check exception:', err);
         setIsUnderMaintenance(false);
       } finally {
         setLoading(false);
