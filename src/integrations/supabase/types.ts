@@ -3904,6 +3904,7 @@ export type Database = {
           model_url: string | null
           name: string
           offsale_at: string | null
+          owner_count: number
           payment_type: Database["public"]["Enums"]["item_payment_type"]
           price_cash: number | null
           price_coins: number | null
@@ -3928,6 +3929,7 @@ export type Database = {
           model_url?: string | null
           name: string
           offsale_at?: string | null
+          owner_count?: number
           payment_type?: Database["public"]["Enums"]["item_payment_type"]
           price_cash?: number | null
           price_coins?: number | null
@@ -3952,6 +3954,7 @@ export type Database = {
           model_url?: string | null
           name?: string
           offsale_at?: string | null
+          owner_count?: number
           payment_type?: Database["public"]["Enums"]["item_payment_type"]
           price_cash?: number | null
           price_coins?: number | null

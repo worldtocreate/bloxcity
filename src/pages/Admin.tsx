@@ -529,10 +529,12 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     thumbnail_url: string | null;
     model_url: string | null;
     texture_url: string | null;
+    owner_count: number;
     created_at: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -548,11 +550,9 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
   const [offsaleAt, setOffsaleAt] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  // 3D model files for non-Face items (optional for storage/future use)
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [textureFile, setTextureFile] = useState<File | null>(null);
   
-  // Faces use PNG only, other categories can upload OBJ + texture for storage
   const isFaceCategory = category === 'faces';
 
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
@@ -609,17 +609,6 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     }
   };
 
-  const uploadThumbnail = async (): Promise<string | null> => {
-    if (!thumbnailFile) return null;
-    const fileExt = thumbnailFile.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `marketplace/${fileName}`;
-    const { error } = await supabase.storage.from('marketplace-assets').upload(filePath, thumbnailFile);
-    if (error) { toast({ title: 'Failed to upload image', description: error.message, variant: 'destructive' }); return null; }
-    const { data: urlData } = supabase.storage.from('marketplace-assets').getPublicUrl(filePath);
-    return urlData.publicUrl;
-  };
-
   const handleCreateItem = async () => {
     if (!name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
     if (!thumbnailFile) { toast({ title: 'Thumbnail image is required', variant: 'destructive' }); return; }
@@ -636,7 +625,6 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     const sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
     
     try {
-      // Upload thumbnail for ALL categories
       const thumbExt = thumbnailFile.name.split('.').pop() || 'png';
       const thumbPath = `marketplace/${sanitizedName}-${timestamp}-thumb.${thumbExt}`;
       const { error: thumbErr } = await supabase.storage.from('marketplace-assets').upload(thumbPath, thumbnailFile);
@@ -644,7 +632,6 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
       const { data: thumbUrlData } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
       thumbnailUrl = thumbUrlData.publicUrl;
       
-      // For non-face items, also upload OBJ + texture to storage
       if (!isFaceCategory && modelFile && textureFile) {
         const modelPath = `marketplace/${sanitizedName}-${timestamp}.obj`;
         const { error: mErr } = await supabase.storage.from('marketplace-assets').upload(modelPath, modelFile);
@@ -693,6 +680,74 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null);
   };
 
+  const openEditModal = (item: typeof items[0]) => {
+    setName(item.name);
+    setDescription(item.description || '');
+    setCategory(item.category);
+    setPriceCoins(item.price_coins.toString());
+    setPriceCash(item.price_cash.toString());
+    setPaymentType(item.payment_type);
+    setIsLimited(item.is_limited);
+    setLimitedStock(item.limited_stock?.toString() || '');
+    setIsOnSale(item.is_on_sale);
+    setOffsaleAt(item.offsale_at ? item.offsale_at.slice(0, 16) : '');
+    setThumbnailPreview(item.thumbnail_url);
+    setShowEditModal(item.id);
+  };
+
+  const handleUpdateItem = async () => {
+    if (!showEditModal) return;
+    if (!name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
+    
+    setSubmitting(true);
+    
+    try {
+      let thumbnailUrl: string | undefined = undefined;
+      
+      // Upload new thumbnail if provided
+      if (thumbnailFile) {
+        setUploading(true);
+        const timestamp = Date.now();
+        const sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const thumbExt = thumbnailFile.name.split('.').pop() || 'png';
+        const thumbPath = `marketplace/${sanitizedName}-${timestamp}-thumb.${thumbExt}`;
+        const { error: thumbErr } = await supabase.storage.from('marketplace-assets').upload(thumbPath, thumbnailFile);
+        if (thumbErr) throw thumbErr;
+        const { data: thumbUrlData } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
+        thumbnailUrl = thumbUrlData.publicUrl;
+        setUploading(false);
+      }
+      
+      const updateData: any = {
+        name: name.trim(),
+        description: description.trim() || null,
+        category: category as any,
+        price_coins: parseInt(priceCoins) || 0,
+        price_cash: parseInt(priceCash) || 0,
+        payment_type: paymentType as any,
+        is_limited: isLimited,
+        limited_stock: isLimited && limitedStock ? parseInt(limitedStock) : null,
+        is_on_sale: isOnSale,
+        offsale_at: offsaleAt || null,
+      };
+      
+      if (thumbnailUrl) {
+        updateData.thumbnail_url = thumbnailUrl;
+      }
+      
+      const { error } = await supabase.from('marketplace_items').update(updateData).eq('id', showEditModal);
+      if (error) throw error;
+      
+      toast({ title: 'Item updated successfully!' });
+      resetForm();
+      setShowEditModal(null);
+      fetchItems();
+    } catch (err: any) {
+      toast({ title: 'Failed to update item', description: err.message, variant: 'destructive' });
+    }
+    setSubmitting(false);
+  };
+
   const toggleOnSale = async (item: any) => {
     const { error } = await supabase.from('marketplace_items').update({ is_on_sale: !item.is_on_sale }).eq('id', item.id);
     if (error) toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
@@ -728,7 +783,7 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
                   <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Stock</TableHead>
+                  <TableHead>Owners</TableHead>
                   <TableHead>On Sale</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -752,9 +807,18 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
                       </div>
                     </TableCell>
                     <TableCell>{item.is_limited ? <span className="px-2 py-1 bg-amber-500/20 text-amber-500 text-xs rounded">Limited</span> : <span className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded">Regular</span>}</TableCell>
-                    <TableCell>{item.is_limited && item.limited_stock ? <span className={mutedClass}>{item.limited_sold}/{item.limited_stock}</span> : <span className={mutedClass}>∞</span>}</TableCell>
+                    <TableCell><span className={`font-medium ${textClass}`}>{item.owner_count || 0}</span></TableCell>
                     <TableCell><input type="checkbox" checked={item.is_on_sale} onChange={() => toggleOnSale(item)} className="w-4 h-4" /></TableCell>
-                    <TableCell><button onClick={() => deleteItem(item.id)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"><Trash2 className="w-4 h-4" /></button></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => openEditModal(item)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title="Edit">
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deleteItem(item.id)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -762,68 +826,40 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className={`${cardClass} rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto`}>
             <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Add Marketplace Item</h2>
             <div className="space-y-4">
-              {/* Category first */}
               <div>
                 <label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label>
                 <select value={category} onChange={(e) => { setCategory(e.target.value); setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null); }} className={`w-full p-2 border rounded-lg ${inputClass}`}>
                   {CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                 </select>
-                <p className={`text-xs mt-1 ${mutedClass}`}>{isFaceCategory ? 'Faces: Upload PNG image' : 'Upload thumbnail image + .obj model + texture file'}</p>
               </div>
-              
-              {/* Thumbnail Upload - Required for ALL categories */}
               <div>
                 <label className={`block text-sm font-medium mb-1 ${textClass}`}>Thumbnail Image *</label>
                 <div className="flex items-center gap-4">
-                  {thumbnailPreview ? (
-                    <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" />
-                  ) : (
-                    <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center">
-                      <Image className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleThumbnailChange} className={`text-sm ${mutedClass}`} />
-                    <p className={`text-xs mt-1 ${mutedClass}`}>PNG, JPG, or WebP recommended</p>
-                  </div>
+                  {thumbnailPreview ? <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" /> : <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center"><Image className="w-8 h-8 text-gray-400" /></div>}
+                  <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleThumbnailChange} className={`text-sm ${mutedClass}`} />
                 </div>
               </div>
-              
-              {/* 3D Model files - Required for non-Face categories */}
               {!isFaceCategory && (
                 <div className="space-y-3">
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${textClass}`}>3D Model (.obj) *</label>
-                    <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 rounded border-2 border-dashed ${modelFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
-                        {modelFile ? <Check className="w-6 h-6 text-green-500" /> : <Upload className="w-6 h-6 text-gray-400" />}
-                      </div>
-                      <div className="flex-1">
-                        <input type="file" accept=".obj" onChange={handleModelChange} className={`text-sm ${mutedClass}`} />
-                        {modelFile && <p className="text-xs mt-1 text-green-600">{modelFile.name}</p>}
-                      </div>
-                    </div>
+                    <input type="file" accept=".obj" onChange={handleModelChange} className={`text-sm ${mutedClass}`} />
+                    {modelFile && <p className="text-xs mt-1 text-green-600">{modelFile.name}</p>}
                   </div>
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${textClass}`}>Texture File *</label>
-                    <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 rounded border-2 border-dashed ${textureFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
-                        {textureFile ? <Check className="w-6 h-6 text-green-500" /> : <Upload className="w-6 h-6 text-gray-400" />}
-                      </div>
-                      <div className="flex-1">
-                        <input type="file" accept=".png,.jpg,.jpeg" onChange={handleTextureChange} className={`text-sm ${mutedClass}`} />
-                        {textureFile && <p className="text-xs mt-1 text-green-600">{textureFile.name}</p>}
-                      </div>
-                    </div>
+                    <input type="file" accept=".png,.jpg,.jpeg" onChange={handleTextureChange} className={`text-sm ${mutedClass}`} />
+                    {textureFile && <p className="text-xs mt-1 text-green-600">{textureFile.name}</p>}
                   </div>
                 </div>
               )}
-              
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Name *</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className={inputClass} /></div>
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className={`w-full p-2 border rounded-lg resize-none h-20 ${inputClass}`} /></div>
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Payment Type</label><select value={paymentType} onChange={(e) => setPaymentType(e.target.value as any)} className={`w-full p-2 border rounded-lg ${inputClass}`}><option value="coins">Coins Only</option><option value="cash">Cash Only</option><option value="both">Both</option></select></div>
@@ -834,15 +870,51 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
               <div className="flex items-center justify-between"><label className={`text-sm font-medium ${textClass}`}>Limited Item</label><input type="checkbox" checked={isLimited} onChange={(e) => setIsLimited(e.target.checked)} className="w-4 h-4" /></div>
               {isLimited && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Limited Stock</label><Input type="number" value={limitedStock} onChange={(e) => setLimitedStock(e.target.value)} placeholder="Total available" min="1" className={inputClass} /></div>}
               <div className="flex items-center justify-between"><label className={`text-sm font-medium ${textClass}`}>On Sale</label><input type="checkbox" checked={isOnSale} onChange={(e) => setIsOnSale(e.target.checked)} className="w-4 h-4" /></div>
-              {isOnSale && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Off-sale Date (Optional)</label><Input type="datetime-local" value={offsaleAt} onChange={(e) => setOffsaleAt(e.target.value)} className={inputClass} /><p className={`text-xs mt-1 ${mutedClass}`}>Leave empty for no automatic off-sale</p></div>}
+              {isOnSale && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Off-sale Date (Optional)</label><Input type="datetime-local" value={offsaleAt} onChange={(e) => setOffsaleAt(e.target.value)} className={inputClass} /></div>}
               <div className="flex gap-3 pt-4">
                 <Button variant="outline" onClick={() => { resetForm(); setShowCreateModal(false); }} className="flex-1">Cancel</Button>
-                <Button 
-                  onClick={handleCreateItem} 
-                  disabled={submitting || !name.trim() || !thumbnailFile || (!isFaceCategory && (!modelFile || !textureFile))} 
-                  className="flex-1"
-                >
+                <Button onClick={handleCreateItem} disabled={submitting || !name.trim() || !thumbnailFile || (!isFaceCategory && (!modelFile || !textureFile))} className="flex-1">
                   {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploading ? 'Uploading...' : 'Creating...'}</> : 'Create Item'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${cardClass} rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto`}>
+            <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Edit Item</h2>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${textClass}`}>Thumbnail Image</label>
+                <div className="flex items-center gap-4">
+                  {thumbnailPreview ? <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" /> : <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center"><Image className="w-8 h-8 text-gray-400" /></div>}
+                  <div>
+                    <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleThumbnailChange} className={`text-sm ${mutedClass}`} />
+                    <p className={`text-xs mt-1 ${mutedClass}`}>Leave empty to keep current</p>
+                  </div>
+                </div>
+              </div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Name *</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className={inputClass} /></div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className={`w-full p-2 border rounded-lg resize-none h-20 ${inputClass}`} /></div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className={`w-full p-2 border rounded-lg ${inputClass}`}>{CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Payment Type</label><select value={paymentType} onChange={(e) => setPaymentType(e.target.value as any)} className={`w-full p-2 border rounded-lg ${inputClass}`}><option value="coins">Coins Only</option><option value="cash">Cash Only</option><option value="both">Both</option></select></div>
+              <div className="grid grid-cols-2 gap-4">
+                {(paymentType === 'coins' || paymentType === 'both') && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Price (Coins)</label><Input type="number" value={priceCoins} onChange={(e) => setPriceCoins(e.target.value)} min="0" className={inputClass} /></div>}
+                {(paymentType === 'cash' || paymentType === 'both') && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Price (Cash)</label><Input type="number" value={priceCash} onChange={(e) => setPriceCash(e.target.value)} min="0" className={inputClass} /></div>}
+              </div>
+              <div className="flex items-center justify-between"><label className={`text-sm font-medium ${textClass}`}>Limited Item</label><input type="checkbox" checked={isLimited} onChange={(e) => setIsLimited(e.target.checked)} className="w-4 h-4" /></div>
+              {isLimited && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Limited Stock</label><Input type="number" value={limitedStock} onChange={(e) => setLimitedStock(e.target.value)} placeholder="Total available" min="1" className={inputClass} /></div>}
+              <div className="flex items-center justify-between"><label className={`text-sm font-medium ${textClass}`}>On Sale</label><input type="checkbox" checked={isOnSale} onChange={(e) => setIsOnSale(e.target.checked)} className="w-4 h-4" /></div>
+              {!isOnSale && <p className={`text-xs ${mutedClass}`}>Item is currently off-sale and won't appear in the marketplace</p>}
+              {isOnSale && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Off-sale Date (Optional)</label><Input type="datetime-local" value={offsaleAt} onChange={(e) => setOffsaleAt(e.target.value)} className={inputClass} /><p className={`text-xs mt-1 ${mutedClass}`}>Set a timer to automatically take item off-sale</p></div>}
+              <div className="flex gap-3 pt-4">
+                <Button variant="outline" onClick={() => { resetForm(); setShowEditModal(null); }} className="flex-1">Cancel</Button>
+                <Button onClick={handleUpdateItem} disabled={submitting || !name.trim()} className="flex-1">
+                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploading ? 'Uploading...' : 'Saving...'}</> : 'Save Changes'}
                 </Button>
               </div>
             </div>
