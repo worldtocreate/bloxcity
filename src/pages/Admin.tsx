@@ -548,16 +548,11 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
   const [offsaleAt, setOffsaleAt] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  // 3D model files for non-Face items
+  // 3D model files for non-Face items (optional for storage/future use)
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [textureFile, setTextureFile] = useState<File | null>(null);
-  // For 3D rendering preview
-  const [tempModelUrl, setTempModelUrl] = useState<string | null>(null);
-  const [tempTextureUrl, setTempTextureUrl] = useState<string | null>(null);
-  const [renderedThumbnail, setRenderedThumbnail] = useState<string | null>(null);
-  const [showRenderPreview, setShowRenderPreview] = useState(false);
   
-  // Faces use PNG only, other categories use OBJ + texture
+  // Faces use PNG only, other categories can upload OBJ + texture for storage
   const isFaceCategory = category === 'faces';
 
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
@@ -568,8 +563,10 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
   const CATS = [
     { id: 'hats', name: 'Hats' },
     { id: 'faces', name: 'Faces' },
-    { id: 'gear', name: 'Gear' },
-    { id: 'accessories', name: 'Accessories' },
+    { id: 'gadgets', name: 'Gadgets' },
+    { id: 'crates', name: 'Crates' },
+    { id: 'heads', name: 'Heads' },
+    { id: 'body-parts', name: 'Body Parts' },
     { id: 't-shirts', name: 'T-Shirts' },
     { id: 'shirts', name: 'Shirts' },
     { id: 'pants', name: 'Pants' },
@@ -600,11 +597,6 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     const file = e.target.files?.[0];
     if (file && file.name.endsWith('.obj')) {
       setModelFile(file);
-      // Create temp URL for preview
-      const url = URL.createObjectURL(file);
-      setTempModelUrl(url);
-      setRenderedThumbnail(null);
-      if (textureFile) setShowRenderPreview(true);
     } else if (file) {
       toast({ title: 'Please select an .obj file', variant: 'destructive' });
     }
@@ -614,26 +606,7 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     const file = e.target.files?.[0];
     if (file) {
       setTextureFile(file);
-      const url = URL.createObjectURL(file);
-      setTempTextureUrl(url);
-      setRenderedThumbnail(null);
-      if (modelFile) setShowRenderPreview(true);
     }
-  };
-
-  const handleThumbnailRendered = (dataUrl: string) => {
-    setRenderedThumbnail(dataUrl);
-  };
-
-  // Convert data URL to File for upload
-  const dataURLtoFile = (dataurl: string, filename: string): File => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while(n--) u8arr[n] = bstr.charCodeAt(n);
-    return new File([u8arr], filename, { type: mime });
   };
 
   const uploadThumbnail = async (): Promise<string | null> => {
@@ -649,10 +622,9 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
 
   const handleCreateItem = async () => {
     if (!name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
-    if (isFaceCategory && !thumbnailFile) { toast({ title: 'PNG image is required for Faces', variant: 'destructive' }); return; }
+    if (!thumbnailFile) { toast({ title: 'Thumbnail image is required', variant: 'destructive' }); return; }
     if (!isFaceCategory && !modelFile) { toast({ title: 'OBJ model file is required', variant: 'destructive' }); return; }
     if (!isFaceCategory && !textureFile) { toast({ title: 'Texture file is required', variant: 'destructive' }); return; }
-    if (!isFaceCategory && !renderedThumbnail) { toast({ title: 'Please wait for 3D model to render', variant: 'destructive' }); return; }
     
     setSubmitting(true);
     setUploading(true);
@@ -664,15 +636,16 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     const sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
     
     try {
-      if (isFaceCategory && thumbnailFile) {
-        // Faces: upload PNG as thumbnail
-        const thumbPath = `marketplace/${sanitizedName}-${timestamp}.png`;
-        const { error } = await supabase.storage.from('marketplace-assets').upload(thumbPath, thumbnailFile);
-        if (error) throw error;
-        const { data: urlData } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
-        thumbnailUrl = urlData.publicUrl;
-      } else if (!isFaceCategory && modelFile && textureFile && renderedThumbnail) {
-        // 3D items: upload OBJ + texture + rendered thumbnail
+      // Upload thumbnail for ALL categories
+      const thumbExt = thumbnailFile.name.split('.').pop() || 'png';
+      const thumbPath = `marketplace/${sanitizedName}-${timestamp}-thumb.${thumbExt}`;
+      const { error: thumbErr } = await supabase.storage.from('marketplace-assets').upload(thumbPath, thumbnailFile);
+      if (thumbErr) throw thumbErr;
+      const { data: thumbUrlData } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
+      thumbnailUrl = thumbUrlData.publicUrl;
+      
+      // For non-face items, also upload OBJ + texture to storage
+      if (!isFaceCategory && modelFile && textureFile) {
         const modelPath = `marketplace/${sanitizedName}-${timestamp}.obj`;
         const { error: mErr } = await supabase.storage.from('marketplace-assets').upload(modelPath, modelFile);
         if (mErr) throw mErr;
@@ -685,14 +658,6 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
         if (tErr) throw tErr;
         const { data: tUrl } = supabase.storage.from('marketplace-assets').getPublicUrl(texPath);
         textureUrl = tUrl.publicUrl;
-        
-        // Upload the rendered thumbnail
-        const renderedFile = dataURLtoFile(renderedThumbnail, `${sanitizedName}-${timestamp}-thumb.png`);
-        const thumbPath = `marketplace/${sanitizedName}-${timestamp}-thumb.png`;
-        const { error: thErr } = await supabase.storage.from('marketplace-assets').upload(thumbPath, renderedFile);
-        if (thErr) throw thErr;
-        const { data: thUrl } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
-        thumbnailUrl = thUrl.publicUrl;
       }
       
       setUploading(false);
@@ -723,10 +688,9 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
   };
 
   const resetForm = () => {
-    setName(''); setDescription(''); setCategory('faces'); setPriceCoins('100'); setPriceCash('10');
+    setName(''); setDescription(''); setCategory('hats'); setPriceCoins('100'); setPriceCash('10');
     setPaymentType('coins'); setIsLimited(false); setLimitedStock(''); setIsOnSale(true); setOffsaleAt('');
     setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null);
-    setTempModelUrl(null); setTempTextureUrl(null); setRenderedThumbnail(null); setShowRenderPreview(false);
   };
 
   const toggleOnSale = async (item: any) => {
@@ -803,74 +767,65 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
           <div className={`${cardClass} rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto`}>
             <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Add Marketplace Item</h2>
             <div className="space-y-4">
-              {/* Category first so file inputs change based on selection */}
-              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label><select value={category} onChange={(e) => { setCategory(e.target.value); setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null); }} className={`w-full p-2 border rounded-lg ${inputClass}`}>{CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select>
-              <p className={`text-xs mt-1 ${mutedClass}`}>{isFaceCategory ? 'Faces: Upload PNG image as thumbnail' : 'Other items: Upload .obj model + texture file'}</p></div>
+              {/* Category first */}
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label>
+                <select value={category} onChange={(e) => { setCategory(e.target.value); setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null); }} className={`w-full p-2 border rounded-lg ${inputClass}`}>
+                  {CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                </select>
+                <p className={`text-xs mt-1 ${mutedClass}`}>{isFaceCategory ? 'Faces: Upload PNG image' : 'Upload thumbnail image + .obj model + texture file'}</p>
+              </div>
               
-              {/* File uploads based on category */}
-              {isFaceCategory ? (
-                <div>
-                  <label className={`block text-sm font-medium mb-1 ${textClass}`}>Face Image (PNG) *</label>
-                  <div className="flex items-center gap-4">
-                    {thumbnailPreview ? <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" /> : <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center"><Image className="w-8 h-8 text-gray-400" /></div>}
-                    <input type="file" accept="image/png" onChange={handleThumbnailChange} className={`flex-1 text-sm ${mutedClass}`} />
+              {/* Thumbnail Upload - Required for ALL categories */}
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${textClass}`}>Thumbnail Image *</label>
+                <div className="flex items-center gap-4">
+                  {thumbnailPreview ? (
+                    <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" />
+                  ) : (
+                    <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center">
+                      <Image className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" onChange={handleThumbnailChange} className={`text-sm ${mutedClass}`} />
+                    <p className={`text-xs mt-1 ${mutedClass}`}>PNG, JPG, or WebP recommended</p>
                   </div>
                 </div>
-              ) : (
+              </div>
+              
+              {/* 3D Model files - Required for non-Face categories */}
+              {!isFaceCategory && (
                 <div className="space-y-3">
                   <div>
                     <label className={`block text-sm font-medium mb-1 ${textClass}`}>3D Model (.obj) *</label>
                     <div className="flex items-center gap-4">
-                      <div className={`w-20 h-20 rounded border-2 border-dashed ${modelFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
-                        {modelFile ? <Check className="w-8 h-8 text-green-500" /> : <Upload className="w-8 h-8 text-gray-400" />}
+                      <div className={`w-16 h-16 rounded border-2 border-dashed ${modelFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
+                        {modelFile ? <Check className="w-6 h-6 text-green-500" /> : <Upload className="w-6 h-6 text-gray-400" />}
                       </div>
                       <div className="flex-1">
                         <input type="file" accept=".obj" onChange={handleModelChange} className={`text-sm ${mutedClass}`} />
-                        {modelFile && <p className={`text-xs mt-1 text-green-600`}>{modelFile.name}</p>}
+                        {modelFile && <p className="text-xs mt-1 text-green-600">{modelFile.name}</p>}
                       </div>
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${textClass}`}>Texture File (.png/.jpg) *</label>
+                    <label className={`block text-sm font-medium mb-1 ${textClass}`}>Texture File *</label>
                     <div className="flex items-center gap-4">
-                      <div className={`w-20 h-20 rounded border-2 border-dashed ${textureFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
-                        {textureFile ? <Check className="w-8 h-8 text-green-500" /> : <Upload className="w-8 h-8 text-gray-400" />}
+                      <div className={`w-16 h-16 rounded border-2 border-dashed ${textureFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
+                        {textureFile ? <Check className="w-6 h-6 text-green-500" /> : <Upload className="w-6 h-6 text-gray-400" />}
                       </div>
                       <div className="flex-1">
                         <input type="file" accept=".png,.jpg,.jpeg" onChange={handleTextureChange} className={`text-sm ${mutedClass}`} />
-                        {textureFile && <p className={`text-xs mt-1 text-green-600`}>{textureFile.name}</p>}
+                        {textureFile && <p className="text-xs mt-1 text-green-600">{textureFile.name}</p>}
                       </div>
                     </div>
                   </div>
-                  {/* 3D Preview Renderer */}
-                  {tempModelUrl && tempTextureUrl && (
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${textClass}`}>3D Preview (Auto-rendered thumbnail)</label>
-                      <div className="flex items-start gap-4">
-                        <ItemThumbnailRenderer
-                          modelUrl={tempModelUrl}
-                          textureUrl={tempTextureUrl}
-                          onThumbnailGenerated={handleThumbnailRendered}
-                          size={150}
-                        />
-                        <div className="flex-1">
-                          {renderedThumbnail ? (
-                            <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-4 h-4" /> Thumbnail rendered successfully!</p>
-                          ) : (
-                            <p className={`text-xs ${mutedClass}`}>Rendering 3D model to 2D thumbnail...</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {!tempModelUrl || !tempTextureUrl ? (
-                    <p className={`text-xs ${mutedClass}`}>Upload both .obj and texture files to see 3D preview</p>
-                  ) : null}
                 </div>
               )}
+              
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Name *</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className={inputClass} /></div>
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className={`w-full p-2 border rounded-lg resize-none h-20 ${inputClass}`} /></div>
-              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className={`w-full p-2 border rounded-lg ${inputClass}`}>{CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Payment Type</label><select value={paymentType} onChange={(e) => setPaymentType(e.target.value as any)} className={`w-full p-2 border rounded-lg ${inputClass}`}><option value="coins">Coins Only</option><option value="cash">Cash Only</option><option value="both">Both</option></select></div>
               <div className="grid grid-cols-2 gap-4">
                 {(paymentType === 'coins' || paymentType === 'both') && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Price (Coins)</label><Input type="number" value={priceCoins} onChange={(e) => setPriceCoins(e.target.value)} min="0" className={inputClass} /></div>}
@@ -884,7 +839,7 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
                 <Button variant="outline" onClick={() => { resetForm(); setShowCreateModal(false); }} className="flex-1">Cancel</Button>
                 <Button 
                   onClick={handleCreateItem} 
-                  disabled={submitting || !name.trim() || (isFaceCategory ? !thumbnailFile : !renderedThumbnail)} 
+                  disabled={submitting || !name.trim() || !thumbnailFile || (!isFaceCategory && (!modelFile || !textureFile))} 
                   className="flex-1"
                 >
                   {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploading ? 'Uploading...' : 'Creating...'}</> : 'Create Item'}
