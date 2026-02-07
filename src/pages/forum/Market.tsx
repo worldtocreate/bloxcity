@@ -14,7 +14,7 @@ import {
   Crown, Palette, Wrench, Sparkles, Shirt
 } from 'lucide-react';
 
-// Collapsible categories matching blade template
+// Categories matching blade template structure
 const CATEGORY_SECTIONS = [
   {
     id: 'crates',
@@ -37,6 +37,7 @@ const CATEGORY_SECTIONS = [
     isCollapsible: true,
     items: [
       { id: 'shirts', name: 'Shirts', icon: Shirt },
+      { id: 't-shirts', name: 'T-Shirts', icon: Shirt },
       { id: 'pants', name: 'Pants', icon: Box },
     ]
   },
@@ -55,7 +56,7 @@ const CATEGORY_SECTIONS = [
     name: 'Other',
     isCollapsible: true,
     items: [
-      { id: 'bundles', name: 'Bundle', icon: Sparkles },
+      { id: 'bundles', name: 'Bundles', icon: Sparkles },
     ]
   },
 ];
