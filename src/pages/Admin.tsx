@@ -23,6 +23,7 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+// InventoryManagementTab is inlined below due to module resolution issues
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -215,6 +216,121 @@ function ItemThumbnailRenderer({ modelUrl, textureUrl, onThumbnailGenerated, siz
    jobs?: { title: string };
  }
  
+// Inline InventoryManagementTab
+const InventoryManagementTab = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string; avatar_url: string | null } | null>(null);
+  const [userInventory, setUserInventory] = useState<any[]>([]);
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [removingItem, setRemovingItem] = useState<string | null>(null);
+  const [showAwardModal, setShowAwardModal] = useState(false);
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [awardReason, setAwardReason] = useState('Admin award');
+  const [awarding, setAwarding] = useState(false);
+  const { toast } = useToast();
+
+  const handleSearchUser = async () => {
+    if (!searchQuery.trim()) return;
+    const { data, error } = await supabase.from('forum_users').select('id, username, avatar_url').ilike('username', searchQuery.trim()).limit(1).single();
+    if (error || !data) { toast({ title: 'User not found', variant: 'destructive' }); return; }
+    setSelectedUser(data);
+    setLoadingInventory(true);
+    const { data: inv } = await supabase.rpc('admin_get_user_inventory', { p_forum_user_id: data.id });
+    setUserInventory(inv || []);
+    setLoadingInventory(false);
+  };
+
+  const handleSearchItems = async () => {
+    if (!itemSearchQuery.trim()) return;
+    const { data } = await supabase.from('marketplace_items').select('id, serial_id, name, thumbnail_url, is_limited, limited_stock, limited_sold').ilike('name', `%${itemSearchQuery.trim()}%`).limit(10);
+    setSearchResults(data || []);
+  };
+
+  const handleAwardItem = async () => {
+    if (!selectedUser || !selectedItem) return;
+    setAwarding(true);
+    const { data, error } = await supabase.rpc('admin_award_item', { p_forum_user_id: selectedUser.id, p_item_id: selectedItem.id, p_reason: awardReason });
+    if (error) { toast({ title: 'Failed to award item', variant: 'destructive' }); }
+    else {
+      const result = data as any;
+      if (result.success) {
+        toast({ title: result.serial_number ? `Awarded ${selectedItem.name} (Serial #${result.serial_number})` : `Awarded ${selectedItem.name}` });
+        setShowAwardModal(false); setSelectedItem(null); setItemSearchQuery(''); setSearchResults([]);
+        const { data: inv } = await supabase.rpc('admin_get_user_inventory', { p_forum_user_id: selectedUser.id });
+        setUserInventory(inv || []);
+      } else { toast({ title: result.error || 'Failed', variant: 'destructive' }); }
+    }
+    setAwarding(false);
+  };
+
+  const handleRemoveItem = async (inventoryId: string, itemName: string, serialNumber: number | null) => {
+    if (!confirm(`Remove ${itemName}${serialNumber ? ` (#${serialNumber})` : ''}?`)) return;
+    setRemovingItem(inventoryId);
+    const { data, error } = await supabase.rpc('admin_remove_item', { p_inventory_id: inventoryId, p_reason: 'Admin removal' });
+    if (error) { toast({ title: 'Failed to remove item', variant: 'destructive' }); }
+    else {
+      const result = data as any;
+      if (result.success) {
+        toast({ title: result.was_limited ? `Removed ${itemName} - Stock restored` : `Removed ${itemName}` });
+        if (selectedUser) { const { data: inv } = await supabase.rpc('admin_get_user_inventory', { p_forum_user_id: selectedUser.id }); setUserInventory(inv || []); }
+      } else { toast({ title: result.error || 'Failed', variant: 'destructive' }); }
+    }
+    setRemovingItem(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Inventory Management</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Award or remove items. Limiteds restore stock when removed.</p>
+        <div className="flex gap-2">
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearchUser()} placeholder="Enter username..." className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+          <button onClick={handleSearchUser} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Search</button>
+        </div>
+      </div>
+      {selectedUser && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {selectedUser.avatar_url ? <img src={selectedUser.avatar_url} alt="" className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 rounded-full bg-gray-200" />}
+              <div><span className="font-semibold text-gray-900 dark:text-white">{selectedUser.username}</span><p className="text-sm text-gray-500">{userInventory.length} items</p></div>
+            </div>
+            <button onClick={() => setShowAwardModal(true)} className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Award Item</button>
+          </div>
+          {loadingInventory ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div> : userInventory.length === 0 ? <div className="text-center py-8 text-gray-500">No items</div> : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700 max-h-[500px] overflow-y-auto">
+              {userInventory.map((item: any) => (
+                <div key={item.inventory_id} className="p-4 flex items-center gap-4">
+                  {item.item_thumbnail ? <img src={item.item_thumbnail} alt="" className="w-12 h-12 rounded-lg object-contain bg-gray-100" /> : <div className="w-12 h-12 rounded-lg bg-gray-200" />}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2"><span className="font-medium text-gray-900 dark:text-white">{item.item_name}</span>{item.is_limited && <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-700 rounded">LTD #{item.serial_number}</span>}</div>
+                    <p className="text-xs text-gray-500">{item.acquired_from}</p>
+                  </div>
+                  <button onClick={() => handleRemoveItem(item.inventory_id, item.item_name, item.serial_number)} disabled={removingItem === item.inventory_id} className="px-3 py-1.5 text-sm bg-red-100 hover:bg-red-200 text-red-700 rounded-lg">{removingItem === item.inventory_id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Remove'}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {showAwardModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Award Item to {selectedUser.username}</h3>
+            <div className="flex gap-2"><input type="text" value={itemSearchQuery} onChange={(e) => setItemSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearchItems()} placeholder="Search item..." className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg" /><button onClick={handleSearchItems} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Search</button></div>
+            {searchResults.length > 0 && <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">{searchResults.map((item: any) => { const soldOut = item.is_limited && item.limited_stock && (item.limited_sold || 0) >= item.limited_stock; return (<button key={item.id} type="button" onClick={() => setSelectedItem(item)} disabled={soldOut} className={`w-full text-left p-3 flex items-center gap-3 ${selectedItem?.id === item.id ? 'bg-blue-50' : ''} ${soldOut ? 'opacity-50' : ''}`}>{item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="w-10 h-10 rounded" /> : <div className="w-10 h-10 bg-gray-200 rounded" />}<div className="flex-1"><span className="font-medium">{item.name}</span>{item.is_limited && <div className="text-xs text-amber-600">LTD {item.limited_sold}/{item.limited_stock}</div>}</div></button>); })}</div>}
+            {selectedItem && <div className="bg-green-50 border border-green-200 rounded-lg p-4"><span className="font-semibold">{selectedItem.name}</span>{selectedItem.is_limited && <p className="text-sm text-amber-600">Serial #{(selectedItem.limited_sold || 0) + 1}</p>}</div>}
+            <input type="text" value={awardReason} onChange={(e) => setAwardReason(e.target.value)} placeholder="Reason..." className="w-full px-3 py-2 border rounded-lg" />
+            <div className="flex gap-2"><button onClick={() => { setShowAwardModal(false); setSelectedItem(null); }} className="flex-1 px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button onClick={handleAwardItem} disabled={!selectedItem || awarding} className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg">{awarding ? 'Awarding...' : 'Award Item'}</button></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
  const JobsTab = () => {
    const { toast } = useToast();
    const [jobs, setJobs] = useState<JobListingAdmin[]>([]);
@@ -3442,6 +3558,9 @@ const Admin = () => {
         
         {/* Marketplace Tab */}
         {activeTab === "marketplace" && <MarketplaceTab darkMode={darkMode} />}
+        
+        {/* Inventory Management Tab */}
+        {activeTab === "inventory" && <InventoryManagementTab />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (

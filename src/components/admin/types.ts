@@ -98,4 +98,5 @@ export type AdminTab =
   | "maintenance"
   | "jobs"
   | "marketplace"
+  | "inventory"
   | "settings";
