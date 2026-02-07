@@ -387,17 +387,7 @@ import Create from "./pages/forum/Create";
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Convert, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
 
-function MarketItemDetailInline() {
-  return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
-      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
-        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Market Item</h1>
-        <p className="text-[hsl(var(--bc-text-muted))] mb-6">Item view is being finalized.</p>
-        <Link to="/market" className="text-[hsl(var(--bc-primary))] hover:underline">Back to Market</Link>
-      </div>
-    </div>
-  );
-}
+// MarketItemDetailInline placeholder removed - using MarketItem component directly in routes
 
 // Inline Inventory component
 function InventoryPage() {
@@ -3282,7 +3272,7 @@ const App = () => (
               <Route path="games" element={<Games />} />
               <Route path="game/:id" element={<GameView />} />
               <Route path="market" element={<Market />} />
-              <Route path="market/item/:id" element={<MarketItemDetailInline />} />
+              <Route path="market/item/:id" element={<MarketItem />} />
               <Route path="character" element={<Character />} />
               <Route path="trading" element={<TradingPageComponent />} />
               <Route path="inventory" element={<InventoryPage />} />
