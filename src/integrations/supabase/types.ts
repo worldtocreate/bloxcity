@@ -4693,6 +4693,7 @@ export type Database = {
         }[]
       }
       get_maintenance_status: { Args: never; Returns: Json }
+      get_page_maintenance_status: { Args: never; Returns: Json }
       get_reservation_count: { Args: never; Returns: number }
       get_staff_list: {
         Args: never
