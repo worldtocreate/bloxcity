@@ -112,6 +112,9 @@ export default function Trading() {
   const [friends, setFriends] = useState<any[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<any>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [requestedItems, setRequestedItems] = useState<string[]>([]);
+  const [friendTradableItems, setFriendTradableItems] = useState<InventoryItem[]>([]);
+  const [loadingFriendItems, setLoadingFriendItems] = useState(false);
   const [sendingTrade, setSendingTrade] = useState(false);
 
   useEffect(() => {
@@ -121,6 +124,32 @@ export default function Trading() {
       fetchFriends();
     }
   }, [forumUser, activeTab]);
+
+  // Handle friend URL param to auto-open trade modal
+  useEffect(() => {
+    const friendId = searchParams.get('friend');
+    if (friendId && forumUser && friends.length > 0) {
+      const friend = friends.find(f => f.id === friendId);
+      if (friend) {
+        setSelectedFriend(friend);
+        setShowNewTradeModal(true);
+        // Clear the param
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('friend');
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [searchParams, forumUser, friends]);
+
+  // Fetch friend's tradable items when a friend is selected
+  useEffect(() => {
+    if (selectedFriend) {
+      fetchFriendTradableItems(selectedFriend.id);
+    } else {
+      setFriendTradableItems([]);
+      setRequestedItems([]);
+    }
+  }, [selectedFriend]);
 
   const fetchTrades = async () => {
     if (!forumUser) return;
@@ -183,6 +212,26 @@ export default function Trading() {
       f.user_1?.id === forumUser.id ? f.user_2 : f.user_1
     ).filter(Boolean);
     setFriends(friendList);
+  };
+
+  const fetchFriendTradableItems = async (friendId: string) => {
+    setLoadingFriendItems(true);
+    const { data } = await supabase
+      .from('user_inventory')
+      .select(`
+        id, item_id, serial_number, is_for_sale,
+        item:item_id(id, name, thumbnail_url, is_limited, rap, limited_sold, limited_stock)
+      `)
+      .eq('forum_user_id', friendId)
+      .eq('is_for_sale', false);
+    
+    // Filter to only sold-out limiteds
+    const tradable = (data || []).filter((inv: any) => 
+      inv.item?.is_limited && 
+      inv.item?.limited_sold >= inv.item?.limited_stock
+    );
+    setFriendTradableItems(tradable as InventoryItem[]);
+    setLoadingFriendItems(false);
   };
 
   const fetchTradeItems = async (tradeId: string) => {
@@ -268,10 +317,12 @@ export default function Trading() {
       return;
     }
     setSendingTrade(true);
+    
+    // First send trade with sender's items
     const { data, error } = await supabase.rpc('send_trade', {
       p_receiver_id: selectedFriend.id,
       p_sender_items: selectedItems,
-      p_receiver_items: []
+      p_receiver_items: requestedItems
     });
     const result = data as { success?: boolean; error?: string; trade_id?: string } | null;
     if (error || (result && !result.success)) {
@@ -281,6 +332,8 @@ export default function Trading() {
       setShowNewTradeModal(false);
       setSelectedFriend(null);
       setSelectedItems([]);
+      setRequestedItems([]);
+      setActiveTab('outgoing');
       fetchTrades();
     }
     setSendingTrade(false);
@@ -471,7 +524,7 @@ export default function Trading() {
           <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--bc-border))]">
               <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">New Trade</h3>
-              <button onClick={() => { setShowNewTradeModal(false); setSelectedFriend(null); setSelectedItems([]); }} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[hsl(var(--bc-bg))]">×</button>
+              <button onClick={() => { setShowNewTradeModal(false); setSelectedFriend(null); setSelectedItems([]); setRequestedItems([]); }} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[hsl(var(--bc-bg))]">×</button>
             </div>
             <div className="p-4 space-y-4">
               {/* Select Friend */}
@@ -526,53 +579,101 @@ export default function Trading() {
                 )}
               </div>
 
-              {/* Select Items */}
+              {/* Trade Items Grid - side by side */}
               {selectedFriend && (
-                <div>
-                  <label className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2 block">
-                    Your items to offer ({selectedItems.length} selected):
-                  </label>
-                  {myTradableItems.length === 0 ? (
-                    <p className="text-sm text-[hsl(var(--bc-text-muted))] text-center py-4 bg-[hsl(var(--bc-bg))] rounded-lg">
-                      No tradable items. Only sold-out limited items can be traded.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                      {myTradableItems.map(inv => (
-                        <button
-                          key={inv.id}
-                          onClick={() => toggleItemSelection(inv.id)}
-                          className={`flex items-center gap-2 p-2 rounded-lg border transition ${
-                            selectedItems.includes(inv.id)
-                              ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10'
-                              : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]'
-                          }`}
-                        >
-                          <div className="w-12 h-12 bg-[hsl(var(--bc-bg))] rounded overflow-hidden">
-                            {inv.item?.thumbnail_url ? (
-                              <img src={inv.item.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <Box className="w-full h-full p-3 text-[hsl(var(--bc-text-muted))]" />
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Your Items */}
+                  <div className="border border-[hsl(var(--bc-border))] rounded-lg p-3">
+                    <label className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2 block">
+                      Your Items ({selectedItems.length} selected)
+                    </label>
+                    {myTradableItems.length === 0 ? (
+                      <p className="text-sm text-[hsl(var(--bc-text-muted))] text-center py-8">
+                        No tradable items. Only sold-out limited items can be traded.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                        {myTradableItems.map(inv => (
+                          <button
+                            key={inv.id}
+                            onClick={() => toggleItemSelection(inv.id)}
+                            className={`relative flex flex-col items-center p-2 rounded-lg border transition ${
+                              selectedItems.includes(inv.id)
+                                ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10'
+                                : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]'
+                            }`}
+                          >
+                            {selectedItems.includes(inv.id) && (
+                              <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
                             )}
-                          </div>
-                          <div className="flex-1 text-left min-w-0">
-                            <div className="text-sm font-medium text-[hsl(var(--bc-text))] truncate">{inv.item?.name}</div>
+                            <div className="w-14 h-14 bg-[hsl(var(--bc-bg))] rounded overflow-hidden mb-1">
+                              {inv.item?.thumbnail_url ? (
+                                <img src={inv.item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Box className="w-full h-full p-3 text-[hsl(var(--bc-text-muted))]" />
+                              )}
+                            </div>
+                            <div className="text-xs font-medium text-[hsl(var(--bc-text))] truncate w-full text-center">{inv.item?.name}</div>
                             <div className="text-xs text-[hsl(var(--bc-text-muted))]">#{inv.serial_number}</div>
-                          </div>
-                          {selectedItems.includes(inv.id) ? (
-                            <Minus className="w-4 h-4 text-red-500" />
-                          ) : (
-                            <Plus className="w-4 h-4 text-green-500" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Friend's Items */}
+                  <div className="border border-[hsl(var(--bc-border))] rounded-lg p-3">
+                    <label className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2 block">
+                      {selectedFriend.username}'s Items ({requestedItems.length} requested)
+                    </label>
+                    {loadingFriendItems ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--bc-primary))]" />
+                      </div>
+                    ) : friendTradableItems.length === 0 ? (
+                      <p className="text-sm text-[hsl(var(--bc-text-muted))] text-center py-8">
+                        {selectedFriend.username} has no tradable items.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                        {friendTradableItems.map(inv => (
+                          <button
+                            key={inv.id}
+                            onClick={() => setRequestedItems(prev => 
+                              prev.includes(inv.id) ? prev.filter(id => id !== inv.id) : [...prev, inv.id]
+                            )}
+                            className={`relative flex flex-col items-center p-2 rounded-lg border transition ${
+                              requestedItems.includes(inv.id)
+                                ? 'border-[hsl(var(--bc-primary))] bg-[hsl(var(--bc-primary))]/10'
+                                : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]'
+                            }`}
+                          >
+                            {requestedItems.includes(inv.id) && (
+                              <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <div className="w-14 h-14 bg-[hsl(var(--bc-bg))] rounded overflow-hidden mb-1">
+                              {inv.item?.thumbnail_url ? (
+                                <img src={inv.item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <Box className="w-full h-full p-3 text-[hsl(var(--bc-text-muted))]" />
+                              )}
+                            </div>
+                            <div className="text-xs font-medium text-[hsl(var(--bc-text))] truncate w-full text-center">{inv.item?.name}</div>
+                            <div className="text-xs text-[hsl(var(--bc-text-muted))]">#{inv.serial_number}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
             <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--bc-border))]">
-              <Button variant="outline" onClick={() => { setShowNewTradeModal(false); setSelectedFriend(null); setSelectedItems([]); }}>Cancel</Button>
+              <Button variant="outline" onClick={() => { setShowNewTradeModal(false); setSelectedFriend(null); setSelectedItems([]); setRequestedItems([]); }}>Cancel</Button>
               <Button onClick={handleSendTrade} disabled={sendingTrade || !selectedFriend || selectedItems.length === 0}>
                 {sendingTrade ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                 Send Trade
