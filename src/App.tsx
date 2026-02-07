@@ -392,22 +392,94 @@ import Create from "./pages/forum/Create";
 // Inline Inventory component
 function InventoryPage() {
   const { forumUser } = useOutletContext<{ forumUser: any }>();
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (forumUser) fetchInventory();
+  }, [forumUser]);
+
+  const fetchInventory = async () => {
+    if (!forumUser) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from('user_inventory')
+      .select('*, item:item_id(id, name, thumbnail_url, category, is_limited)')
+      .eq('forum_user_id', forumUser.id)
+      .order('acquired_at', { ascending: false });
+    setInventory(data || []);
+    setLoading(false);
+  };
+
   if (!forumUser) return <Navigate to="/login" replace />;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">My Inventory</h1>
-          <p className="text-[hsl(var(--bc-text-muted))]">View and manage your items</p>
+          <p className="text-[hsl(var(--bc-text-muted))]">View and manage your items ({inventory.length} items)</p>
         </div>
         <Link to="/trading" className="bc-btn bc-btn-primary gap-2"><ArrowRightLeft className="w-4 h-4" />Trade Items</Link>
       </div>
-      <div className="bc-card p-6 text-center">
-        <Package className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Your inventory is empty</h3>
-        <p className="text-[hsl(var(--bc-text-muted))] mb-4">Visit the Market to purchase items!</p>
-        <Link to="/market" className="bc-btn bc-btn-primary">Browse Market</Link>
-      </div>
+      {inventory.length === 0 ? (
+        <div className="bc-card p-6 text-center">
+          <Package className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">Your inventory is empty</h3>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-4">Visit the Market to purchase items!</p>
+          <Link to="/market" className="bc-btn bc-btn-primary">Browse Market</Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {inventory.map((inv) => (
+            <Link 
+              key={inv.id} 
+              to={`/market/item/${inv.item?.id}`}
+              className="bc-card overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all group"
+            >
+              <div className="aspect-square bg-[hsl(var(--bc-bg))] relative">
+                {inv.item?.thumbnail_url ? (
+                  <img src={inv.item.thumbnail_url} alt={inv.item.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))]/40" />
+                  </div>
+                )}
+                {inv.item?.is_limited && (
+                  <div className="absolute top-2 left-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-amber-500 text-white text-xs font-semibold">
+                      Rare
+                    </span>
+                  </div>
+                )}
+                {inv.is_for_sale && (
+                  <div className="absolute top-2 right-2">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-green-500 text-white text-xs font-semibold">
+                      On Sale
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <h3 className="font-medium text-sm text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-primary))]">
+                  {inv.item?.name || 'Unknown Item'}
+                </h3>
+                {inv.serial_number && (
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{inv.serial_number}</p>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -420,6 +492,8 @@ function TradingPageComponent() {
   const [tradingWith, setTradingWith] = useState<any>(null);
   const [friends, setFriends] = useState<any[]>([]);
   const [trades, setTrades] = useState<any[]>([]);
+  const [myInventory, setMyInventory] = useState<any[]>([]);
+  const [selectedMyItems, setSelectedMyItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -430,6 +504,16 @@ function TradingPageComponent() {
   const fetchData = async () => {
     if (!forumUser) return;
     setLoading(true);
+    
+    // Fetch user's inventory (only limited items can be traded)
+    const { data: inventoryData } = await supabase
+      .from('user_inventory')
+      .select('*, item:item_id(id, name, thumbnail_url, is_limited, rap)')
+      .eq('forum_user_id', forumUser.id)
+      .eq('is_for_sale', false);
+    
+    const tradableItems = (inventoryData || []).filter((inv: any) => inv.item?.is_limited);
+    setMyInventory(tradableItems);
     
     // Fetch friends
     const { data: friendships } = await supabase
@@ -445,7 +529,6 @@ function TradingPageComponent() {
         .in('id', friendIds);
       setFriends(friendUsers || []);
       
-      // If ?with= param, find that friend
       if (withUsername && friendUsers) {
         const friend = friendUsers.find(f => f.username.toLowerCase() === withUsername.toLowerCase());
         if (friend) setTradingWith(friend);
@@ -462,6 +545,14 @@ function TradingPageComponent() {
     setTrades(tradesData || []);
     
     setLoading(false);
+  };
+
+  const toggleItemSelection = (inventoryId: string) => {
+    setSelectedMyItems(prev => 
+      prev.includes(inventoryId) 
+        ? prev.filter(id => id !== inventoryId)
+        : [...prev, inventoryId]
+    );
   };
 
   if (!forumUser) return <Navigate to="/login" replace />;
@@ -484,27 +575,66 @@ function TradingPageComponent() {
             <img src={tradingWith.avatar_url || '/placeholder.svg'} alt="" className="w-16 h-16 rounded-full" />
             <div>
               <h2 className="text-xl font-bold text-[hsl(var(--bc-text))]">Trade with {tradingWith.username}</h2>
-              <p className="text-[hsl(var(--bc-text-muted))]">Select items to trade</p>
+              <p className="text-[hsl(var(--bc-text-muted))]">Select limited items to trade</p>
             </div>
-            <button onClick={() => setTradingWith(null)} className="ml-auto text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]">✕</button>
+            <button onClick={() => { setTradingWith(null); setSelectedMyItems([]); }} className="ml-auto text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]">✕</button>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="border border-[hsl(var(--bc-border))] rounded-xl p-4">
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-3">Your Items</h3>
-              <div className="min-h-[200px] flex items-center justify-center text-[hsl(var(--bc-text-muted))]">
-                <p>Select items from your inventory</p>
-              </div>
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-3">Your Items ({selectedMyItems.length} selected)</h3>
+              {myInventory.length === 0 ? (
+                <div className="min-h-[200px] flex items-center justify-center text-[hsl(var(--bc-text-muted))]">
+                  <p>You have no limited items to trade</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto">
+                  {myInventory.map((inv: any) => (
+                    <button
+                      key={inv.id}
+                      onClick={() => toggleItemSelection(inv.id)}
+                      className={`relative rounded-lg border-2 transition ${
+                        selectedMyItems.includes(inv.id) 
+                          ? 'border-green-500 bg-green-500/10' 
+                          : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]'
+                      }`}
+                    >
+                      <div className="aspect-square bg-[hsl(var(--bc-bg))]">
+                        {inv.item?.thumbnail_url ? (
+                          <img src={inv.item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <Package className="w-6 h-6 m-auto text-[hsl(var(--bc-text-muted))]" />
+                        )}
+                      </div>
+                      <div className="p-1 text-center">
+                        <p className="text-xs text-[hsl(var(--bc-text))] truncate">{inv.item?.name}</p>
+                        {inv.serial_number && <p className="text-[10px] text-[hsl(var(--bc-text-muted))]">#{inv.serial_number}</p>}
+                      </div>
+                      {selectedMyItems.includes(inv.id) && (
+                        <div className="absolute top-1 right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="border border-[hsl(var(--bc-border))] rounded-xl p-4">
               <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-3">{tradingWith.username}'s Items</h3>
               <div className="min-h-[200px] flex items-center justify-center text-[hsl(var(--bc-text-muted))]">
-                <p>Waiting for items...</p>
+                <p>Select items to request from {tradingWith.username}</p>
               </div>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setTradingWith(null)} className="bc-btn bc-btn-secondary">Cancel</button>
-            <button className="bc-btn bc-btn-primary">Send Trade Request</button>
+            <button onClick={() => { setTradingWith(null); setSelectedMyItems([]); }} className="bc-btn bc-btn-secondary">Cancel</button>
+            <button 
+              className="bc-btn bc-btn-primary"
+              disabled={selectedMyItems.length === 0}
+              onClick={() => toast({ title: 'Trade feature coming soon!', description: 'Full trading will be available soon.' })}
+            >
+              Send Trade Request
+            </button>
           </div>
         </div>
       ) : (
@@ -2321,6 +2451,7 @@ function MarketItem() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [purchaseType, setPurchaseType] = useState<'official' | 'reseller'>('official');
   const [selectedResellerId, setSelectedResellerId] = useState<string>('');
+  const [bloxCityProfile, setBloxCityProfile] = useState<any>(null);
 
   const CATEGORY_NAMES: Record<string, string> = {
     'hats': 'Hat',
@@ -2384,6 +2515,9 @@ function MarketItem() {
   const fetchItem = async () => {
     if (!itemId) return;
     setLoading(true);
+    setOwnsItem(false);
+    setOwnedCopies([]);
+    
     const { data, error } = await supabase
       .from('marketplace_items')
       .select('*')
@@ -2394,6 +2528,23 @@ function MarketItem() {
       console.error('Error fetching item:', error);
     } else {
       setItem(data);
+    }
+    
+    // Fetch BLOX City profile for creator display
+    const { data: bcProfile } = await supabase
+      .from('forum_users')
+      .select('id, serial_id, username, avatar_url, is_verified')
+      .eq('username', 'BLOX City')
+      .maybeSingle();
+    
+    if (bcProfile) {
+      // Check if BLOX City has gold checkmark
+      const { data: goldCheck } = await supabase
+        .from('forum_gold_checkmarks')
+        .select('id')
+        .eq('forum_user_id', bcProfile.id)
+        .maybeSingle();
+      setBloxCityProfile({ ...bcProfile, has_gold: !!goldCheck });
     }
     
     // Fetch resale listings for limited items
@@ -2753,13 +2904,35 @@ function MarketItem() {
               {/* Creator */}
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">By</span>
-                <Link to="/market" className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]">
-                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center">
-                    <span className="font-bold text-[hsl(var(--bc-primary))]">BC</span>
+                <Link 
+                  to={bloxCityProfile ? `/${bloxCityProfile.serial_id}/${bloxCityProfile.username}/profile` : '/market'} 
+                  className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center overflow-hidden">
+                    {bloxCityProfile?.avatar_url ? (
+                      <img src={bloxCityProfile.avatar_url} alt="BLOX City" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-bold text-[hsl(var(--bc-primary))]">BC</span>
+                    )}
                   </div>
-                  <span>BLOX City</span>
+                  <span className="flex items-center gap-1">
+                    BLOX City
+                    {bloxCityProfile?.has_gold && (
+                      <Crown className="w-4 h-4 text-yellow-500" />
+                    )}
+                    {bloxCityProfile?.is_verified && (
+                      <BadgeCheck className="w-4 h-4 text-green-500" />
+                    )}
+                  </span>
                 </Link>
               </div>
+
+              {/* Already owned message */}
+              {ownsItem && !item.is_limited && (
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-400 font-medium">✓ You already own this item</p>
+                </div>
+              )}
 
               {/* Purchase section */}
               {canPurchaseOfficial && (
