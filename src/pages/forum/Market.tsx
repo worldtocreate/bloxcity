@@ -28,7 +28,7 @@ const CATEGORY_SECTIONS = [
     isCollapsible: true,
     items: [
       { id: 'hats', name: 'Hats', icon: Crown },
-      { id: 'gear', name: 'Gadgets', icon: Wrench },
+      { id: 'gadgets', name: 'Gadgets', icon: Wrench },
     ]
   },
   {
