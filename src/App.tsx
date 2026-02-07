@@ -374,10 +374,8 @@ import Updates from "./pages/Updates";
 import Games from "./pages/forum/Games";
 // GameDetail inlined below
 import Market from "./pages/forum/Market";
-import MarketItemDetail from "./pages/forum/MarketItemDetail";
 import Character from "./pages/forum/Character";
-import TradingPage from "./pages/forum/TradingPage";
-import Inventory from "./pages/forum/Inventory";
+// Marketplace + trading pages are inlined below to avoid module resolution issues
 // Players page removed - using ForumUsers at /players instead
 import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
@@ -389,8 +387,44 @@ import Create from "./pages/forum/Create";
 // GameView, SettingsPrivacy, SettingsSecurity are inlined below
 // Upgrades, Convert, Support, TermsOfService, PrivacyPolicy, GameDetail, MarketItem, Roadmap are inlined below
 
- // Inline Jobs component
- import { Briefcase, MapPin, Clock, Building2, Send } from "lucide-react";
+function MarketItemDetailInline() {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
+        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Market Item</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-6">Item view is being finalized.</p>
+        <Link to="/market" className="text-[hsl(var(--bc-primary))] hover:underline">Back to Market</Link>
+      </div>
+    </div>
+  );
+}
+
+function InventoryInline() {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
+        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Inventory</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-6">Inventory view is being finalized.</p>
+        <Link to="/market" className="text-[hsl(var(--bc-primary))] hover:underline">Browse Market</Link>
+      </div>
+    </div>
+  );
+}
+
+function TradingPageInline() {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center p-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 max-w-md w-full text-center">
+        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Trading</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-6">Trading is being finalized.</p>
+        <Link to="/friends" className="text-[hsl(var(--bc-primary))] hover:underline">Go to Friends</Link>
+      </div>
+    </div>
+  );
+}
+
+// Inline Jobs component
+import { Briefcase, MapPin, Clock, Building2, Send } from "lucide-react";
  
  interface JobListing {
    id: string;
@@ -2746,10 +2780,10 @@ const App = () => (
               <Route path="games" element={<Games />} />
               <Route path="game/:id" element={<GameView />} />
               <Route path="market" element={<Market />} />
-              <Route path="market/item/:id" element={<MarketItemDetail />} />
+              <Route path="market/item/:id" element={<MarketItemDetailInline />} />
               <Route path="character" element={<Character />} />
-              <Route path="trading" element={<TradingPage />} />
-              <Route path="inventory" element={<Inventory />} />
+              <Route path="trading" element={<TradingPageInline />} />
+              <Route path="inventory" element={<InventoryInline />} />
               <Route path="login" element={<ForumLogin />} />
               <Route path="register" element={<ForumRegister />} />
               <Route path="forgot-password" element={<ForumForgotPassword />} />

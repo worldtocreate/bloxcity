@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useSearchParams, useOutletContext } from 'react-router-dom';
 import { ForumUser } from '@/hooks/useForumAuth';
-import { useMarketplaceItems, MarketplaceItem } from '@/hooks/useMarketplace';
+import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { 
-  Search, Heart, Clock, 
-  Shirt, Sparkles, Crown, Palette, Box, 
+import {
+  Search, Heart, Clock,
+  Shirt, Sparkles, Crown, Palette, Box,
   Grid3X3, List, Coins, Loader2, DollarSign, Wrench
 } from 'lucide-react';
 
@@ -43,6 +44,56 @@ function formatPrice(price: number): string {
   return price.toLocaleString();
 }
 
+type MarketplaceItem = {
+  id: string;
+  name: string;
+  category: string;
+  created_at: string;
+  is_limited: boolean;
+  thumbnail_url: string | null;
+  favorites_count: number;
+  sales_count: number;
+  payment_type: 'coins' | 'cash' | 'both';
+  price_coins: number;
+  price_cash: number;
+};
+
+function useMarketplaceItems(category: string) {
+  const [items, setItems] = useState<MarketplaceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      setLoading(true);
+      let query = supabase
+        .from('marketplace_items')
+        .select('id,name,category,created_at,is_limited,thumbnail_url,favorites_count,sales_count,payment_type,price_coins,price_cash')
+        .eq('is_on_sale', true)
+        .order('created_at', { ascending: false });
+
+      if (category && category !== 'all') {
+        // Supabase types narrow category to a literal union; runtime values are validated by our UI.
+        query = query.eq('category', category as any);
+      }
+
+      const { data, error } = await query;
+      if (!cancelled) {
+        setItems((!error && data ? (data as MarketplaceItem[]) : []) as MarketplaceItem[]);
+        setLoading(false);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [category]);
+
+  return { items, loading };
+}
+
 export default function Market() {
   const context = useOutletContext<{
     user: any;
@@ -75,7 +126,7 @@ export default function Market() {
     }
   });
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams(searchParams);
     if (searchQuery) params.set('q', searchQuery);
