@@ -109,6 +109,10 @@ export default function ForumUserProfile() {
   const [areFriends, setAreFriends] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [verifiedModalOpen, setVerifiedModalOpen] = useState(false);
+
+  // Inventory preview state (for profile)
+  const [inventoryPreview, setInventoryPreview] = useState<any[]>([]);
+  const [inventoryPreviewLoading, setInventoryPreviewLoading] = useState(false);
   
   // Follow system state
   const [isFollowing, setIsFollowing] = useState(false);
@@ -128,6 +132,8 @@ export default function ForumUserProfile() {
 
   const isOwnProfile = forumUser?.serial_id === parseInt(serialId || '0') || 
                        forumUser?.username?.toLowerCase() === username?.toLowerCase();
+
+  const canViewInventory = !!profile && (isOwnProfile || isAdmin);
 
   const isOnline = profile?.last_seen_at && 
     new Date(profile.last_seen_at) > new Date(Date.now() - 5 * 60 * 1000);
@@ -183,7 +189,19 @@ export default function ForumUserProfile() {
 
     setProfile(userData as ProfileData);
 
-    // Check if blocked
+    // Fetch inventory preview for own profile (or admins)
+    setInventoryPreview([]);
+    if (isOwnProfile || isAdmin) {
+      setInventoryPreviewLoading(true);
+      const { data: invPreview } = await supabase
+        .from('user_inventory')
+        .select('id, serial_number, is_for_sale, acquired_at, item:item_id(id, name, thumbnail_url, is_limited)')
+        .eq('forum_user_id', userData.id)
+        .order('acquired_at', { ascending: false })
+        .limit(8);
+      setInventoryPreview(invPreview || []);
+      setInventoryPreviewLoading(false);
+    }
     if (forumUser && forumUser.id !== userData.id) {
       const { data: blockData } = await supabase
         .from('forum_blocked_users')
@@ -1062,12 +1080,54 @@ export default function ForumUserProfile() {
             {isOwnProfile && <Link to="/inventory" className="bc-btn bc-btn-secondary bc-btn-sm">View All</Link>}
           </div>
           <div className="bc-card p-4">
-            <div className="text-center py-8">
-              <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-2" />
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">
-                {isOwnProfile ? "Your inventory is empty" : `${profile.username} doesn't have any items yet`}
-              </p>
-            </div>
+            {!canViewInventory ? (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-2" />
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">Inventory is private.</p>
+              </div>
+            ) : inventoryPreviewLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--bc-primary))]" />
+              </div>
+            ) : inventoryPreview.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-2" />
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  {isOwnProfile ? "Your inventory is empty" : `${profile.username} doesn't have any items yet`}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {inventoryPreview.map((inv: any) => (
+                  <Link
+                    key={inv.id}
+                    to={inv.item?.id ? `/market/item/${inv.item.id}` : '/market'}
+                    className="group"
+                  >
+                    <div className="aspect-square rounded-lg border border-[hsl(var(--bc-border))] bg-[hsl(var(--bc-bg))] overflow-hidden">
+                      {inv.item?.thumbnail_url ? (
+                        <img
+                          src={inv.item.thumbnail_url}
+                          alt={inv.item.name || 'Item'}
+                          className="w-full h-full object-cover group-hover:scale-[1.02] transition"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-8 h-8 text-[hsl(var(--bc-text-muted))]/40" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-1">
+                      <p className="text-xs font-semibold text-[hsl(var(--bc-text))] truncate">{inv.item?.name || 'Unknown'}</p>
+                      {inv.serial_number ? (
+                        <p className="text-[10px] text-[hsl(var(--bc-text-muted))] truncate">Serial #{inv.serial_number}</p>
+                      ) : null}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

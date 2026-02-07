@@ -2690,7 +2690,8 @@ function MarketItem() {
   }
 
   const isLimitedSoldOut = item.is_limited && item.limited_stock && (item.limited_sold >= item.limited_stock);
-  const canPurchaseOfficial = item.is_on_sale && !isLimitedSoldOut && (!ownsItem || item.category === 'crates');
+  const canPurchaseOfficial = item.is_on_sale && !isLimitedSoldOut;
+  const isOwnedNonLimited = ownsItem && !item.is_limited && item.category !== 'crates';
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
@@ -2707,13 +2708,13 @@ function MarketItem() {
             <div className="p-4">
               <p className="text-sm text-[hsl(var(--bc-text-muted))]">
                 Are you sure you want to buy <span className="font-semibold text-[hsl(var(--bc-text))]">{item.name}</span> for{' '}
-                <span className="text-green-500 font-semibold">
+                <span className="font-semibold">
                   {item.payment_type === 'cash' ? `$${formatPrice(item.price_cash)}` : `${formatPrice(item.price_coins)} Coins`}
                 </span>?
               </p>
             </div>
             <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--bc-border))]">
-              <Button onClick={handlePurchase} disabled={purchasing} className="bg-green-500 hover:bg-green-600 text-white">
+              <Button onClick={handlePurchase} disabled={purchasing}>
                 {purchasing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 Buy Now
               </Button>
@@ -2736,8 +2737,8 @@ function MarketItem() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Which Copy</label>
-                  <select 
-                    value={selectedCopyId} 
+                  <select
+                    value={selectedCopyId}
                     onChange={(e) => setSelectedCopyId(e.target.value)}
                     className="w-full mt-1 h-9 px-3 text-sm border border-[hsl(var(--bc-border))] rounded-lg bg-[hsl(var(--bc-bg))] text-[hsl(var(--bc-text))]"
                   >
@@ -2748,10 +2749,10 @@ function MarketItem() {
                 </div>
                 <div>
                   <label className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Price (Coins)</label>
-                  <Input 
-                    type="number" 
-                    value={sellPrice} 
-                    onChange={(e) => setSellPrice(e.target.value)} 
+                  <Input
+                    type="number"
+                    value={sellPrice}
+                    onChange={(e) => setSellPrice(e.target.value)}
                     placeholder="Price"
                     className="mt-1 h-9"
                   />
@@ -2759,7 +2760,7 @@ function MarketItem() {
               </div>
             </div>
             <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--bc-border))]">
-              <Button onClick={handleListForSale} className="bg-green-500 hover:bg-green-600 text-white">
+              <Button onClick={handleListForSale}>
                 Sell
               </Button>
             </div>
@@ -2789,7 +2790,7 @@ function MarketItem() {
                     </>
                   )}
                 </div>
-                
+
                 {/* Item thumbnail */}
                 <div className="aspect-square bg-[hsl(var(--bc-bg))] rounded-lg flex items-center justify-center">
                   {item.thumbnail_url ? (
@@ -2799,7 +2800,7 @@ function MarketItem() {
                   )}
                 </div>
               </div>
-              
+
               {/* Owned banner */}
               {ownsItem && (
                 <div className="flex items-center justify-center gap-2 bg-green-500 text-white text-sm font-semibold py-2">
@@ -2867,16 +2868,16 @@ function MarketItem() {
                             </div>
                           </div>
                           {forumUser?.id !== listing.forum_user_id ? (
-                            <Button 
+                            <Button
                               onClick={() => handlePurchaseResale(listing.id)}
                               disabled={purchasing}
-                              className="bg-green-500 hover:bg-green-600 text-white text-sm"
+                              className="text-sm"
                             >
                               <DollarSign className="w-4 h-4 mr-1" />
                               {formatPrice(listing.sale_price_coins)}
                             </Button>
                           ) : (
-                            <Button 
+                            <Button
                               onClick={() => handleRemoveFromSale(listing.id)}
                               variant="destructive"
                               size="sm"
@@ -2900,12 +2901,12 @@ function MarketItem() {
               <div className="flex items-start justify-between gap-4 mb-4">
                 <h1 className="text-3xl font-semibold text-[hsl(var(--bc-text))]">{item.name}</h1>
               </div>
-              
+
               {/* Creator */}
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">By</span>
-                <Link 
-                  to={bloxCityProfile ? `/${bloxCityProfile.serial_id}/${bloxCityProfile.username}/profile` : '/market'} 
+                <Link
+                  to={bloxCityProfile ? `/${bloxCityProfile.serial_id}/${bloxCityProfile.username}/profile` : '/market'}
                   className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]"
                 >
                   <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center overflow-hidden">
@@ -2940,17 +2941,19 @@ function MarketItem() {
                   <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">
                     Purchase For
                   </div>
-                  <Button 
+                  <Button
                     onClick={() => setShowPurchaseModal(true)}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white mb-4"
+                    disabled={isOwnedNonLimited}
+                    className="w-full mb-4"
                   >
-                    {item.price_coins === 0 && item.price_cash === 0 ? (
-                      'Take for Free'
-                    ) : item.payment_type === 'cash' ? (
-                      <>Buy for <DollarSign className="w-4 h-4 mx-1" /> {formatPrice(item.price_cash)}</>
-                    ) : (
-                      <>Buy for <Coins className="w-4 h-4 mx-1 text-yellow-300" /> {formatPrice(item.price_coins)}</>
-                    )}
+                    {isOwnedNonLimited
+                      ? 'Owned'
+                      : item.price_coins === 0 && item.price_cash === 0
+                        ? 'Take for Free'
+                        : item.payment_type === 'cash'
+                          ? <>Buy for <DollarSign className="w-4 h-4 mx-1" /> {formatPrice(item.price_cash)}</>
+                          : <>Buy for <Coins className="w-4 h-4 mx-1" /> {formatPrice(item.price_coins)}</>
+                    }
                   </Button>
                 </>
               )}
@@ -2959,9 +2962,9 @@ function MarketItem() {
               {item.is_limited && isLimitedSoldOut && ownsItem && ownedCopies.length > 0 && (
                 <>
                   <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">or</div>
-                  <Button 
+                  <Button
                     onClick={() => setShowSellModal(true)}
-                    className="w-full bg-green-500 hover:bg-green-600 text-white"
+                    className="w-full"
                   >
                     Sell Item
                   </Button>
