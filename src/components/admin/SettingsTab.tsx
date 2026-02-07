@@ -58,15 +58,16 @@ const SettingsTab = ({ darkMode }: SettingsTabProps) => {
     try {
       const { error } = await supabase
         .from('site_settings')
-        .update({ 
+        .upsert({ 
+          key: 'forum_announcement',
           value: JSON.parse(JSON.stringify(announcement)),
           updated_at: new Date().toISOString()
-        })
-        .eq('key', 'forum_announcement');
+        }, { onConflict: 'key' });
       
       if (error) throw error;
       setExportStatus({ success: true, message: 'Announcement saved successfully!' });
     } catch (error) {
+      console.error('Save error:', error);
       setExportStatus({ success: false, message: 'Failed to save announcement.' });
     }
     setSavingAnnouncement(false);
