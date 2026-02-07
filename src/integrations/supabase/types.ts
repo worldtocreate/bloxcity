@@ -3774,6 +3774,215 @@ export type Database = {
           },
         ]
       }
+      marketplace_favorites: {
+        Row: {
+          created_at: string | null
+          forum_user_id: string
+          id: string
+          item_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          forum_user_id: string
+          id?: string
+          item_id: string
+        }
+        Update: {
+          created_at?: string | null
+          forum_user_id?: string
+          id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_favorites_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_favorites_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_favorites_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_items: {
+        Row: {
+          category: Database["public"]["Enums"]["item_category"]
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          favorites_count: number | null
+          id: string
+          is_limited: boolean | null
+          is_on_sale: boolean | null
+          limited_sold: number | null
+          limited_stock: number | null
+          model_url: string | null
+          name: string
+          offsale_at: string | null
+          payment_type: Database["public"]["Enums"]["item_payment_type"]
+          price_cash: number | null
+          price_coins: number | null
+          rap: number | null
+          sales_count: number | null
+          texture_url: string | null
+          thumbnail_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["item_category"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          favorites_count?: number | null
+          id?: string
+          is_limited?: boolean | null
+          is_on_sale?: boolean | null
+          limited_sold?: number | null
+          limited_stock?: number | null
+          model_url?: string | null
+          name: string
+          offsale_at?: string | null
+          payment_type?: Database["public"]["Enums"]["item_payment_type"]
+          price_cash?: number | null
+          price_coins?: number | null
+          rap?: number | null
+          sales_count?: number | null
+          texture_url?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["item_category"]
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          favorites_count?: number | null
+          id?: string
+          is_limited?: boolean | null
+          is_on_sale?: boolean | null
+          limited_sold?: number | null
+          limited_stock?: number | null
+          model_url?: string | null
+          name?: string
+          offsale_at?: string | null
+          payment_type?: Database["public"]["Enums"]["item_payment_type"]
+          price_cash?: number | null
+          price_coins?: number | null
+          rap?: number | null
+          sales_count?: number | null
+          texture_url?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_purchases: {
+        Row: {
+          buyer_id: string
+          id: string
+          inventory_id: string | null
+          item_id: string
+          price_cash: number | null
+          price_coins: number | null
+          purchased_at: string | null
+          seller_id: string | null
+          serial_number: number | null
+        }
+        Insert: {
+          buyer_id: string
+          id?: string
+          inventory_id?: string | null
+          item_id: string
+          price_cash?: number | null
+          price_coins?: number | null
+          purchased_at?: string | null
+          seller_id?: string | null
+          serial_number?: number | null
+        }
+        Update: {
+          buyer_id?: string
+          id?: string
+          inventory_id?: string | null
+          item_id?: string
+          price_cash?: number | null
+          price_coins?: number | null
+          purchased_at?: string | null
+          seller_id?: string | null
+          serial_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_purchases_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_purchases_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_purchases_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "user_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_purchases_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_purchases_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           email: string
@@ -3950,6 +4159,201 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          inventory_id: string
+          item_id: string
+          owner_id: string
+          rap_at_trade: number | null
+          serial_number: number | null
+          trade_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inventory_id: string
+          item_id: string
+          owner_id: string
+          rap_at_trade?: number | null
+          serial_number?: number | null
+          trade_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inventory_id?: string
+          item_id?: string
+          owner_id?: string
+          rap_at_trade?: number | null
+          serial_number?: number | null
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_items_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "user_inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_items_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_items_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trades: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          receiver_id: string
+          receiver_value: number | null
+          responded_at: string | null
+          sender_id: string
+          sender_value: number | null
+          status: Database["public"]["Enums"]["trade_status"] | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          receiver_id: string
+          receiver_value?: number | null
+          responded_at?: string | null
+          sender_id: string
+          sender_value?: number | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          receiver_id?: string
+          receiver_value?: number | null
+          responded_at?: string | null
+          sender_id?: string
+          sender_value?: number | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_inventory: {
+        Row: {
+          acquired_at: string | null
+          acquired_from: string | null
+          acquired_price: number | null
+          forum_user_id: string
+          id: string
+          is_for_sale: boolean | null
+          item_id: string
+          sale_price_cash: number | null
+          sale_price_coins: number | null
+          serial_number: number | null
+        }
+        Insert: {
+          acquired_at?: string | null
+          acquired_from?: string | null
+          acquired_price?: number | null
+          forum_user_id: string
+          id?: string
+          is_for_sale?: boolean | null
+          item_id: string
+          sale_price_cash?: number | null
+          sale_price_coins?: number | null
+          serial_number?: number | null
+        }
+        Update: {
+          acquired_at?: string | null
+          acquired_from?: string | null
+          acquired_price?: number | null
+          forum_user_id?: string
+          id?: string
+          is_for_sale?: boolean | null
+          item_id?: string
+          sale_price_cash?: number | null
+          sale_price_coins?: number | null
+          serial_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_inventory_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_inventory_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_inventory_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           admin_pin_hash: string | null
@@ -4117,6 +4521,7 @@ export type Database = {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
       }
+      execute_trade: { Args: { p_trade_id: string }; Returns: Json }
       get_affiliate_info: {
         Args: { _forum_user_id: string }
         Returns: {
@@ -4169,6 +4574,14 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_item: {
+        Args: { p_item_id: string; p_use_coins?: boolean }
+        Returns: Json
+      }
+      purchase_resale_item: {
+        Args: { p_inventory_id: string; p_use_coins?: boolean }
+        Returns: Json
+      }
       redeem_membership: { Args: { tier_name: string }; Returns: undefined }
       save_maintenance_settings: {
         Args: { p_enabled: boolean; p_message: string; p_password: string }
@@ -4209,8 +4622,24 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       application_status: "pending" | "accepted" | "declined"
+      item_category:
+        | "hats"
+        | "faces"
+        | "gear"
+        | "accessories"
+        | "t-shirts"
+        | "shirts"
+        | "pants"
+        | "bundles"
+      item_payment_type: "coins" | "cash" | "both"
       job_status: "open" | "closed" | "filled"
       job_work_type: "remote" | "hybrid" | "on_site"
+      trade_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "cancelled"
+        | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4340,8 +4769,26 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       application_status: ["pending", "accepted", "declined"],
+      item_category: [
+        "hats",
+        "faces",
+        "gear",
+        "accessories",
+        "t-shirts",
+        "shirts",
+        "pants",
+        "bundles",
+      ],
+      item_payment_type: ["coins", "cash", "both"],
       job_status: ["open", "closed", "filled"],
       job_work_type: ["remote", "hybrid", "on_site"],
+      trade_status: [
+        "pending",
+        "accepted",
+        "declined",
+        "cancelled",
+        "completed",
+      ],
     },
   },
 } as const
