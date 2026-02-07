@@ -354,8 +354,229 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
        )}
      </div>
    );
- };
- 
+  };
+
+// Inlined MarketplaceTab to avoid module resolution issues
+const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
+  const { toast } = useToast();
+  const [items, setItems] = useState<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    category: string;
+    price_coins: number;
+    price_cash: number;
+    payment_type: 'coins' | 'cash' | 'both';
+    is_limited: boolean;
+    limited_stock: number | null;
+    limited_sold: number;
+    is_on_sale: boolean;
+    offsale_at: string | null;
+    thumbnail_url: string | null;
+    created_at: string;
+  }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('faces');
+  const [priceCoins, setPriceCoins] = useState('100');
+  const [priceCash, setPriceCash] = useState('10');
+  const [paymentType, setPaymentType] = useState<'coins' | 'cash' | 'both'>('coins');
+  const [isLimited, setIsLimited] = useState(false);
+  const [limitedStock, setLimitedStock] = useState('');
+  const [isOnSale, setIsOnSale] = useState(true);
+  const [offsaleAt, setOffsaleAt] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+
+  const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const textClass = darkMode ? 'text-white' : 'text-gray-800';
+  const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const inputClass = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-800';
+
+  const CATS = [
+    { id: 'hats', name: 'Hats' },
+    { id: 'faces', name: 'Faces' },
+    { id: 'gear', name: 'Gear' },
+    { id: 'accessories', name: 'Accessories' },
+    { id: 't-shirts', name: 'T-Shirts' },
+    { id: 'shirts', name: 'Shirts' },
+    { id: 'pants', name: 'Pants' },
+    { id: 'bundles', name: 'Bundles' },
+  ];
+
+  const fetchItems = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('marketplace_items').select('*').order('created_at', { ascending: false });
+    if (error) toast({ title: 'Failed to load items', description: error.message, variant: 'destructive' });
+    else setItems((data || []) as any);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchItems(); }, []);
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setThumbnailPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadThumbnail = async (): Promise<string | null> => {
+    if (!thumbnailFile) return null;
+    const fileExt = thumbnailFile.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `marketplace/${fileName}`;
+    const { error } = await supabase.storage.from('marketplace-assets').upload(filePath, thumbnailFile);
+    if (error) { toast({ title: 'Failed to upload image', description: error.message, variant: 'destructive' }); return null; }
+    const { data: urlData } = supabase.storage.from('marketplace-assets').getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
+  const handleCreateItem = async () => {
+    if (!name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
+    if (!thumbnailFile) { toast({ title: 'Thumbnail image is required', variant: 'destructive' }); return; }
+    setSubmitting(true);
+    setUploading(true);
+    const thumbnailUrl = await uploadThumbnail();
+    setUploading(false);
+    if (!thumbnailUrl) { setSubmitting(false); return; }
+    const { error } = await supabase.from('marketplace_items').insert({
+      name: name.trim(),
+      description: description.trim() || null,
+      category: category as any,
+      price_coins: parseInt(priceCoins) || 0,
+      price_cash: parseInt(priceCash) || 0,
+      payment_type: paymentType as any,
+      is_limited: isLimited,
+      limited_stock: isLimited && limitedStock ? parseInt(limitedStock) : null,
+      is_on_sale: isOnSale,
+      offsale_at: offsaleAt || null,
+      thumbnail_url: thumbnailUrl,
+    } as any);
+    if (error) toast({ title: 'Failed to create item', description: error.message, variant: 'destructive' });
+    else { toast({ title: 'Item created successfully!' }); resetForm(); setShowCreateModal(false); fetchItems(); }
+    setSubmitting(false);
+  };
+
+  const resetForm = () => {
+    setName(''); setDescription(''); setCategory('faces'); setPriceCoins('100'); setPriceCash('10');
+    setPaymentType('coins'); setIsLimited(false); setLimitedStock(''); setIsOnSale(true); setOffsaleAt('');
+    setThumbnailFile(null); setThumbnailPreview(null);
+  };
+
+  const toggleOnSale = async (item: any) => {
+    const { error } = await supabase.from('marketplace_items').update({ is_on_sale: !item.is_on_sale }).eq('id', item.id);
+    if (error) toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
+    else { toast({ title: item.is_on_sale ? 'Item taken off sale' : 'Item put on sale' }); fetchItems(); }
+  };
+
+  const deleteItem = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    const { error } = await supabase.from('marketplace_items').delete().eq('id', id);
+    if (error) toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
+    else { toast({ title: 'Item deleted' }); fetchItems(); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-3">
+        <Button onClick={() => setShowCreateModal(true)}><Plus className="w-4 h-4 mr-2" /> Add Item</Button>
+        <Button variant="outline" onClick={fetchItems}><RefreshCw className="w-4 h-4 mr-2" /> Refresh</Button>
+      </div>
+      <Card className={cardClass}>
+        <CardHeader><CardTitle className={textClass}>Marketplace Items ({items.length})</CardTitle></CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
+          ) : items.length === 0 ? (
+            <div className={`text-center py-12 ${mutedClass}`}><Image className="w-12 h-12 mx-auto mb-3 opacity-50" /><p>No marketplace items yet</p></div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Thumbnail</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>On Sale</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      {item.thumbnail_url ? (
+                        <img src={item.thumbnail_url} alt={item.name} className="w-12 h-12 rounded object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded bg-gray-200 flex items-center justify-center"><Image className="w-6 h-6 text-gray-400" /></div>
+                      )}
+                    </TableCell>
+                    <TableCell className={`font-medium ${textClass}`}>{item.name}</TableCell>
+                    <TableCell className="capitalize">{item.category}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1 text-sm">
+                        {(item.payment_type === 'coins' || item.payment_type === 'both') && <div className="flex items-center gap-1"><span className="text-yellow-500">●</span>{item.price_coins.toLocaleString()}</div>}
+                        {(item.payment_type === 'cash' || item.payment_type === 'both') && <div className="flex items-center gap-1"><span className="text-green-500">$</span>{item.price_cash.toLocaleString()}</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>{item.is_limited ? <span className="px-2 py-1 bg-amber-500/20 text-amber-500 text-xs rounded">Limited</span> : <span className="px-2 py-1 bg-gray-500/20 text-gray-500 text-xs rounded">Regular</span>}</TableCell>
+                    <TableCell>{item.is_limited && item.limited_stock ? <span className={mutedClass}>{item.limited_sold}/{item.limited_stock}</span> : <span className={mutedClass}>∞</span>}</TableCell>
+                    <TableCell><input type="checkbox" checked={item.is_on_sale} onChange={() => toggleOnSale(item)} className="w-4 h-4" /></TableCell>
+                    <TableCell><button onClick={() => deleteItem(item.id)} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"><Trash2 className="w-4 h-4" /></button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`${cardClass} rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto`}>
+            <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Add Marketplace Item</h2>
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${textClass}`}>Thumbnail Image (PNG) *</label>
+                <div className="flex items-center gap-4">
+                  {thumbnailPreview ? <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" /> : <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center"><Image className="w-8 h-8 text-gray-400" /></div>}
+                  <input type="file" accept="image/png,image/jpeg,image/gif" onChange={handleThumbnailChange} className={`flex-1 text-sm ${mutedClass}`} />
+                </div>
+              </div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Name *</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className={inputClass} /></div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className={`w-full p-2 border rounded-lg resize-none h-20 ${inputClass}`} /></div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className={`w-full p-2 border rounded-lg ${inputClass}`}>{CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Payment Type</label><select value={paymentType} onChange={(e) => setPaymentType(e.target.value as any)} className={`w-full p-2 border rounded-lg ${inputClass}`}><option value="coins">Coins Only</option><option value="cash">Cash Only</option><option value="both">Both</option></select></div>
+              <div className="grid grid-cols-2 gap-4">
+                {(paymentType === 'coins' || paymentType === 'both') && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Price (Coins)</label><Input type="number" value={priceCoins} onChange={(e) => setPriceCoins(e.target.value)} min="0" className={inputClass} /></div>}
+                {(paymentType === 'cash' || paymentType === 'both') && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Price (Cash)</label><Input type="number" value={priceCash} onChange={(e) => setPriceCash(e.target.value)} min="0" className={inputClass} /></div>}
+              </div>
+              <div className="flex items-center justify-between"><label className={`text-sm font-medium ${textClass}`}>Limited Item</label><input type="checkbox" checked={isLimited} onChange={(e) => setIsLimited(e.target.checked)} className="w-4 h-4" /></div>
+              {isLimited && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Limited Stock</label><Input type="number" value={limitedStock} onChange={(e) => setLimitedStock(e.target.value)} placeholder="Total available" min="1" className={inputClass} /></div>}
+              <div className="flex items-center justify-between"><label className={`text-sm font-medium ${textClass}`}>On Sale</label><input type="checkbox" checked={isOnSale} onChange={(e) => setIsOnSale(e.target.checked)} className="w-4 h-4" /></div>
+              {isOnSale && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Off-sale Date (Optional)</label><Input type="datetime-local" value={offsaleAt} onChange={(e) => setOffsaleAt(e.target.value)} className={inputClass} /><p className={`text-xs mt-1 ${mutedClass}`}>Leave empty for no automatic off-sale</p></div>}
+              <div className="flex gap-3 pt-4">
+                <Button variant="outline" onClick={() => { resetForm(); setShowCreateModal(false); }} className="flex-1">Cancel</Button>
+                <Button onClick={handleCreateItem} disabled={submitting || !name.trim() || !thumbnailFile} className="flex-1">{submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploading ? 'Uploading...' : 'Creating...'}</> : 'Create Item'}</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // NOTE: Inlined to avoid production module resolution issues.
 const GamesManagementTab = ({ darkMode }: { darkMode: boolean }) => {
   const { toast } = useToast();
@@ -2867,6 +3088,9 @@ const Admin = () => {
         
         {/* Game Thumbnails Tab */}
         {activeTab === "game-thumbnails" && <GameThumbnailsTab darkMode={darkMode} />}
+        
+        {/* Marketplace Tab */}
+        {activeTab === "marketplace" && <MarketplaceTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (
