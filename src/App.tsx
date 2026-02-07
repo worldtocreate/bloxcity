@@ -425,7 +425,59 @@ function InventoryPage() {
 // Inline Trading component  
 function TradingPageComponent() {
   const { forumUser } = useOutletContext<{ forumUser: any }>();
+  const [searchParams] = useSearchParams();
+  const withUsername = searchParams.get('with');
+  const [tradingWith, setTradingWith] = useState<any>(null);
+  const [friends, setFriends] = useState<any[]>([]);
+  const [trades, setTrades] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (forumUser) fetchData();
+  }, [forumUser, withUsername]);
+
+  const fetchData = async () => {
+    if (!forumUser) return;
+    setLoading(true);
+    
+    // Fetch friends
+    const { data: friendships } = await supabase
+      .from('forum_friendships')
+      .select('user_1_id, user_2_id')
+      .or(`user_1_id.eq.${forumUser.id},user_2_id.eq.${forumUser.id}`);
+    
+    if (friendships && friendships.length > 0) {
+      const friendIds = friendships.map(f => f.user_1_id === forumUser.id ? f.user_2_id : f.user_1_id);
+      const { data: friendUsers } = await supabase
+        .from('forum_users')
+        .select('id, username, avatar_url')
+        .in('id', friendIds);
+      setFriends(friendUsers || []);
+      
+      // If ?with= param, find that friend
+      if (withUsername && friendUsers) {
+        const friend = friendUsers.find(f => f.username.toLowerCase() === withUsername.toLowerCase());
+        if (friend) setTradingWith(friend);
+      }
+    }
+    
+    // Fetch existing trades
+    const { data: tradesData } = await supabase
+      .from('trades')
+      .select('*, sender:sender_id(username, avatar_url), receiver:receiver_id(username, avatar_url)')
+      .or(`sender_id.eq.${forumUser.id},receiver_id.eq.${forumUser.id}`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setTrades(tradesData || []);
+    
+    setLoading(false);
+  };
+
   if (!forumUser) return <Navigate to="/login" replace />;
+  
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
@@ -435,11 +487,85 @@ function TradingPageComponent() {
         </div>
         <Link to="/inventory" className="bc-btn bc-btn-secondary gap-2"><Package className="w-4 h-4" />My Inventory</Link>
       </div>
-      <div className="bc-card p-6 text-center">
-        <ArrowRightLeft className="w-16 h-16 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-2">No trades yet</h3>
-        <p className="text-[hsl(var(--bc-text-muted))]">Visit a friend's profile to initiate a trade</p>
-      </div>
+      
+      {tradingWith ? (
+        <div className="bc-card p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <img src={tradingWith.avatar_url || '/placeholder.svg'} alt="" className="w-16 h-16 rounded-full" />
+            <div>
+              <h2 className="text-xl font-bold text-[hsl(var(--bc-text))]">Trade with {tradingWith.username}</h2>
+              <p className="text-[hsl(var(--bc-text-muted))]">Select items to trade</p>
+            </div>
+            <button onClick={() => setTradingWith(null)} className="ml-auto text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))]">✕</button>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="border border-[hsl(var(--bc-border))] rounded-xl p-4">
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-3">Your Items</h3>
+              <div className="min-h-[200px] flex items-center justify-center text-[hsl(var(--bc-text-muted))]">
+                <p>Select items from your inventory</p>
+              </div>
+            </div>
+            <div className="border border-[hsl(var(--bc-border))] rounded-xl p-4">
+              <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-3">{tradingWith.username}'s Items</h3>
+              <div className="min-h-[200px] flex items-center justify-center text-[hsl(var(--bc-text-muted))]">
+                <p>Waiting for items...</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button onClick={() => setTradingWith(null)} className="bc-btn bc-btn-secondary">Cancel</button>
+            <button className="bc-btn bc-btn-primary">Send Trade Request</button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Friends List */}
+          <div className="bc-card p-6">
+            <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-4">Trade with a Friend</h3>
+            {friends.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-3" />
+                <p className="text-[hsl(var(--bc-text-muted))]">Add friends to start trading!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {friends.map(friend => (
+                  <button key={friend.id} onClick={() => setTradingWith(friend)} className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[hsl(var(--bc-bg-light))] transition">
+                    <img src={friend.avatar_url || '/placeholder.svg'} alt="" className="w-10 h-10 rounded-full" />
+                    <span className="font-medium text-[hsl(var(--bc-text))]">{friend.username}</span>
+                    <ArrowRightLeft className="w-4 h-4 ml-auto text-[hsl(var(--bc-primary))]" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {/* Recent Trades */}
+          <div className="bc-card p-6">
+            <h3 className="font-semibold text-[hsl(var(--bc-text))] mb-4">Recent Trades</h3>
+            {trades.length === 0 ? (
+              <div className="text-center py-8">
+                <ArrowRightLeft className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-3" />
+                <p className="text-[hsl(var(--bc-text-muted))]">No trades yet</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {trades.map(trade => (
+                  <div key={trade.id} className="flex items-center gap-3 p-3 rounded-lg bg-[hsl(var(--bc-bg-light))]">
+                    <img src={(trade.sender?.avatar_url || trade.receiver?.avatar_url) || '/placeholder.svg'} alt="" className="w-10 h-10 rounded-full" />
+                    <div>
+                      <p className="font-medium text-[hsl(var(--bc-text))]">
+                        {trade.sender_id === forumUser.id ? `To ${trade.receiver?.username}` : `From ${trade.sender?.username}`}
+                      </p>
+                      <p className="text-xs text-[hsl(var(--bc-text-muted))]">{trade.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2185,46 +2311,105 @@ function ForumResetPassword() {
 function MarketItem() {
   const params = window.location.pathname.match(/\/market\/item\/([^\/]+)/);
   const itemId = params ? params[1] : undefined;
+  const { forumUser } = useForumAuth();
+  const { toast } = useToast();
+  const [item, setItem] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
   const [isFavorited, setIsFavorited] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
+  const [resaleListings, setResaleListings] = useState<any[]>([]);
 
   const CATEGORY_NAMES: Record<string, string> = {
     'hats': 'Hat',
     'faces': 'Face',
+    'gear': 'Gear',
     'shirts': 'Shirt',
     't-shirts': 'T-Shirt',
     'pants': 'Pants',
     'bundles': 'Bundle',
+    'accessories': 'Accessory',
   };
 
-  const item = {
-    id: itemId || "1",
-    name: "Sparkle Time Fedora",
-    description: "A classic fedora with a sparkling twist. Limited edition item.",
-    category: "hats",
-    price: 15000,
-    isLimited: true,
-    limitedStock: 50,
-    remainingStock: 12,
-    creator: "BLOX",
-    creatorId: "1",
-    favorites: 8920,
-    sales: 48,
+  useEffect(() => {
+    if (itemId) fetchItem();
+  }, [itemId]);
+
+  const fetchItem = async () => {
+    if (!itemId) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('marketplace_items')
+      .select('*')
+      .eq('id', itemId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching item:', error);
+    } else {
+      setItem(data);
+    }
+    
+    // Fetch resale listings for limited items
+    if (data?.is_limited) {
+      const { data: resales } = await supabase
+        .from('user_inventory')
+        .select('*, owner:forum_user_id(username, avatar_url)')
+        .eq('item_id', itemId)
+        .eq('is_for_sale', true)
+        .order('sale_price_coins', { ascending: true })
+        .limit(10);
+      setResaleListings(resales || []);
+    }
+    
+    setLoading(false);
   };
 
-  const sellers = [
-    { id: "1", username: "RareCollector", price: 18500, serial: 3 },
-    { id: "2", username: "ItemTrader99", price: 19000, serial: 7 },
-    { id: "3", username: "LimitedKing", price: 22000, serial: 1 },
-  ];
-
-  const comments = [
-    { id: "1", username: "User123", content: "This item is amazing!", created: "2024-01-20" },
-    { id: "2", username: "Collector", content: "Best hat in the catalog.", created: "2024-01-18" },
-  ];
+  const handlePurchase = async () => {
+    if (!forumUser || !item) {
+      toast({ title: 'Please log in to purchase', variant: 'destructive' });
+      return;
+    }
+    setPurchasing(true);
+    const { data, error } = await supabase.rpc('purchase_item', {
+      p_item_id: item.id,
+      p_use_coins: item.payment_type !== 'cash'
+    });
+    
+    if (error) {
+      toast({ title: 'Purchase failed', description: error.message, variant: 'destructive' });
+    } else if (data && typeof data === 'object' && 'success' in data && data.success) {
+      toast({ title: 'Purchase successful!', description: `You now own ${item.name}` });
+      fetchItem();
+    } else {
+      const errMsg = data && typeof data === 'object' && 'error' in data ? String(data.error) : 'Unknown error';
+      toast({ title: 'Purchase failed', description: errMsg, variant: 'destructive' });
+    }
+    setPurchasing(false);
+  };
 
   const formatNumber = (num: number) => num >= 1000 ? `${(num / 1000).toFixed(1)}K` : String(num);
-  const formatPrice = (price: number) => price.toLocaleString();
+  const formatPrice = (price: number) => price?.toLocaleString() || '0';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className="min-h-screen bg-[hsl(var(--bc-bg))] flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-xl font-bold text-[hsl(var(--bc-text))] mb-2">Item Not Found</h1>
+          <Link to="/market" className="text-[hsl(var(--bc-primary))] hover:underline">← Back to Market</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
@@ -2240,32 +2425,51 @@ function MarketItem() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
               <div className="flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-64 aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Gamepad2 className="w-24 h-24 text-[hsl(var(--bc-primary))]/40" />
+                <div className="w-full md:w-64 aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {item.thumbnail_url ? (
+                    <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <Gamepad2 className="w-24 h-24 text-[hsl(var(--bc-primary))]/40" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        {item.isLimited && <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500 text-white text-xs">Limited</span>}
+                        {item.is_limited && <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500 text-white text-xs">Limited</span>}
                         <span className="inline-flex items-center px-2 py-1 rounded bg-[hsl(var(--bc-primary))]/10 text-[hsl(var(--bc-primary))] text-xs">{CATEGORY_NAMES[item.category] || item.category}</span>
                       </div>
                       <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">{item.name}</h1>
-                      <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <Link to={`/id/${item.creatorId}/profile`} className="text-[hsl(var(--bc-primary))] hover:underline">{item.creator}</Link></p>
+                      <p className="text-[hsl(var(--bc-text-muted))] mt-1">By <span className="text-[hsl(var(--bc-primary))]">BLOX City</span></p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="icon" onClick={() => setIsFavorited(!isFavorited)} className={isFavorited ? "text-red-500 border-red-500" : ""}>♥</Button>
                     </div>
                   </div>
-                  <p className="text-[hsl(var(--bc-text-muted))] mt-4">{item.description}</p>
+                  {item.description && <p className="text-[hsl(var(--bc-text-muted))] mt-4">{item.description}</p>}
                   <div className="flex flex-wrap gap-6 mt-6 text-sm">
                     <div><span className="text-[hsl(var(--bc-text-muted))]">Type</span><p className="font-semibold text-[hsl(var(--bc-text))]">{CATEGORY_NAMES[item.category] || item.category}</p></div>
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Price</span><p className="font-bold text-xl text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-5 h-5 text-yellow-500" />{formatPrice(item.price)}</p></div>
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Favorites</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.favorites)}</p></div>
-                    <div><span className="text-[hsl(var(--bc-text-muted))]">Sales</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales)}</p></div>
-                    {item.isLimited && <div><span className="text-[hsl(var(--bc-text-muted))]">Stock</span><p className="font-semibold text-[hsl(var(--bc-text))]">{item.remainingStock} / {item.limitedStock}</p></div>}
+                    <div>
+                      <span className="text-[hsl(var(--bc-text-muted))]">Price</span>
+                      <p className="font-bold text-xl text-[hsl(var(--bc-primary))] flex items-center gap-1">
+                        {item.payment_type === 'cash' ? (
+                          <><DollarSign className="w-5 h-5 text-green-500" />{formatPrice(item.price_cash)}</>
+                        ) : (
+                          <><Coins className="w-5 h-5 text-yellow-500" />{formatPrice(item.price_coins)}</>
+                        )}
+                      </p>
+                    </div>
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Favorites</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.favorites_count || 0)}</p></div>
+                    <div><span className="text-[hsl(var(--bc-text-muted))]">Sales</span><p className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales_count || 0)}</p></div>
+                    {item.is_limited && item.limited_stock && (
+                      <div><span className="text-[hsl(var(--bc-text-muted))]">Stock</span><p className="font-semibold text-[hsl(var(--bc-text))]">{item.limited_stock - (item.limited_sold || 0)} / {item.limited_stock}</p></div>
+                    )}
                   </div>
-                  <Button className="mt-6 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90">Buy Now</Button>
+                  {item.is_on_sale && (
+                    <Button onClick={handlePurchase} disabled={purchasing} className="mt-6 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90">
+                      {purchasing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Purchasing...</> : 'Buy Now'}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -2275,37 +2479,31 @@ function MarketItem() {
                 <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write a comment..." className="bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]" />
                 <Button onClick={() => setComment("")}>Send</Button>
               </div>
-              <div className="space-y-4">
-                {comments.map((c) => (
-                  <div key={c.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center text-[hsl(var(--bc-text))]">{c.username[0]}</div>
-                    <div>
-                      <div className="flex items-center gap-2"><span className="font-medium text-[hsl(var(--bc-text))]">{c.username}</span><span className="text-xs text-[hsl(var(--bc-text-muted))]">{c.created}</span></div>
-                      <p className="text-[hsl(var(--bc-text-muted))] text-sm">{c.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No comments yet. Be the first!</div>
             </div>
           </div>
-          {item.isLimited && (
+          {item.is_limited && (
             <div>
               <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 sticky top-4">
                 <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4">Private Sellers</h2>
-                <div className="space-y-3">
-                  {sellers.map((seller) => (
-                    <div key={seller.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--bc-bg))] border border-[hsl(var(--bc-border))]">
-                      <div>
-                        <Link to={`/id/${seller.username}/profile`} className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]">{seller.username}</Link>
-                        <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{seller.serial}</p>
+                {resaleListings.length === 0 ? (
+                  <p className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No sellers yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {resaleListings.map((listing) => (
+                      <div key={listing.id} className="flex items-center justify-between p-3 rounded-lg bg-[hsl(var(--bc-bg))] border border-[hsl(var(--bc-border))]">
+                        <div>
+                          <span className="font-medium text-[hsl(var(--bc-text))]">{listing.owner?.username}</span>
+                          <p className="text-xs text-[hsl(var(--bc-text-muted))]">Serial #{listing.serial_number || '?'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-4 h-4 text-yellow-500" />{formatPrice(listing.sale_price_coins)}</p>
+                          <Button size="sm" variant="outline" className="mt-1 text-xs h-7">Buy</Button>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-[hsl(var(--bc-primary))] flex items-center gap-1"><Coins className="w-4 h-4 text-yellow-500" />{formatPrice(seller.price)}</p>
-                        <Button size="sm" variant="outline" className="mt-1 text-xs h-7">Buy</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
