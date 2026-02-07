@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users, Store } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserAvatar from "@/components/forum/UserAvatar";
 import MembershipBadge from "@/components/forum/MembershipBadge";
@@ -1013,6 +1013,15 @@ interface LandingGame {
   creator: { username: string };
 }
 
+interface LandingItem {
+  id: string;
+  name: string;
+  thumbnail_url: string | null;
+  price_coins: number | null;
+  price_cash: number | null;
+  is_limited: boolean;
+}
+
 interface LandingStats {
   users: number;
   games: number;
@@ -1026,6 +1035,7 @@ function LandingPage() {
 
   const [threads, setThreads] = useState<LandingThread[]>([]);
   const [games, setGames] = useState<LandingGame[]>([]);
+  const [items, setItems] = useState<LandingItem[]>([]);
   const [stats, setStats] = useState<LandingStats>({ users: 0, games: 0, threads: 0 });
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -1033,42 +1043,84 @@ function LandingPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [threadsRes, gamesRes, usersCountRes, gamesCountRes, threadsCountRes] = await Promise.all([
+        // Fetch threads with author info - use forum_users_public for unauthenticated access
+        const [threadsRes, gamesRes, itemsRes, usersCountRes, gamesCountRes, threadsCountRes] = await Promise.all([
           supabase
             .from('forum_threads')
-            .select('id, title, view_count, reply_count, created_at, author:author_id(username, avatar_url)')
+            .select('id, title, view_count, reply_count, created_at, author_id')
             .eq('is_deleted', false)
             .order('created_at', { ascending: false })
             .limit(4),
           supabase
             .from('forum_games')
-            .select('id, title, thumbnail_url, play_count, creator:creator_id(username)')
+            .select('id, title, thumbnail_url, play_count, creator_id')
             .eq('is_private', false)
             .order('play_count', { ascending: false })
             .limit(6),
-          supabase.from('forum_users').select('id', { count: 'exact', head: true }),
+          supabase
+            .from('marketplace_items')
+            .select('id, name, thumbnail_url, price_coins, price_cash, is_limited')
+            .order('created_at', { ascending: false })
+            .limit(8),
+          supabase.from('forum_users_public').select('id', { count: 'exact', head: true }),
           supabase.from('forum_games').select('id', { count: 'exact', head: true }).eq('is_private', false),
           supabase.from('forum_threads').select('id', { count: 'exact', head: true }).eq('is_deleted', false),
         ]);
 
-        if (threadsRes.data) {
-          setThreads(threadsRes.data.map((t: any) => ({
-            id: t.id,
-            title: t.title,
-            view_count: t.view_count,
-            reply_count: t.reply_count,
-            created_at: t.created_at,
-            author: t.author || { username: 'Unknown', avatar_url: null },
-          })));
+        // Fetch author data separately from public view
+        if (threadsRes.data && threadsRes.data.length > 0) {
+          const authorIds = [...new Set(threadsRes.data.map((t: any) => t.author_id).filter(Boolean))];
+          const { data: authorsData } = await supabase
+            .from('forum_users_public')
+            .select('id, username, avatar_url')
+            .in('id', authorIds);
+          
+          const authorsMap = new Map((authorsData || []).map((a: any) => [a.id, a]));
+          
+          setThreads(threadsRes.data.map((t: any) => {
+            const author = authorsMap.get(t.author_id);
+            return {
+              id: t.id,
+              title: t.title,
+              view_count: t.view_count,
+              reply_count: t.reply_count,
+              created_at: t.created_at,
+              author: author ? { username: author.username, avatar_url: author.avatar_url } : { username: 'Unknown', avatar_url: null },
+            };
+          }));
         }
 
-        if (gamesRes.data) {
-          setGames(gamesRes.data.map((g: any) => ({
-            id: g.id,
-            title: g.title,
-            thumbnail_url: g.thumbnail_url,
-            play_count: g.play_count || 0,
-            creator: g.creator || { username: 'Unknown' },
+        // Fetch creator data separately for games
+        if (gamesRes.data && gamesRes.data.length > 0) {
+          const creatorIds = [...new Set(gamesRes.data.map((g: any) => g.creator_id).filter(Boolean))];
+          const { data: creatorsData } = await supabase
+            .from('forum_users_public')
+            .select('id, username')
+            .in('id', creatorIds);
+          
+          const creatorsMap = new Map((creatorsData || []).map((c: any) => [c.id, c]));
+          
+          setGames(gamesRes.data.map((g: any) => {
+            const creator = creatorsMap.get(g.creator_id);
+            return {
+              id: g.id,
+              title: g.title,
+              thumbnail_url: g.thumbnail_url,
+              play_count: g.play_count || 0,
+              creator: creator ? { username: creator.username } : { username: 'Unknown' },
+            };
+          }));
+        }
+
+        // Set items
+        if (itemsRes.data) {
+          setItems(itemsRes.data.map((i: any) => ({
+            id: i.id,
+            name: i.name,
+            thumbnail_url: i.thumbnail_url,
+            price_coins: i.price_coins,
+            price_cash: i.price_cash,
+            is_limited: i.is_limited,
           })));
         }
 
@@ -1232,26 +1284,61 @@ function LandingPage() {
             )}
           </section>
 
-          {/* Customize Character + Forum Posts Grid */}
-          <div className="grid lg:grid-cols-2 gap-12 mb-16">
-            {/* Customize Character */}
-            <div>
-              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
-                <User className="w-5 h-5 text-[hsl(var(--bc-warning))]" />
-                Customize your Character
+          {/* Recent Items Section */}
+          <section className="mb-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-2">
+                <Store className="w-6 h-6 text-[hsl(var(--bc-success))]" />
+                New Items
               </h2>
-              <p className="text-[hsl(var(--bc-text-muted))] mb-4">
-                Pick and choose from a collection of items created by the community to create your own unique character with.
-              </p>
-              <div className="grid grid-cols-4 gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-2 aspect-square flex items-center justify-center">
-                    <div className="w-12 h-12 bg-[hsl(var(--bc-bg-light))] rounded" />
+              <Link to="/market" className="text-[hsl(var(--bc-primary))] hover:underline font-medium text-sm">
+                View All →
+              </Link>
+            </div>
+            {dataLoading ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden animate-pulse">
+                    <div className="aspect-square bg-[hsl(var(--bc-bg-light))]" />
+                    <div className="p-2 space-y-2">
+                      <div className="h-3 bg-[hsl(var(--bc-bg-light))] rounded w-3/4" />
+                      <div className="h-3 bg-[hsl(var(--bc-bg-light))] rounded w-1/2" />
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
+            ) : items.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                {items.map((item) => (
+                  <Link key={item.id} to="/login" className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg overflow-hidden hover:border-[hsl(var(--bc-primary))] transition">
+                    <div className="aspect-square bg-[hsl(var(--bc-bg-light))] flex items-center justify-center relative">
+                      {item.thumbnail_url ? (
+                        <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-8 h-8 text-[hsl(var(--bc-text-muted))]" />
+                      )}
+                      {item.is_limited && (
+                        <div className="absolute top-1 right-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded">
+                          LTD
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <div className="font-medium text-[hsl(var(--bc-text))] text-xs truncate group-hover:text-[hsl(var(--bc-primary))] transition">{item.name}</div>
+                      <div className="text-xs text-[hsl(var(--bc-text-muted))]">
+                        {item.price_coins ? `${item.price_coins.toLocaleString()} Coins` : item.price_cash ? `${item.price_cash.toLocaleString()} Cash` : 'Free'}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No items available yet.</div>
+            )}
+          </section>
 
+          {/* Forum Posts + Character Grid */}
+          <div className="grid lg:grid-cols-2 gap-12 mb-16">
             {/* Recent Forum Posts */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -1304,6 +1391,28 @@ function LandingPage() {
               ) : (
                 <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">No forum posts yet.</div>
               )}
+            </div>
+
+            {/* Customize Character */}
+            <div>
+              <h2 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-[hsl(var(--bc-warning))]" />
+                Customize your Character
+              </h2>
+              <p className="text-[hsl(var(--bc-text-muted))] mb-4">
+                Pick and choose from a collection of items created by the community to create your own unique character with.
+              </p>
+              <div className="grid grid-cols-4 gap-3">
+                {items.slice(0, 4).map((item) => (
+                  <Link key={item.id} to="/login" className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg p-2 aspect-square flex items-center justify-center hover:border-[hsl(var(--bc-primary))] transition">
+                    {item.thumbnail_url ? (
+                      <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <div className="w-12 h-12 bg-[hsl(var(--bc-bg-light))] rounded" />
+                    )}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
 
