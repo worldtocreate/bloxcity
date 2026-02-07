@@ -1,9 +1,41 @@
 import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Search, Gamepad2 } from 'lucide-react';
+import { Plus, Loader2, Search, Gamepad2, Wrench } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
+
+// Inline page maintenance hook
+function usePageMaintenance(pageKey: string) {
+  const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const { data, error } = await supabase.from('admin_settings').select('value').eq('key', 'page_maintenance').single();
+        if (error) setIsUnderMaintenance(false);
+        else if (data?.value) setIsUnderMaintenance((data.value as Record<string, boolean>)[pageKey] === true);
+      } catch { setIsUnderMaintenance(false); }
+      finally { setLoading(false); }
+    };
+    check();
+  }, [pageKey]);
+  return { isUnderMaintenance, loading };
+}
+
+function PageMaintenance({ pageName }: { pageName: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] p-4">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+          <Wrench className="w-10 h-10 text-amber-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-3">{pageName} Under Maintenance</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-6">We are currently performing scheduled maintenance. Please check back soon!</p>
+      </div>
+    </div>
+  );
+}
 
 interface Game {
   id: string;
@@ -42,6 +74,8 @@ const GAME_CATEGORIES = [
 ];
 
 export default function Games() {
+  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance('games');
+  
   const context = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
@@ -67,6 +101,19 @@ export default function Games() {
   useEffect(() => {
     fetchGames();
   }, [forumUser]);
+  
+  // Show maintenance page if page is under maintenance (unless admin)
+  if (maintenanceLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+  
+  if (isUnderMaintenance && !isAdmin) {
+    return <PageMaintenance pageName="Games" />;
+  }
 
   const fetchGames = async () => {
     const { data } = await supabase

@@ -1,10 +1,66 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { User, Box, RefreshCw, X } from 'lucide-react';
+import { User, Box, RefreshCw, X, Loader2, Wrench, Twitter, MessageCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+// Inline page maintenance hook
+function usePageMaintenance(pageKey: string) {
+  const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkMaintenance = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('admin_settings')
+          .select('value')
+          .eq('key', 'page_maintenance')
+          .single();
+
+        if (error) {
+          setIsUnderMaintenance(false);
+        } else if (data?.value) {
+          const settings = data.value as Record<string, boolean>;
+          setIsUnderMaintenance(settings[pageKey] === true);
+        }
+      } catch (err) {
+        setIsUnderMaintenance(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkMaintenance();
+  }, [pageKey]);
+
+  return { isUnderMaintenance, loading };
+}
+
+// Inline page maintenance component
+function PageMaintenance({ pageName }: { pageName: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] p-4">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+          <Wrench className="w-10 h-10 text-amber-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-3">{pageName} Under Maintenance</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-6">We are currently performing scheduled maintenance on this page. Please check back soon!</p>
+        <div className="flex items-center justify-center gap-4">
+          <a href="https://twitter.com/bloxcity" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] hover:border-[hsl(var(--bc-primary))] transition-all">
+            <Twitter className="w-4 h-4" /><span className="text-sm">Twitter</span>
+          </a>
+          <a href="https://discord.gg/bloxcity" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-text))] hover:border-[hsl(var(--bc-primary))] transition-all">
+            <MessageCircle className="w-4 h-4" /><span className="text-sm">Discord</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Item categories for avatar customization
 const ITEM_CATEGORIES = [
@@ -75,13 +131,15 @@ interface BodyColors {
 }
 
 export default function Character() {
+  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance('character');
+  
   const context = useOutletContext<{
     user: any;
     forumUser: ForumUser | null;
     isAdmin: boolean;
   }>();
   
-  const { forumUser } = context || {};
+  const { forumUser, isAdmin } = context || {};
   const [selectedCategory, setSelectedCategory] = useState('hats');
   const [selectedAngle, setSelectedAngle] = useState<'left' | 'right'>('right');
   const [selectedBodyPart, setSelectedBodyPart] = useState<BodyPart | null>(null);
@@ -95,6 +153,19 @@ export default function Character() {
     left_leg: '#008000',
     right_leg: '#008000',
   });
+
+  // Show maintenance page if page is under maintenance (unless admin)
+  if (maintenanceLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+  
+  if (isUnderMaintenance && !isAdmin) {
+    return <PageMaintenance pageName="Character" />;
+  }
 
   // Filter items by category
   const filteredItems = ownedItems.filter(item => item.category === selectedCategory);

@@ -81,42 +81,44 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   };
 
   const handleSave = async () => {
+    // Only require password for global maintenance mode, not page-specific
     if (!settings.password && settings.enabled) {
-      toast.error('Please set a password before enabling maintenance mode');
+      toast.error('Please set a password before enabling global maintenance mode');
       return;
     }
     
     setSaving(true);
 
-    // Save global maintenance settings
-    const { error } = await supabase.rpc('save_maintenance_settings', {
-      p_enabled: settings.enabled,
-      p_message: settings.message,
-      p_password: settings.password || 'admin123' // Fallback password
-    });
+    // Save global maintenance settings (only if password provided or mode enabled)
+    if (settings.enabled || settings.password) {
+      const { error } = await supabase.rpc('save_maintenance_settings', {
+        p_enabled: settings.enabled,
+        p_message: settings.message,
+        p_password: settings.password || 'admin123'
+      });
 
-    if (error) {
-      console.error('Save error:', error);
-      toast.error('Failed to save settings');
-      setSaving(false);
-      return;
+      if (error) {
+        console.error('Save error:', error);
+        toast.error('Failed to save global maintenance settings');
+        setSaving(false);
+        return;
+      }
     }
 
-    // Save page-specific maintenance settings
+    // Save page-specific maintenance settings using upsert
     const { error: pageError } = await supabase
       .from('admin_settings')
-      .update({
+      .upsert({
+        key: 'page_maintenance',
         value: pageSettings as unknown as { [key: string]: boolean },
         updated_at: new Date().toISOString()
-      })
-      .eq('key', 'page_maintenance');
+      }, { onConflict: 'key' });
 
     if (pageError) {
       console.error('Page settings save error:', pageError);
       toast.error('Failed to save page settings');
     } else {
-      toast.success(settings.enabled ? 'Maintenance mode enabled!' : 'Settings saved');
-      // Clear password field after saving
+      toast.success('Settings saved successfully!');
       setSettings(prev => ({ ...prev, password: '' }));
     }
     setSaving(false);

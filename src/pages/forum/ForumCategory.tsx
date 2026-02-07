@@ -1,10 +1,42 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Pin, Lock, MessageSquare, ChevronRight, User, Shield } from 'lucide-react';
+import { Plus, Pin, Lock, MessageSquare, ChevronRight, User, Shield, Loader2, Wrench } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import UserAvatar from '@/components/forum/UserAvatar';
 import { getRelativeTime } from '@/lib/timeUtils';
+
+// Inline page maintenance hook
+function usePageMaintenance(pageKey: string) {
+  const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const { data, error } = await supabase.from('admin_settings').select('value').eq('key', 'page_maintenance').single();
+        if (error) setIsUnderMaintenance(false);
+        else if (data?.value) setIsUnderMaintenance((data.value as Record<string, boolean>)[pageKey] === true);
+      } catch { setIsUnderMaintenance(false); }
+      finally { setLoading(false); }
+    };
+    check();
+  }, [pageKey]);
+  return { isUnderMaintenance, loading };
+}
+
+function PageMaintenance({ pageName }: { pageName: string }) {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh] p-4">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+          <Wrench className="w-10 h-10 text-amber-500" />
+        </div>
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-3">{pageName} Under Maintenance</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-6">We are currently performing scheduled maintenance. Please check back soon!</p>
+      </div>
+    </div>
+  );
+}
 
 interface Thread {
   id: string;
@@ -38,6 +70,8 @@ interface Category {
 }
 
 export default function ForumCategory() {
+  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance('forum');
+  
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, forumUser, isAdmin } = useOutletContext<{ 
@@ -53,6 +87,19 @@ export default function ForumCategory() {
   useEffect(() => {
     if (slug) fetchCategory();
   }, [slug]);
+
+  // Show maintenance page if page is under maintenance (unless admin)
+  if (maintenanceLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+  
+  if (isUnderMaintenance && !isAdmin) {
+    return <PageMaintenance pageName="Forums" />;
+  }
 
   const fetchCategory = async () => {
     const { data: cat } = await supabase
