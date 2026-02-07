@@ -128,7 +128,8 @@ export default function Trading() {
   // Handle friend URL param to auto-open trade modal
   useEffect(() => {
     const friendId = searchParams.get('friend');
-    if (friendId && forumUser && friends.length > 0) {
+    if (friendId && forumUser) {
+      // First check if it's in loaded friends list
       const friend = friends.find(f => f.id === friendId);
       if (friend) {
         setSelectedFriend(friend);
@@ -137,6 +138,24 @@ export default function Trading() {
         const newParams = new URLSearchParams(searchParams);
         newParams.delete('friend');
         setSearchParams(newParams, { replace: true });
+      } else if (friends.length > 0) {
+        // Friend not in list - fetch directly (they might be a friend but not in first batch)
+        const fetchFriendDirectly = async () => {
+          const { data } = await supabase
+            .from('forum_users')
+            .select('id, serial_id, username, avatar_url')
+            .eq('id', friendId)
+            .single();
+          
+          if (data) {
+            setSelectedFriend(data);
+            setShowNewTradeModal(true);
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('friend');
+            setSearchParams(newParams, { replace: true });
+          }
+        };
+        fetchFriendDirectly();
       }
     }
   }, [searchParams, forumUser, friends]);
