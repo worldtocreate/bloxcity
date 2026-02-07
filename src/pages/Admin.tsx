@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { 
   Check, X, Clock, RefreshCw, Mail, Send, Image, 
   Ban, Trash2, Plus, CheckSquare, Square,
-  UserPlus, UserMinus, Search, Download, Loader2
+  UserPlus, UserMinus, Search, Download, Loader2, Upload
 } from "lucide-react";
 
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -29,6 +29,91 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Canvas, useLoader, useFrame } from '@react-three/fiber';
+import { OrbitControls, Center } from '@react-three/drei';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import * as THREE from 'three';
+
+// Inline 3D Model component for thumbnail rendering
+function Model3D({ modelUrl, textureUrl }: { modelUrl: string; textureUrl: string | null }) {
+  const obj = useLoader(OBJLoader, modelUrl);
+  const texture = textureUrl ? useLoader(THREE.TextureLoader, textureUrl) : null;
+
+  useEffect(() => {
+    if (texture) {
+      texture.flipY = false;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+    }
+    obj.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = texture 
+          ? new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide })
+          : new THREE.MeshStandardMaterial({ color: 0x888888, side: THREE.DoubleSide });
+      }
+    });
+  }, [obj, texture]);
+
+  useEffect(() => {
+    const box = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = 2 / maxDim;
+    obj.scale.setScalar(scale);
+    const center = box.getCenter(new THREE.Vector3());
+    obj.position.sub(center.multiplyScalar(scale));
+  }, [obj]);
+
+  return <primitive object={obj} />;
+}
+
+function SceneCapture3D({ onCapture }: { onCapture: (dataUrl: string) => void }) {
+  const capturedRef = useRef(false);
+  useFrame(({ gl, scene, camera }) => {
+    if (!capturedRef.current) {
+      setTimeout(() => {
+        gl.render(scene, camera);
+        onCapture(gl.domElement.toDataURL('image/png'));
+        capturedRef.current = true;
+      }, 800);
+    }
+  });
+  return null;
+}
+
+function ItemThumbnailRenderer({ modelUrl, textureUrl, onThumbnailGenerated, size = 200 }: { 
+  modelUrl: string; 
+  textureUrl: string | null; 
+  onThumbnailGenerated: (dataUrl: string) => void;
+  size?: number;
+}) {
+  const [loading, setLoading] = useState(true);
+  const handleRender = (dataUrl: string) => {
+    setLoading(false);
+    onThumbnailGenerated(dataUrl);
+  };
+  return (
+    <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800" style={{ width: size, height: size }}>
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div className="text-center">
+            <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto mb-2" />
+            <p className="text-xs text-gray-500">Rendering 3D...</p>
+          </div>
+        </div>
+      )}
+      <Canvas camera={{ position: [0, 0, 4], fov: 45 }} gl={{ preserveDrawingBuffer: true, antialias: true }}>
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[10, 10, 5]} intensity={1} />
+        <Suspense fallback={null}>
+          <Center><Model3D modelUrl={modelUrl} textureUrl={textureUrl} /></Center>
+        </Suspense>
+        <SceneCapture3D onCapture={handleRender} />
+        <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={2} />
+      </Canvas>
+    </div>
+  );
+}
 
  // Inline JobsTab component
  interface JobCategory {
@@ -397,6 +482,11 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
   // 3D model files for non-Face items
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [textureFile, setTextureFile] = useState<File | null>(null);
+  // For 3D rendering preview
+  const [tempModelUrl, setTempModelUrl] = useState<string | null>(null);
+  const [tempTextureUrl, setTempTextureUrl] = useState<string | null>(null);
+  const [renderedThumbnail, setRenderedThumbnail] = useState<string | null>(null);
+  const [showRenderPreview, setShowRenderPreview] = useState(false);
   
   // Faces use PNG only, other categories use OBJ + texture
   const isFaceCategory = category === 'faces';
@@ -439,13 +529,42 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
 
   const handleModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.name.endsWith('.obj')) setModelFile(file);
-    else if (file) toast({ title: 'Please select an .obj file', variant: 'destructive' });
+    if (file && file.name.endsWith('.obj')) {
+      setModelFile(file);
+      // Create temp URL for preview
+      const url = URL.createObjectURL(file);
+      setTempModelUrl(url);
+      setRenderedThumbnail(null);
+      if (textureFile) setShowRenderPreview(true);
+    } else if (file) {
+      toast({ title: 'Please select an .obj file', variant: 'destructive' });
+    }
   };
 
   const handleTextureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setTextureFile(file);
+    if (file) {
+      setTextureFile(file);
+      const url = URL.createObjectURL(file);
+      setTempTextureUrl(url);
+      setRenderedThumbnail(null);
+      if (modelFile) setShowRenderPreview(true);
+    }
+  };
+
+  const handleThumbnailRendered = (dataUrl: string) => {
+    setRenderedThumbnail(dataUrl);
+  };
+
+  // Convert data URL to File for upload
+  const dataURLtoFile = (dataurl: string, filename: string): File => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--) u8arr[n] = bstr.charCodeAt(n);
+    return new File([u8arr], filename, { type: mime });
   };
 
   const uploadThumbnail = async (): Promise<string | null> => {
@@ -464,6 +583,7 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     if (isFaceCategory && !thumbnailFile) { toast({ title: 'PNG image is required for Faces', variant: 'destructive' }); return; }
     if (!isFaceCategory && !modelFile) { toast({ title: 'OBJ model file is required', variant: 'destructive' }); return; }
     if (!isFaceCategory && !textureFile) { toast({ title: 'Texture file is required', variant: 'destructive' }); return; }
+    if (!isFaceCategory && !renderedThumbnail) { toast({ title: 'Please wait for 3D model to render', variant: 'destructive' }); return; }
     
     setSubmitting(true);
     setUploading(true);
@@ -482,8 +602,8 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
         if (error) throw error;
         const { data: urlData } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
         thumbnailUrl = urlData.publicUrl;
-      } else if (!isFaceCategory && modelFile && textureFile) {
-        // Other items: upload OBJ + texture
+      } else if (!isFaceCategory && modelFile && textureFile && renderedThumbnail) {
+        // 3D items: upload OBJ + texture + rendered thumbnail
         const modelPath = `marketplace/${sanitizedName}-${timestamp}.obj`;
         const { error: mErr } = await supabase.storage.from('marketplace-assets').upload(modelPath, modelFile);
         if (mErr) throw mErr;
@@ -496,7 +616,14 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
         if (tErr) throw tErr;
         const { data: tUrl } = supabase.storage.from('marketplace-assets').getPublicUrl(texPath);
         textureUrl = tUrl.publicUrl;
-        // Note: 3D items need manual thumbnail or rendering pipeline
+        
+        // Upload the rendered thumbnail
+        const renderedFile = dataURLtoFile(renderedThumbnail, `${sanitizedName}-${timestamp}-thumb.png`);
+        const thumbPath = `marketplace/${sanitizedName}-${timestamp}-thumb.png`;
+        const { error: thErr } = await supabase.storage.from('marketplace-assets').upload(thumbPath, renderedFile);
+        if (thErr) throw thErr;
+        const { data: thUrl } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
+        thumbnailUrl = thUrl.publicUrl;
       }
       
       setUploading(false);
@@ -530,6 +657,7 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     setName(''); setDescription(''); setCategory('faces'); setPriceCoins('100'); setPriceCash('10');
     setPaymentType('coins'); setIsLimited(false); setLimitedStock(''); setIsOnSale(true); setOffsaleAt('');
     setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null);
+    setTempModelUrl(null); setTempTextureUrl(null); setRenderedThumbnail(null); setShowRenderPreview(false);
   };
 
   const toggleOnSale = async (item: any) => {
@@ -634,18 +762,41 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
                     </div>
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${textClass}`}>Texture File (.png/.mtl) *</label>
+                    <label className={`block text-sm font-medium mb-1 ${textClass}`}>Texture File (.png/.jpg) *</label>
                     <div className="flex items-center gap-4">
                       <div className={`w-20 h-20 rounded border-2 border-dashed ${textureFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
                         {textureFile ? <Check className="w-8 h-8 text-green-500" /> : <Upload className="w-8 h-8 text-gray-400" />}
                       </div>
                       <div className="flex-1">
-                        <input type="file" accept=".png,.jpg,.jpeg,.mtl" onChange={handleTextureChange} className={`text-sm ${mutedClass}`} />
+                        <input type="file" accept=".png,.jpg,.jpeg" onChange={handleTextureChange} className={`text-sm ${mutedClass}`} />
                         {textureFile && <p className={`text-xs mt-1 text-green-600`}>{textureFile.name}</p>}
                       </div>
                     </div>
                   </div>
-                  <p className={`text-xs ${mutedClass}`}>Note: 3D items will need a thumbnail uploaded separately or rendered from the model.</p>
+                  {/* 3D Preview Renderer */}
+                  {tempModelUrl && tempTextureUrl && (
+                    <div>
+                      <label className={`block text-sm font-medium mb-2 ${textClass}`}>3D Preview (Auto-rendered thumbnail)</label>
+                      <div className="flex items-start gap-4">
+                        <ItemThumbnailRenderer
+                          modelUrl={tempModelUrl}
+                          textureUrl={tempTextureUrl}
+                          onThumbnailGenerated={handleThumbnailRendered}
+                          size={150}
+                        />
+                        <div className="flex-1">
+                          {renderedThumbnail ? (
+                            <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-4 h-4" /> Thumbnail rendered successfully!</p>
+                          ) : (
+                            <p className={`text-xs ${mutedClass}`}>Rendering 3D model to 2D thumbnail...</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {!tempModelUrl || !tempTextureUrl ? (
+                    <p className={`text-xs ${mutedClass}`}>Upload both .obj and texture files to see 3D preview</p>
+                  ) : null}
                 </div>
               )}
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Name *</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className={inputClass} /></div>
@@ -662,7 +813,13 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
               {isOnSale && <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Off-sale Date (Optional)</label><Input type="datetime-local" value={offsaleAt} onChange={(e) => setOffsaleAt(e.target.value)} className={inputClass} /><p className={`text-xs mt-1 ${mutedClass}`}>Leave empty for no automatic off-sale</p></div>}
               <div className="flex gap-3 pt-4">
                 <Button variant="outline" onClick={() => { resetForm(); setShowCreateModal(false); }} className="flex-1">Cancel</Button>
-                <Button onClick={handleCreateItem} disabled={submitting || !name.trim() || !thumbnailFile} className="flex-1">{submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploading ? 'Uploading...' : 'Creating...'}</> : 'Create Item'}</Button>
+                <Button 
+                  onClick={handleCreateItem} 
+                  disabled={submitting || !name.trim() || (isFaceCategory ? !thumbnailFile : !renderedThumbnail)} 
+                  className="flex-1"
+                >
+                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />{uploading ? 'Uploading...' : 'Creating...'}</> : 'Create Item'}
+                </Button>
               </div>
             </div>
           </div>
