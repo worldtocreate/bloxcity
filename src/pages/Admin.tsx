@@ -373,6 +373,8 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     is_on_sale: boolean;
     offsale_at: string | null;
     thumbnail_url: string | null;
+    model_url: string | null;
+    texture_url: string | null;
     created_at: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
@@ -392,6 +394,12 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
   const [offsaleAt, setOffsaleAt] = useState('');
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  // 3D model files for non-Face items
+  const [modelFile, setModelFile] = useState<File | null>(null);
+  const [textureFile, setTextureFile] = useState<File | null>(null);
+  
+  // Faces use PNG only, other categories use OBJ + texture
+  const isFaceCategory = category === 'faces';
 
   const cardClass = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const textClass = darkMode ? 'text-white' : 'text-gray-800';
@@ -429,6 +437,17 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
     }
   };
 
+  const handleModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.name.endsWith('.obj')) setModelFile(file);
+    else if (file) toast({ title: 'Please select an .obj file', variant: 'destructive' });
+  };
+
+  const handleTextureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setTextureFile(file);
+  };
+
   const uploadThumbnail = async (): Promise<string | null> => {
     if (!thumbnailFile) return null;
     const fileExt = thumbnailFile.name.split('.').pop();
@@ -442,34 +461,75 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
 
   const handleCreateItem = async () => {
     if (!name.trim()) { toast({ title: 'Name is required', variant: 'destructive' }); return; }
-    if (!thumbnailFile) { toast({ title: 'Thumbnail image is required', variant: 'destructive' }); return; }
+    if (isFaceCategory && !thumbnailFile) { toast({ title: 'PNG image is required for Faces', variant: 'destructive' }); return; }
+    if (!isFaceCategory && !modelFile) { toast({ title: 'OBJ model file is required', variant: 'destructive' }); return; }
+    if (!isFaceCategory && !textureFile) { toast({ title: 'Texture file is required', variant: 'destructive' }); return; }
+    
     setSubmitting(true);
     setUploading(true);
-    const thumbnailUrl = await uploadThumbnail();
-    setUploading(false);
-    if (!thumbnailUrl) { setSubmitting(false); return; }
-    const { error } = await supabase.from('marketplace_items').insert({
-      name: name.trim(),
-      description: description.trim() || null,
-      category: category as any,
-      price_coins: parseInt(priceCoins) || 0,
-      price_cash: parseInt(priceCash) || 0,
-      payment_type: paymentType as any,
-      is_limited: isLimited,
-      limited_stock: isLimited && limitedStock ? parseInt(limitedStock) : null,
-      is_on_sale: isOnSale,
-      offsale_at: offsaleAt || null,
-      thumbnail_url: thumbnailUrl,
-    } as any);
-    if (error) toast({ title: 'Failed to create item', description: error.message, variant: 'destructive' });
-    else { toast({ title: 'Item created successfully!' }); resetForm(); setShowCreateModal(false); fetchItems(); }
+    
+    let thumbnailUrl: string | null = null;
+    let modelUrl: string | null = null;
+    let textureUrl: string | null = null;
+    const timestamp = Date.now();
+    const sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    
+    try {
+      if (isFaceCategory && thumbnailFile) {
+        // Faces: upload PNG as thumbnail
+        const thumbPath = `marketplace/${sanitizedName}-${timestamp}.png`;
+        const { error } = await supabase.storage.from('marketplace-assets').upload(thumbPath, thumbnailFile);
+        if (error) throw error;
+        const { data: urlData } = supabase.storage.from('marketplace-assets').getPublicUrl(thumbPath);
+        thumbnailUrl = urlData.publicUrl;
+      } else if (!isFaceCategory && modelFile && textureFile) {
+        // Other items: upload OBJ + texture
+        const modelPath = `marketplace/${sanitizedName}-${timestamp}.obj`;
+        const { error: mErr } = await supabase.storage.from('marketplace-assets').upload(modelPath, modelFile);
+        if (mErr) throw mErr;
+        const { data: mUrl } = supabase.storage.from('marketplace-assets').getPublicUrl(modelPath);
+        modelUrl = mUrl.publicUrl;
+        
+        const texExt = textureFile.name.substring(textureFile.name.lastIndexOf('.'));
+        const texPath = `marketplace/${sanitizedName}-${timestamp}-texture${texExt}`;
+        const { error: tErr } = await supabase.storage.from('marketplace-assets').upload(texPath, textureFile);
+        if (tErr) throw tErr;
+        const { data: tUrl } = supabase.storage.from('marketplace-assets').getPublicUrl(texPath);
+        textureUrl = tUrl.publicUrl;
+        // Note: 3D items need manual thumbnail or rendering pipeline
+      }
+      
+      setUploading(false);
+      const { error } = await supabase.from('marketplace_items').insert({
+        name: name.trim(),
+        description: description.trim() || null,
+        category: category as any,
+        price_coins: parseInt(priceCoins) || 0,
+        price_cash: parseInt(priceCash) || 0,
+        payment_type: paymentType as any,
+        is_limited: isLimited,
+        limited_stock: isLimited && limitedStock ? parseInt(limitedStock) : null,
+        is_on_sale: isOnSale,
+        offsale_at: offsaleAt || null,
+        thumbnail_url: thumbnailUrl,
+        model_url: modelUrl,
+        texture_url: textureUrl,
+      } as any);
+      if (error) throw error;
+      toast({ title: 'Item created successfully!' }); 
+      resetForm(); 
+      setShowCreateModal(false); 
+      fetchItems();
+    } catch (err: any) {
+      toast({ title: 'Failed to create item', description: err.message, variant: 'destructive' });
+    }
     setSubmitting(false);
   };
 
   const resetForm = () => {
     setName(''); setDescription(''); setCategory('faces'); setPriceCoins('100'); setPriceCash('10');
     setPaymentType('coins'); setIsLimited(false); setLimitedStock(''); setIsOnSale(true); setOffsaleAt('');
-    setThumbnailFile(null); setThumbnailPreview(null);
+    setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null);
   };
 
   const toggleOnSale = async (item: any) => {
@@ -546,13 +606,48 @@ const MarketplaceTab = ({ darkMode }: { darkMode: boolean }) => {
           <div className={`${cardClass} rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto`}>
             <h2 className={`text-xl font-bold mb-4 ${textClass}`}>Add Marketplace Item</h2>
             <div className="space-y-4">
-              <div>
-                <label className={`block text-sm font-medium mb-1 ${textClass}`}>Thumbnail Image (PNG) *</label>
-                <div className="flex items-center gap-4">
-                  {thumbnailPreview ? <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" /> : <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center"><Image className="w-8 h-8 text-gray-400" /></div>}
-                  <input type="file" accept="image/png,image/jpeg,image/gif" onChange={handleThumbnailChange} className={`flex-1 text-sm ${mutedClass}`} />
+              {/* Category first so file inputs change based on selection */}
+              <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label><select value={category} onChange={(e) => { setCategory(e.target.value); setThumbnailFile(null); setThumbnailPreview(null); setModelFile(null); setTextureFile(null); }} className={`w-full p-2 border rounded-lg ${inputClass}`}>{CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select>
+              <p className={`text-xs mt-1 ${mutedClass}`}>{isFaceCategory ? 'Faces: Upload PNG image as thumbnail' : 'Other items: Upload .obj model + texture file'}</p></div>
+              
+              {/* File uploads based on category */}
+              {isFaceCategory ? (
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${textClass}`}>Face Image (PNG) *</label>
+                  <div className="flex items-center gap-4">
+                    {thumbnailPreview ? <img src={thumbnailPreview} alt="Preview" className="w-20 h-20 rounded object-cover border" /> : <div className="w-20 h-20 rounded border-2 border-dashed border-gray-400 flex items-center justify-center"><Image className="w-8 h-8 text-gray-400" /></div>}
+                    <input type="file" accept="image/png" onChange={handleThumbnailChange} className={`flex-1 text-sm ${mutedClass}`} />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${textClass}`}>3D Model (.obj) *</label>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-20 h-20 rounded border-2 border-dashed ${modelFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
+                        {modelFile ? <Check className="w-8 h-8 text-green-500" /> : <Upload className="w-8 h-8 text-gray-400" />}
+                      </div>
+                      <div className="flex-1">
+                        <input type="file" accept=".obj" onChange={handleModelChange} className={`text-sm ${mutedClass}`} />
+                        {modelFile && <p className={`text-xs mt-1 text-green-600`}>{modelFile.name}</p>}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${textClass}`}>Texture File (.png/.mtl) *</label>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-20 h-20 rounded border-2 border-dashed ${textureFile ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-400'} flex items-center justify-center`}>
+                        {textureFile ? <Check className="w-8 h-8 text-green-500" /> : <Upload className="w-8 h-8 text-gray-400" />}
+                      </div>
+                      <div className="flex-1">
+                        <input type="file" accept=".png,.jpg,.jpeg,.mtl" onChange={handleTextureChange} className={`text-sm ${mutedClass}`} />
+                        {textureFile && <p className={`text-xs mt-1 text-green-600`}>{textureFile.name}</p>}
+                      </div>
+                    </div>
+                  </div>
+                  <p className={`text-xs ${mutedClass}`}>Note: 3D items will need a thumbnail uploaded separately or rendered from the model.</p>
+                </div>
+              )}
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Name *</label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className={inputClass} /></div>
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className={`w-full p-2 border rounded-lg resize-none h-20 ${inputClass}`} /></div>
               <div><label className={`block text-sm font-medium mb-1 ${textClass}`}>Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className={`w-full p-2 border rounded-lg ${inputClass}`}>{CATS.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></div>
@@ -2553,6 +2648,9 @@ const Admin = () => {
 
          {/* Jobs Tab */}
          {activeTab === "jobs" && <JobsTab />}
+         
+         {/* Marketplace Tab */}
+         {activeTab === "marketplace" && <MarketplaceTab darkMode={darkMode} />}
  
         {/* Reservations Tab */}
         {activeTab === "reservations" && (
