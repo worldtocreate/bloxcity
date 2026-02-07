@@ -3817,6 +3817,75 @@ export type Database = {
           },
         ]
       }
+      marketplace_item_comments: {
+        Row: {
+          content: string
+          created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          forum_user_id: string
+          id: string
+          is_deleted: boolean
+          item_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          forum_user_id: string
+          id?: string
+          is_deleted?: boolean
+          item_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          forum_user_id?: string
+          id?: string
+          is_deleted?: boolean
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_item_comments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_item_comments_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_item_comments_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_item_comments_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_item_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_items: {
         Row: {
           category: Database["public"]["Enums"]["item_category"]

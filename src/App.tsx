@@ -2307,6 +2307,9 @@ function MarketItem() {
   const [item, setItem] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [resaleListings, setResaleListings] = useState<any[]>([]);
@@ -2331,8 +2334,52 @@ function MarketItem() {
   };
 
   useEffect(() => {
-    if (itemId) fetchItem();
+    if (itemId) {
+      fetchItem();
+      fetchComments();
+    }
   }, [itemId]);
+
+  const fetchComments = async () => {
+    if (!itemId) return;
+    setCommentsLoading(true);
+    const { data } = await supabase
+      .from('marketplace_item_comments')
+      .select('*, author:forum_user_id(id, serial_id, username, avatar_url, is_verified, membership_tier)')
+      .eq('item_id', itemId)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setComments(data || []);
+    setCommentsLoading(false);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!forumUser) {
+      toast({ title: 'Please log in to comment', variant: 'destructive' });
+      return;
+    }
+    if (!comment.trim()) {
+      toast({ title: 'Please enter a comment', variant: 'destructive' });
+      return;
+    }
+    setSubmittingComment(true);
+    const { error } = await supabase
+      .from('marketplace_item_comments')
+      .insert({
+        item_id: itemId,
+        forum_user_id: forumUser.id,
+        content: comment.trim()
+      });
+    if (error) {
+      toast({ title: 'Failed to post comment', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Comment posted!' });
+      setComment('');
+      fetchComments();
+    }
+    setSubmittingComment(false);
+  };
 
   const fetchItem = async () => {
     if (!itemId) return;
@@ -2593,11 +2640,11 @@ function MarketItem() {
                 </div>
                 
                 {/* Item thumbnail */}
-                <div className="aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/10 to-transparent rounded-lg flex items-center justify-center">
+                <div className="aspect-square bg-[hsl(var(--bc-bg))] rounded-lg flex items-center justify-center">
                   {item.thumbnail_url ? (
                     <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-contain" />
                   ) : (
-                    <Gamepad2 className="w-32 h-32 text-[hsl(var(--bc-primary))]/30" />
+                    <Gamepad2 className="w-32 h-32 text-[hsl(var(--bc-text-muted))]/30" />
                   )}
                 </div>
               </div>
@@ -2767,14 +2814,62 @@ function MarketItem() {
                   <Input 
                     value={comment} 
                     onChange={(e) => setComment(e.target.value)} 
-                    placeholder="Write a comment..." 
+                    placeholder={forumUser ? "Write a comment..." : "Log in to comment..."}
+                    disabled={!forumUser}
                     className="bg-[hsl(var(--bc-bg))] border-[hsl(var(--bc-border))]" 
+                    onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
                   />
-                  <Button onClick={() => setComment("")}>Send</Button>
+                  <Button 
+                    onClick={handleSubmitComment} 
+                    disabled={submittingComment || !forumUser}
+                  >
+                    {submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
+                  </Button>
                 </div>
-                <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">
-                  No comments yet. Be the first!
-                </div>
+                {commentsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--bc-primary))]" />
+                  </div>
+                ) : comments.length === 0 ? (
+                  <div className="text-center py-8 text-[hsl(var(--bc-text-muted))]">
+                    No comments yet. Be the first!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {comments.map((c) => (
+                      <div key={c.id} className="flex gap-3">
+                        <Link to={`/${c.author?.serial_id}/${c.author?.username}/profile`} className="flex-shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg))] flex items-center justify-center overflow-hidden">
+                            {c.author?.avatar_url ? (
+                              <img src={c.author.avatar_url} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="font-bold text-[hsl(var(--bc-text-muted))]">
+                                {c.author?.username?.[0]?.toUpperCase() || '?'}
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Link 
+                              to={`/${c.author?.serial_id}/${c.author?.username}/profile`}
+                              className="font-semibold text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]"
+                            >
+                              {c.author?.username || 'Unknown'}
+                            </Link>
+                            {c.author?.is_verified && (
+                              <BadgeCheck className="w-4 h-4 text-green-500" />
+                            )}
+                            <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                              {new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[hsl(var(--bc-text))]">{c.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

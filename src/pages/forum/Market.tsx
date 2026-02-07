@@ -91,6 +91,7 @@ type MarketplaceItem = {
   payment_type: 'coins' | 'cash' | 'both';
   price_coins: number;
   price_cash: number;
+  is_on_sale: boolean;
 };
 
 function useMarketplaceItems(category: string) {
@@ -104,8 +105,7 @@ function useMarketplaceItems(category: string) {
       setLoading(true);
       let query = supabase
         .from('marketplace_items')
-        .select('id,name,category,created_at,is_limited,thumbnail_url,favorites_count,sales_count,payment_type,price_coins,price_cash')
-        .eq('is_on_sale', true)
+        .select('id,name,category,created_at,is_limited,thumbnail_url,favorites_count,sales_count,payment_type,price_coins,price_cash,is_on_sale')
         .order('created_at', { ascending: false });
 
       if (category && category !== 'all') {
@@ -351,7 +351,7 @@ export default function Market() {
                   >
                     <Card className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))] overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all hover:shadow-lg">
                       {/* Thumbnail */}
-                      <div className="aspect-square bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 relative">
+                      <div className="aspect-square bg-[hsl(var(--bc-bg))] relative">
                         {item.thumbnail_url ? (
                           <img 
                             src={item.thumbnail_url} 
@@ -360,12 +360,21 @@ export default function Market() {
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <Box className="w-12 h-12 text-[hsl(var(--bc-primary))]/40" />
+                            <Box className="w-12 h-12 text-[hsl(var(--bc-text-muted))]/40" />
+                          </div>
+                        )}
+                        
+                        {/* Offsale badge */}
+                        {!item.is_on_sale && (
+                          <div className="absolute top-2 left-2">
+                            <Badge className="bg-gray-500 text-white text-xs">
+                              Offsale
+                            </Badge>
                           </div>
                         )}
                         
                         {/* Limited badge */}
-                        {item.is_limited && (
+                        {item.is_limited && item.is_on_sale && (
                           <div className="absolute top-2 left-2">
                             <Badge className="bg-amber-500 text-white text-xs">
                               <Clock className="w-3 h-3 mr-1" />
@@ -418,11 +427,11 @@ export default function Market() {
                     <Card className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] transition-all">
                       <CardContent className="p-4 flex items-center gap-4">
                         {/* Thumbnail */}
-                        <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <div className="w-16 h-16 rounded-lg bg-[hsl(var(--bc-bg))] flex items-center justify-center flex-shrink-0 overflow-hidden">
                           {item.thumbnail_url ? (
                             <img src={item.thumbnail_url} alt={item.name} className="w-full h-full object-cover" />
                           ) : (
-                            <Box className="w-8 h-8 text-[hsl(var(--bc-primary))]/40" />
+                            <Box className="w-8 h-8 text-[hsl(var(--bc-text-muted))]/40" />
                           )}
                         </div>
                         
@@ -432,7 +441,10 @@ export default function Market() {
                             <h3 className="font-medium text-[hsl(var(--bc-text))] truncate">
                               {item.name}
                             </h3>
-                            {item.is_limited && (
+                            {!item.is_on_sale && (
+                              <Badge className="bg-gray-500 text-white text-xs">Offsale</Badge>
+                            )}
+                            {item.is_limited && item.is_on_sale && (
                               <Badge className="bg-amber-500 text-white text-xs">Rare</Badge>
                             )}
                           </div>
