@@ -4631,6 +4631,10 @@ export type Database = {
         | "shirts"
         | "pants"
         | "bundles"
+        | "crates"
+        | "heads"
+        | "body-parts"
+        | "gadgets"
       item_payment_type: "coins" | "cash" | "both"
       job_status: "open" | "closed" | "filled"
       job_work_type: "remote" | "hybrid" | "on_site"
@@ -4778,6 +4782,10 @@ export const Constants = {
         "shirts",
         "pants",
         "bundles",
+        "crates",
+        "heads",
+        "body-parts",
+        "gadgets",
       ],
       item_payment_type: ["coins", "cash", "both"],
       job_status: ["open", "closed", "filled"],
