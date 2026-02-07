@@ -374,9 +374,10 @@ import Updates from "./pages/Updates";
 import Games from "./pages/forum/Games";
 // GameDetail inlined below
 import Market from "./pages/forum/Market";
-// MarketItem inlined below
+import MarketItemDetail from "./pages/forum/MarketItemDetail";
 import Character from "./pages/forum/Character";
-import Trading from "./pages/forum/Trading";
+import TradingPage from "./pages/forum/TradingPage";
+import Inventory from "./pages/forum/Inventory";
 // Players page removed - using ForumUsers at /players instead
 import Groups from "./pages/forum/Groups";
 import GroupDetail from "./pages/forum/GroupDetail";
@@ -2745,9 +2746,10 @@ const App = () => (
               <Route path="games" element={<Games />} />
               <Route path="game/:id" element={<GameView />} />
               <Route path="market" element={<Market />} />
-              <Route path="market/item/:id" element={<MarketItem />} />
+              <Route path="market/item/:id" element={<MarketItemDetail />} />
               <Route path="character" element={<Character />} />
-              <Route path="trading" element={<Trading />} />
+              <Route path="trading" element={<TradingPage />} />
+              <Route path="inventory" element={<Inventory />} />
               <Route path="login" element={<ForumLogin />} />
               <Route path="register" element={<ForumRegister />} />
               <Route path="forgot-password" element={<ForumForgotPassword />} />
