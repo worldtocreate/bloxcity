@@ -4306,6 +4306,55 @@ export type Database = {
           },
         ]
       }
+      trade_notifications: {
+        Row: {
+          created_at: string | null
+          email_sent: boolean | null
+          id: string
+          notification_type: string
+          recipient_id: string
+          trade_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_sent?: boolean | null
+          id?: string
+          notification_type: string
+          recipient_id: string
+          trade_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_sent?: boolean | null
+          id?: string
+          notification_type?: string
+          recipient_id?: string
+          trade_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trade_notifications_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           completed_at: string | null
@@ -4576,9 +4625,14 @@ export type Database = {
         Args: { p_amount: number; p_group_id: string }
         Returns: boolean
       }
+      add_receiver_items_to_trade: {
+        Args: { p_receiver_items: string[]; p_trade_id: string }
+        Returns: Json
+      }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
+      cancel_trade: { Args: { p_trade_id: string }; Returns: Json }
       check_content_rate_limit: {
         Args: { p_content_type: string; p_forum_user_id: string }
         Returns: boolean
@@ -4599,6 +4653,8 @@ export type Database = {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
       }
+      decline_trade: { Args: { p_trade_id: string }; Returns: Json }
+      delete_inventory_item: { Args: { p_inventory_id: string }; Returns: Json }
       execute_trade: { Args: { p_trade_id: string }; Returns: Json }
       get_affiliate_info: {
         Args: { _forum_user_id: string }
@@ -4664,6 +4720,14 @@ export type Database = {
       save_maintenance_settings: {
         Args: { p_enabled: boolean; p_message: string; p_password: string }
         Returns: boolean
+      }
+      send_trade: {
+        Args: {
+          p_receiver_id: string
+          p_receiver_items: string[]
+          p_sender_items: string[]
+        }
+        Returns: Json
       }
       submit_ad_with_cost: {
         Args: {
