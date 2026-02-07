@@ -2973,7 +2973,7 @@ function MarketItem() {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase">Owners</div>
-                    <div className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.sales_count || 0)}</div>
+                    <div className="font-semibold text-[hsl(var(--bc-text))]">{formatNumber(item.owner_count || 0)}</div>
                   </div>
                 </div>
               </div>
