@@ -111,6 +111,7 @@ function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: strin
 
 interface FriendStatus {
   id: string;
+  serial_id: number;
   username: string;
   avatar_url: string | null;
   status_text: string;
@@ -127,6 +128,7 @@ interface FriendRequest {
   id: string;
   sender: {
     id: string;
+    serial_id: number;
     username: string;
     avatar_url: string | null;
     level: number;
@@ -266,6 +268,7 @@ export default function ForumDashboard() {
         created_at,
         sender:sender_id (
           id,
+          serial_id,
           username,
           avatar_url,
           level,
@@ -293,7 +296,7 @@ export default function ForumDashboard() {
 
       const { data: friends } = await supabase
         .from('forum_users')
-        .select('id, username, avatar_url, status_text, status_updated_at, is_verified, level, avatar_effect, membership_tier')
+        .select('id, serial_id, username, avatar_url, status_text, status_updated_at, is_verified, level, avatar_effect, membership_tier')
         .in('id', friendIds)
         .not('status_text', 'is', null)
         .order('status_updated_at', { ascending: false });
@@ -679,7 +682,7 @@ export default function ForumDashboard() {
             <div className="bc-card-body text-white">
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
-                  <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
+                  <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0">
                     {forumUser?.avatar_url ? (
                       <img 
                         src={forumUser.avatar_url} 
@@ -718,7 +721,7 @@ export default function ForumDashboard() {
           <div className="bc-card">
             <div className="bc-card-body">
               <div className="flex gap-3">
-                <Link to={`/id/${forumUser?.username}/profile`} className="shrink-0">
+                <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0">
                   {forumUser?.avatar_url ? (
                     <img 
                       src={forumUser.avatar_url} 
@@ -934,7 +937,7 @@ export default function ForumDashboard() {
                   <div className="space-y-3">
                     {friendRequests.slice(0, 3).map(request => (
                       <div key={request.id} className="flex items-center gap-3">
-                        <Link to={`/id/${request.sender.username}/profile`}>
+                        <Link to={`/${request.sender.serial_id}/${request.sender.username}/profile`}>
                           <UserAvatar
                             avatarUrl={request.sender.avatar_url}
                             username={request.sender.username}
@@ -944,7 +947,7 @@ export default function ForumDashboard() {
                         </Link>
                         <div className="flex-1 min-w-0">
                           <Link 
-                            to={`/id/${request.sender.username}/profile`}
+                            to={`/${request.sender.serial_id}/${request.sender.username}/profile`}
                             className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] text-sm truncate block"
                           >
                             {request.sender.username}
@@ -998,7 +1001,7 @@ export default function ForumDashboard() {
                     {friendStatuses.map(friend => (
                       <div key={friend.id} className="p-4">
                         <div className="flex gap-3">
-                          <Link to={`/id/${friend.username}/profile`}>
+                          <Link to={`/${friend.serial_id}/${friend.username}/profile`}>
                             <UserAvatar
                               avatarUrl={friend.avatar_url}
                               username={friend.username}
@@ -1010,7 +1013,7 @@ export default function ForumDashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <Link 
-                                to={`/id/${friend.username}/profile`}
+                                to={`/${friend.serial_id}/${friend.username}/profile`}
                                 className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]"
                               >
                                 {friend.username}

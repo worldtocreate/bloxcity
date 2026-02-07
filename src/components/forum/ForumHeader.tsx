@@ -291,7 +291,7 @@ export default function ForumHeader({ user, forumUser, isAdmin, isModerator }: F
               )}
               
               <Link 
-                to={`/user/${forumUser?.username}`}
+                to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`}
                 className="flex items-center gap-2"
               >
                 {forumUser?.avatar_url ? (

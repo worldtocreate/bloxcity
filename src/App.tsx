@@ -486,7 +486,7 @@ function InventoryPage() {
 
 // Inline Trading component  
 function TradingPageComponent() {
-  const { forumUser } = useOutletContext<{ forumUser: any }>();
+  const { forumUser, isAdmin } = useOutletContext<{ forumUser: any; isAdmin: boolean }>();
   const [searchParams] = useSearchParams();
   const withUsername = searchParams.get('with');
   const [tradingWith, setTradingWith] = useState<any>(null);
@@ -495,7 +495,23 @@ function TradingPageComponent() {
   const [myInventory, setMyInventory] = useState<any[]>([]);
   const [selectedMyItems, setSelectedMyItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPageMaintenance, setIsPageMaintenance] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Check page maintenance status
+    const checkMaintenance = async () => {
+      const { data } = await supabase
+        .from('admin_settings')
+        .select('value')
+        .eq('key', 'page_maintenance')
+        .single();
+      if (data?.value && (data.value as any).trading && !isAdmin) {
+        setIsPageMaintenance(true);
+      }
+    };
+    checkMaintenance();
+  }, [isAdmin]);
 
   useEffect(() => {
     if (forumUser) fetchData();
@@ -556,6 +572,21 @@ function TradingPageComponent() {
   };
 
   if (!forumUser) return <Navigate to="/login" replace />;
+  
+  if (isPageMaintenance) {
+    return (
+      <div className="flex items-center justify-center p-4 py-20">
+        <div className="max-w-md w-full text-center">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-amber-500/10 flex items-center justify-center">
+            <Package className="w-12 h-12 text-amber-500" />
+          </div>
+          <h1 className="text-3xl font-bold text-[hsl(var(--bc-text))] mb-3">Trading is Under Maintenance</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-8">We're performing scheduled maintenance. Please check back soon!</p>
+          <Link to="/" className="inline-flex items-center gap-2 text-[hsl(var(--bc-primary))] hover:underline">Back to Dashboard</Link>
+        </div>
+      </div>
+    );
+  }
   
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
 
