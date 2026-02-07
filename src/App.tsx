@@ -2917,9 +2917,13 @@ function MarketItem() {
     );
   }
 
-  const isLimitedSoldOut = item.is_limited && item.limited_stock && (item.limited_sold >= item.limited_stock);
+  const limitedStock = item?.limited_stock ?? null;
+  const limitedSold = item?.limited_sold ?? 0;
+  const isLimitedSoldOut = item.is_limited && limitedStock !== null && limitedSold >= limitedStock;
+  const isLimitedOffSale = item.is_limited && (item.is_on_sale === false || (item.offsale_at && new Date(item.offsale_at).getTime() <= Date.now()));
   const canPurchaseOfficial = item.is_on_sale && !isLimitedSoldOut;
   const isOwnedNonLimited = ownsItem && !item.is_limited && item.category !== 'crates';
+  const isLimitedResaleEligible = item.is_limited && (isLimitedSoldOut || isLimitedOffSale);
 
   return (
     <div className="min-h-screen bg-[hsl(var(--bc-bg))]">
@@ -3222,8 +3226,8 @@ function MarketItem() {
                 </>
               )}
 
-              {/* Sell section for owned limiteds that are sold out */}
-              {item.is_limited && isLimitedSoldOut && ownsItem && (
+              {/* Sell section for owned limiteds that are resale-eligible (sold out or offsale) */}
+              {isLimitedResaleEligible && ownsItem && (
                 <div className="space-y-3">
                   {/* Show list for sale button if user has unlisted copies */}
                   {ownedCopies.length > 0 && (
