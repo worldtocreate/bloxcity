@@ -3217,16 +3217,28 @@ function MarketItem() {
                 </>
               )}
 
-              {/* Sell button for owned limiteds */}
-              {item.is_limited && isLimitedSoldOut && ownsItem && ownedCopies.length > 0 && (
+              {/* Sell button for owned limiteds that are sold out */}
+              {item.is_limited && isLimitedSoldOut && ownsItem && (
                 <>
-                  <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">or</div>
-                  <Button
-                    onClick={() => setShowSellModal(true)}
-                    className="w-full"
-                  >
-                    Sell Item
-                  </Button>
+                  {ownedCopies.length > 0 ? (
+                    <>
+                      {canPurchaseOfficial && <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">or</div>}
+                      <div className="text-xs font-bold text-[hsl(var(--bc-text-muted))] uppercase mb-2">
+                        Sell Your Copy
+                      </div>
+                      <Button
+                        onClick={() => setShowSellModal(true)}
+                        variant="outline"
+                        className="w-full border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+                      >
+                        List for Sale
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                      <p className="text-sm text-amber-400 font-medium">Your copy is currently listed for sale</p>
+                    </div>
+                  )}
                 </>
               )}
             </div>
