@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Wrench, Save, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Wrench, Save, Loader2, Eye, EyeOff, ShoppingBag, Users, ArrowRightLeft, Gamepad2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MaintenanceSettings {
   enabled: boolean;
   password: string;
   message: string;
+}
+
+interface PageMaintenanceSettings {
+  trading: boolean;
+  character: boolean;
+  market: boolean;
+  forum: boolean;
+  games: boolean;
 }
 
 interface MaintenanceTabProps {
@@ -19,6 +27,13 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
     password: '',
     message: 'We are currently performing scheduled maintenance. Please check back soon.'
   });
+  const [pageSettings, setPageSettings] = useState<PageMaintenanceSettings>({
+    trading: false,
+    character: false,
+    market: false,
+    forum: false,
+    games: false
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +43,7 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   }, []);
 
   const fetchSettings = async () => {
-    // Use the secure admin_settings table
+    // Fetch global maintenance settings
     const { data } = await supabase
       .from('admin_settings')
       .select('value')
@@ -43,6 +58,25 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
         message: (val.message as string) || 'We are currently performing scheduled maintenance. Please check back soon.'
       });
     }
+
+    // Fetch page-specific maintenance settings
+    const { data: pageData } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'page_maintenance')
+      .single();
+    
+    if (pageData?.value) {
+      const val = pageData.value as Record<string, boolean>;
+      setPageSettings({
+        trading: val.trading || false,
+        character: val.character || false,
+        market: val.market || false,
+        forum: val.forum || false,
+        games: val.games || false
+      });
+    }
+    
     setLoading(false);
   };
 
@@ -54,7 +88,7 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
     
     setSaving(true);
 
-    // Use the secure function to save settings with hashed password
+    // Save global maintenance settings
     const { error } = await supabase.rpc('save_maintenance_settings', {
       p_enabled: settings.enabled,
       p_message: settings.message,
@@ -64,12 +98,32 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
     if (error) {
       console.error('Save error:', error);
       toast.error('Failed to save settings');
+      setSaving(false);
+      return;
+    }
+
+    // Save page-specific maintenance settings
+    const { error: pageError } = await supabase
+      .from('admin_settings')
+      .update({
+        value: pageSettings as unknown as { [key: string]: boolean },
+        updated_at: new Date().toISOString()
+      })
+      .eq('key', 'page_maintenance');
+
+    if (pageError) {
+      console.error('Page settings save error:', pageError);
+      toast.error('Failed to save page settings');
     } else {
       toast.success(settings.enabled ? 'Maintenance mode enabled!' : 'Settings saved');
       // Clear password field after saving
       setSettings(prev => ({ ...prev, password: '' }));
     }
     setSaving(false);
+  };
+
+  const togglePageMaintenance = (page: keyof PageMaintenanceSettings) => {
+    setPageSettings(prev => ({ ...prev, [page]: !prev[page] }));
   };
 
   if (loading) {
@@ -85,16 +139,25 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
   const textClass = darkMode ? 'text-white' : 'text-gray-800';
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-500';
 
+  const pageOptions: { key: keyof PageMaintenanceSettings; label: string; icon: React.ReactNode; description: string }[] = [
+    { key: 'trading', label: 'Trading', icon: <ArrowRightLeft className="w-5 h-5" />, description: 'Disable the trading page' },
+    { key: 'character', label: 'Character', icon: <Users className="w-5 h-5" />, description: 'Disable character customization' },
+    { key: 'market', label: 'Marketplace', icon: <ShoppingBag className="w-5 h-5" />, description: 'Disable the marketplace' },
+    { key: 'forum', label: 'Forums', icon: <MessageSquare className="w-5 h-5" />, description: 'Disable forum discussions' },
+    { key: 'games', label: 'Games', icon: <Gamepad2 className="w-5 h-5" />, description: 'Disable the games section' },
+  ];
+
   return (
     <div className="space-y-6">
+      {/* Global Maintenance Mode */}
       <div className={`rounded-lg border p-6 space-y-6 ${cardClass}`}>
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-amber-900/30' : 'bg-amber-100'}`}>
             <Wrench className="w-6 h-6 text-amber-600" />
           </div>
           <div>
-            <h2 className={`text-xl font-semibold ${textClass}`}>Maintenance Mode</h2>
-            <p className={mutedClass}>Enable maintenance mode to restrict access to the site</p>
+            <h2 className={`text-xl font-semibold ${textClass}`}>Global Maintenance Mode</h2>
+            <p className={mutedClass}>Enable maintenance mode to restrict access to the entire site</p>
           </div>
         </div>
 
@@ -159,34 +222,87 @@ export default function MaintenanceTab({ darkMode }: MaintenanceTabProps) {
             Password is securely hashed. Enter a new password only when you want to change it.
           </p>
         </div>
+      </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end pt-4 border-t">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            Save Changes
-          </button>
+      {/* Page-Specific Maintenance */}
+      <div className={`rounded-lg border p-6 space-y-6 ${cardClass}`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-blue-900/30' : 'bg-blue-100'}`}>
+            <Wrench className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className={`text-xl font-semibold ${textClass}`}>Page Maintenance</h2>
+            <p className={mutedClass}>Put specific pages in maintenance mode without affecting the entire site</p>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {pageOptions.map(({ key, label, icon, description }) => (
+            <div
+              key={key}
+              className={`flex items-center justify-between p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  pageSettings[key] 
+                    ? 'bg-amber-500/20 text-amber-500' 
+                    : darkMode ? 'bg-gray-600 text-gray-400' : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {icon}
+                </div>
+                <div>
+                  <div className={`font-medium ${textClass}`}>{label}</div>
+                  <div className={`text-sm ${mutedClass}`}>{description}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => togglePageMaintenance(key)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                  pageSettings[key] ? 'bg-amber-600' : darkMode ? 'bg-gray-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                    pageSettings[key] ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Warning */}
-      {settings.enabled && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition"
+        >
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          Save All Changes
+        </button>
+      </div>
+
+      {/* Active Warnings */}
+      {(settings.enabled || Object.values(pageSettings).some(v => v)) && (
+        <div className={`border rounded-lg p-4 ${darkMode ? 'bg-amber-900/20 border-amber-700' : 'bg-amber-50 border-amber-200'}`}>
           <div className="flex items-start gap-3">
-            <Wrench className="w-5 h-5 text-amber-600 mt-0.5" />
+            <Wrench className={`w-5 h-5 mt-0.5 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />
             <div>
-              <div className="font-medium text-amber-800">Maintenance Mode is Active</div>
-              <p className="text-sm text-amber-700 mt-1">
-                Regular users will see the maintenance page. Staff can bypass using the password.
-              </p>
+              <div className={`font-medium ${darkMode ? 'text-amber-300' : 'text-amber-800'}`}>Active Maintenance</div>
+              <ul className={`text-sm mt-1 space-y-1 ${darkMode ? 'text-amber-400' : 'text-amber-700'}`}>
+                {settings.enabled && <li>• Global maintenance mode is enabled</li>}
+                {pageSettings.trading && <li>• Trading page is in maintenance</li>}
+                {pageSettings.character && <li>• Character page is in maintenance</li>}
+                {pageSettings.market && <li>• Marketplace is in maintenance</li>}
+                {pageSettings.forum && <li>• Forums are in maintenance</li>}
+                {pageSettings.games && <li>• Games section is in maintenance</li>}
+              </ul>
             </div>
           </div>
         </div>
