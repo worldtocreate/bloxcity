@@ -1,10 +1,29 @@
-import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail } from "lucide-react";
-import { useState } from "react";
+import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail, Store, MessageSquare, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import landingBg from "@/assets/landing-background.png";
 import logoSmall from "@/assets/IMG_2412_Original-1.png";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
+
+interface LandingItem {
+  id: string;
+  serial_id: number;
+  name: string;
+  thumbnail_url: string | null;
+  price_coins: number;
+  price_cash: number;
+  is_limited: boolean;
+}
+
+interface RecentThread {
+  id: string;
+  title: string;
+  created_at: string;
+  author_username: string;
+  author_avatar: string | null;
+}
 
 // Inlined Footer component to avoid module resolution issues
 const Footer = () => {
@@ -50,6 +69,68 @@ const Index = () => {
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
   const [newsletterError, setNewsletterError] = useState("");
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+
+  // Stats state
+  const [stats, setStats] = useState({ players: 0, threads: 0, posts: 0 });
+  const [items, setItems] = useState<LandingItem[]>([]);
+  const [recentThreads, setRecentThreads] = useState<RecentThread[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    fetchLandingData();
+  }, []);
+
+  const fetchLandingData = async () => {
+    setLoadingStats(true);
+    try {
+      // Fetch stats from public view
+      const [{ count: players }, { count: threads }, { count: posts }] = await Promise.all([
+        supabase.from('forum_users_public').select('*', { count: 'exact', head: true }),
+        supabase.from('forum_threads').select('*', { count: 'exact', head: true }),
+        supabase.from('forum_posts').select('*', { count: 'exact', head: true }),
+      ]);
+      setStats({ players: players || 0, threads: threads || 0, posts: posts || 0 });
+
+      // Fetch recent items
+      const { data: itemsData } = await supabase
+        .from('marketplace_items')
+        .select('id, serial_id, name, thumbnail_url, price_coins, price_cash, is_limited')
+        .order('created_at', { ascending: false })
+        .limit(4);
+      
+      if (itemsData) setItems(itemsData as LandingItem[]);
+
+      // Fetch recent threads with authors from public view
+      const { data: threadsData } = await supabase
+        .from('forum_threads')
+        .select('id, title, created_at, author_id')
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (threadsData && threadsData.length > 0) {
+        // Get author info from public view
+        const authorIds = [...new Set(threadsData.map(t => t.author_id))];
+        const { data: authorsData } = await supabase
+          .from('forum_users_public')
+          .select('id, username, avatar_url')
+          .in('id', authorIds);
+        
+        const authorsMap = new Map(authorsData?.map(a => [a.id, a]) || []);
+        
+        const threadsWithAuthors: RecentThread[] = threadsData.map(t => ({
+          id: t.id,
+          title: t.title,
+          created_at: t.created_at,
+          author_username: authorsMap.get(t.author_id)?.username || 'Unknown',
+          author_avatar: authorsMap.get(t.author_id)?.avatar_url || null,
+        }));
+        setRecentThreads(threadsWithAuthors);
+      }
+    } catch (err) {
+      console.error('Error fetching landing data:', err);
+    }
+    setLoadingStats(false);
+  };
 
   const handleNewsletterSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +179,18 @@ const Index = () => {
     setNewsletterLoading(false);
   };
 
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = Math.floor((now.getTime() - then.getTime()) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
+  const getItemSlug = (name: string) => name.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+
   return (
     <div className="has-header">
       <Header />
@@ -144,6 +237,145 @@ const Index = () => {
               <p>bloxcity.net</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Community Stats Section */}
+      <div className="maintenance-container" style={{ paddingTop: '2rem', paddingBottom: '0', minHeight: 'auto' }}>
+        <div className="maintenance-content">
+          <div className="about-hero-section" style={{ marginBottom: '1.5rem' }}>
+            <h2>Community Stats</h2>
+          </div>
+          
+          {loadingStats ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-[hsl(var(--bc-primary))] mb-1">
+                  <Users className="w-5 h-5" />
+                  <span className="text-2xl font-bold">{stats.players.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">Players</p>
+              </div>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-[hsl(var(--bc-accent))] mb-1">
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="text-2xl font-bold">{stats.threads.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">Threads</p>
+              </div>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-[hsl(var(--bc-green))] mb-1">
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="text-2xl font-bold">{stats.posts.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">Posts</p>
+              </div>
+            </div>
+          )}
+
+          {/* New Items Section */}
+          {items.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+                  <Store className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+                  New Items
+                </h3>
+                <Link to="/market" className="text-sm text-[hsl(var(--bc-primary))] hover:underline">
+                  View All →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {items.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={`/item/${item.serial_id}/${getItemSlug(item.name)}`}
+                    className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden hover:border-[hsl(var(--bc-primary))]/50 hover:shadow-lg transition-all"
+                  >
+                    <div className="aspect-square relative bg-[hsl(var(--bc-bg-light))]">
+                      {item.thumbnail_url ? (
+                        <img
+                          src={item.thumbnail_url}
+                          alt={item.name}
+                          className="w-full h-full object-contain p-2"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Store className="w-12 h-12 text-[hsl(var(--bc-text-muted))]" />
+                        </div>
+                      )}
+                      {item.is_limited && (
+                        <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold bg-[hsl(var(--bc-accent))] text-white rounded-full">
+                          LTD
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm font-medium text-[hsl(var(--bc-text))] truncate group-hover:text-[hsl(var(--bc-primary))] transition">
+                        {item.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-[hsl(var(--bc-text-muted))]">
+                        {item.price_coins > 0 && (
+                          <span className="flex items-center gap-1">
+                            🪙 {item.price_coins.toLocaleString()}
+                          </span>
+                        )}
+                        {item.price_cash > 0 && (
+                          <span className="flex items-center gap-1">
+                            💵 {item.price_cash}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Forum Activity */}
+          {recentThreads.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+                  Recent Discussions
+                </h3>
+                <Link to="/forum" className="text-sm text-[hsl(var(--bc-primary))] hover:underline">
+                  View Forum →
+                </Link>
+              </div>
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+                {recentThreads.map((thread, idx) => (
+                  <Link
+                    key={thread.id}
+                    to={`/thread/${thread.id}`}
+                    className={`block p-4 hover:bg-[hsl(var(--bc-bg-light))] transition ${idx !== recentThreads.length - 1 ? 'border-b border-[hsl(var(--bc-border))]' : ''}`}
+                  >
+                    <p className="font-medium text-[hsl(var(--bc-text))] line-clamp-1 hover:text-[hsl(var(--bc-primary))] transition">
+                      {thread.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-[hsl(var(--bc-text-muted))]">
+                      {thread.author_avatar && (
+                        <img 
+                          src={thread.author_avatar} 
+                          alt="" 
+                          className="w-4 h-4 rounded-full"
+                        />
+                      )}
+                      <span>by {thread.author_username}</span>
+                      <span>•</span>
+                      <span>{formatTimeAgo(thread.created_at)}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

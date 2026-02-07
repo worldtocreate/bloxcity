@@ -113,9 +113,8 @@ export default function ForumHome() {
 
   const fetchTopUsers = async () => {
     const { data } = await supabase
-      .from('forum_users')
+      .from('forum_users_public')
       .select('id, serial_id, username, avatar_url, xp, level, membership_tier, avatar_effect')
-      .eq('is_suspended', false)
       .order('xp', { ascending: false })
       .limit(5);
     
@@ -138,7 +137,7 @@ export default function ForumHome() {
 
   const fetchStats = async () => {
     const [{ count: users }, { count: threads }, { count: posts }] = await Promise.all([
-      supabase.from('forum_users').select('*', { count: 'exact', head: true }),
+      supabase.from('forum_users_public').select('*', { count: 'exact', head: true }),
       supabase.from('forum_threads').select('*', { count: 'exact', head: true }),
       supabase.from('forum_posts').select('*', { count: 'exact', head: true }),
     ]);
