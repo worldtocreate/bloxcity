@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   Coins, Heart, Flag, MessageCircle, Clock, Users, 
   Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User, UsersRound, Gift, DollarSign,
-  Package, Copy, TrendingUp, Zap, FileText, PenSquare
+  Package, Copy, TrendingUp, Zap, FileText, PenSquare, Star, Plus, Flame
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -149,7 +149,6 @@ interface Referral {
 
 // XP calculation helpers
 function calculateXpForLevel(level: number): number {
-  // Each level requires more XP: level 1 = 100, level 2 = 300, level 3 = 600, etc.
   return level * level * 100;
 }
 
@@ -184,9 +183,6 @@ export default function ForumDashboard() {
   const [cash, setCash] = useState(0);
   const [lastClaim, setLastClaim] = useState<string | null>(null);
   const [claiming, setClaiming] = useState(false);
-  const [redeemingTier, setRedeemingTier] = useState<string | null>(null);
-  const [showRedeemDialog, setShowRedeemDialog] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<'bronze' | 'silver' | 'platinum' | null>(null);
   const [reportingStatus, setReportingStatus] = useState<string | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [statusText, setStatusText] = useState('');
@@ -223,7 +219,6 @@ export default function ForumDashboard() {
     setCoins(forumUser.coins || 0);
     setCash(forumUser.cash || 0);
 
-    // Fetch user data including referral info and XP
     const { data: userData } = await supabase
       .from('forum_users')
       .select('last_coin_claim, coins, cash, referral_code, referral_count, xp, level, last_daily_login_xp')
@@ -241,18 +236,9 @@ export default function ForumDashboard() {
       setLastDailyLoginXp(userData.last_daily_login_xp);
     }
 
-    // Fetch referrals
     const { data: referralsData } = await supabase
       .from('forum_referrals')
-      .select(`
-        id,
-        referred_id,
-        created_at,
-        referred_user:referred_id (
-          username,
-          avatar_url
-        )
-      `)
+      .select(`id, referred_id, created_at, referred_user:referred_id (username, avatar_url)`)
       .eq('referrer_id', forumUser.id)
       .order('created_at', { ascending: false });
     
@@ -260,21 +246,9 @@ export default function ForumDashboard() {
       setReferrals(referralsData as unknown as Referral[]);
     }
 
-    // Fetch friend requests
     const { data: requests } = await supabase
       .from('forum_friend_requests')
-      .select(`
-        id,
-        created_at,
-        sender:sender_id (
-          id,
-          serial_id,
-          username,
-          avatar_url,
-          level,
-          membership_tier
-        )
-      `)
+      .select(`id, created_at, sender:sender_id (id, serial_id, username, avatar_url, level, membership_tier)`)
       .eq('receiver_id', forumUser.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -283,7 +257,6 @@ export default function ForumDashboard() {
       setFriendRequests(requests as unknown as FriendRequest[]);
     }
 
-    // Fetch friends with statuses
     const { data: friendships } = await supabase
       .from('forum_friendships')
       .select('user_1_id, user_2_id')
@@ -355,8 +328,7 @@ export default function ForumDashboard() {
     
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m`;
   };
 
   const handleClaimReward = async () => {
@@ -403,7 +375,6 @@ export default function ForumDashboard() {
         setUserXp(data);
         setLastDailyLoginXp(new Date().toISOString());
         toast.success('⚡ +50 XP claimed!');
-        // Recalculate level
         const newLevel = Math.floor(Math.sqrt(data / 100)) + 1;
         setUserLevel(newLevel);
       }
@@ -555,65 +526,77 @@ export default function ForumDashboard() {
   // Not logged in - show public dashboard
   if (!user) {
     return (
-      <div className="flex gap-6">
-        <div className="flex-1 space-y-6 min-w-0">
-          <WelcomeDialog isLoggedIn={false} />
-          
-          <div className="bc-card" style={{ background: 'hsl(var(--bc-info))', border: 'none' }}>
-            <div className="bc-card-body text-white text-center py-8">
-              <h1 className="text-3xl font-bold mb-3">Welcome to BLOX City</h1>
-              <p className="opacity-90 mb-6 max-w-md mx-auto">
-                Join our community to connect with friends, earn coins, and redeem exclusive memberships!
-              </p>
-              <div className="flex justify-center gap-4">
-                <Link to="/login" className="bc-btn bc-btn-success">
-                  Log In
-                </Link>
-                <Link to="/register" className="bc-btn bc-btn-gray">
-                  Sign Up
-                </Link>
-              </div>
+      <div className="space-y-6">
+        <WelcomeDialog isLoggedIn={false} />
+        
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--bc-primary))] via-[hsl(var(--bc-primary))]/80 to-[hsl(var(--bc-accent))] p-6 md:p-8">
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1.5' cy='1.5' r='1.5' fill='rgba(255,255,255,0.1)'/%3E%3C/svg%3E\")" }} />
+          <div className="relative z-10 text-center py-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+              Welcome to BLOX City
+            </h1>
+            <p className="text-white/80 max-w-lg mx-auto mb-6">
+              Join our community to connect with friends, earn coins, and redeem exclusive memberships!
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link 
+                to="/login" 
+                className="px-6 py-2.5 bg-white text-[hsl(var(--bc-primary))] rounded-xl font-semibold hover:bg-white/90 transition-all hover:scale-105"
+              >
+                Log In
+              </Link>
+              <Link 
+                to="/register" 
+                className="px-6 py-2.5 bg-white/20 backdrop-blur text-white rounded-xl font-semibold hover:bg-white/30 transition-all"
+              >
+                Sign Up
+              </Link>
             </div>
           </div>
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              to="/forum"
-              className="bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl p-6 transition group"
-            >
-              <MessageCircle className="w-8 h-8 text-[hsl(var(--bc-primary))] mb-3" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))]">Browse Forums</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Explore community discussions</p>
-            </Link>
-            <Link
-              to="/groups"
-              className="bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl p-6 transition group"
-            >
-              <UsersRound className="w-8 h-8 text-[hsl(var(--bc-accent))] mb-3" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-accent))]">Browse Groups</h3>
-              <p className="text-sm text-[hsl(var(--bc-text-muted))]">Join community groups</p>
-            </Link>
-          </div>
         </div>
 
-        <div className="hidden lg:block w-44 flex-shrink-0 space-y-4">
-          <UserAdBanner type="skyscraper" />
-        </div>
-        
-        <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
+        {/* Quick Links */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            to="/forum"
+            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-primary))]/50 hover:shadow-lg hover:shadow-[hsl(var(--bc-primary))]/5 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 flex items-center justify-center mb-3">
+              <MessageCircle className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+            </div>
+            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Browse Forums</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Explore community discussions</p>
+          </Link>
+          <Link
+            to="/groups"
+            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-accent))]/50 hover:shadow-lg hover:shadow-[hsl(var(--bc-accent))]/5 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-accent))]/20 to-[hsl(var(--bc-accent))]/5 flex items-center justify-center mb-3">
+              <UsersRound className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
+            </div>
+            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-accent))] transition">Browse Groups</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Join community groups</p>
+          </Link>
+          <Link
+            to="/games"
+            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-green))]/50 hover:shadow-lg hover:shadow-[hsl(var(--bc-green))]/5 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-green))]/20 to-[hsl(var(--bc-green))]/5 flex items-center justify-center mb-3">
+              <Flame className="w-6 h-6 text-[hsl(var(--bc-green))]" />
+            </div>
+            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Play Games</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Discover fun experiences</p>
+          </Link>
           <Link
             to="/forum/leaderboard"
-            className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
+            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Leaderboard</h3>
-                <p className="text-xs text-[hsl(var(--bc-text-muted))]">View top players</p>
-              </div>
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center mb-3">
+              <Star className="w-6 h-6 text-amber-500" />
             </div>
+            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-amber-500 transition">Leaderboard</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">View top players</p>
           </Link>
         </div>
       </div>
@@ -629,7 +612,7 @@ export default function ForumDashboard() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Compensation Dialog for existing users */}
       {forumUser && (
         <CompensationDialog 
@@ -672,92 +655,136 @@ export default function ForumDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       <UserAdBanner type="banner" />
       
-      <div className="flex gap-6">
-        <div className="flex-1 space-y-6 min-w-0">
-          {/* Welcome Header */}
-          <div className="bc-card" style={{ background: 'hsl(var(--bc-info))', border: 'none' }}>
-            <div className="bc-card-body text-white">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4">
-                  <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0">
-                    {forumUser?.avatar_url ? (
-                      <img 
-                        src={forumUser.avatar_url} 
-                        alt={forumUser.username}
-                        className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                        <User className="w-8 h-8 text-white" />
-                      </div>
-                    )}
-                  </Link>
-                  <div>
-                    <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
-                      Welcome back, {forumUser?.username}!
-                      {forumUser?.is_verified && <VerifiedBadge size="lg" />}
-                    </h1>
-                    <p className="opacity-90">Check out what your friends are up to</p>
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--bc-primary))] via-[hsl(var(--bc-primary))]/80 to-[hsl(var(--bc-accent))] p-6">
+        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1.5' cy='1.5' r='1.5' fill='rgba(255,255,255,0.1)'/%3E%3C/svg%3E\")" }} />
+        <div className="relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0">
+                {forumUser?.avatar_url ? (
+                  <img 
+                    src={forumUser.avatar_url} 
+                    alt={forumUser.username}
+                    className="w-16 h-16 rounded-xl object-cover border-2 border-white/30 shadow-lg"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center border border-white/30">
+                    <User className="w-8 h-8 text-white" />
                   </div>
+                )}
+              </Link>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-xl md:text-2xl font-bold text-white">
+                    Welcome back, {forumUser?.username}!
+                  </h1>
+                  {forumUser?.is_verified && <VerifiedBadge size="lg" />}
                 </div>
-                <div className="flex items-center gap-3">
-                  <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-white/30 transition">
-                    <Coins className="w-5 h-5 text-yellow-300" />
-                    <span className="font-bold">{coins.toLocaleString()}</span>
-                  </Link>
-                  <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-white/30 transition">
-                    <DollarSign className="w-5 h-5 text-green-300" />
-                    <span className="font-bold">{cash}</span>
-                  </Link>
-                </div>
+                <p className="text-white/80 text-sm">Check out what your friends are up to</p>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-white/30 transition border border-white/10">
+                <Coins className="w-5 h-5 text-yellow-300" />
+                <span className="font-bold text-white">{coins.toLocaleString()}</span>
+              </Link>
+              <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-white/30 transition border border-white/10">
+                <DollarSign className="w-5 h-5 text-green-300" />
+                <span className="font-bold text-white">{cash}</span>
+              </Link>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Status Posting Box */}
-          <div className="bc-card">
-            <div className="bc-card-body">
+      {/* Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{userLevel}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Level</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
+              <Zap className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{userXp.toLocaleString()}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Total XP</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-green))]/20 to-[hsl(var(--bc-green))]/5 flex items-center justify-center">
+              <Users className="w-5 h-5 text-[hsl(var(--bc-green))]" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{friendStatuses.length}</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Friends Online</div>
+            </div>
+          </div>
+        </div>
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-accent))]/20 to-[hsl(var(--bc-accent))]/5 flex items-center justify-center">
+              <Star className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{referralCount}/5</div>
+              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Referrals</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Actions & Progress */}
+        <div className="space-y-4">
+          {/* Status Update */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
+              <PenSquare className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Update Status</h3>
+            </div>
+            <div className="p-4">
               <div className="flex gap-3">
                 <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0">
-                  {forumUser?.avatar_url ? (
-                    <img 
-                      src={forumUser.avatar_url} 
-                      alt={forumUser.username}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
-                      <User className="w-5 h-5 text-white" />
-                    </div>
-                  )}
+                  <UserAvatar
+                    avatarUrl={forumUser?.avatar_url || null}
+                    username={forumUser?.username || ''}
+                    size="md"
+                  />
                 </Link>
                 <div className="flex-1">
                   <textarea
                     value={statusText}
                     onChange={(e) => setStatusText(e.target.value.slice(0, 280))}
                     placeholder="What's on your mind?"
-                    className="bc-input"
-                    style={{ resize: 'none' }}
+                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-2 text-sm text-[hsl(var(--bc-text))] placeholder:text-[hsl(var(--bc-text-muted))] focus:outline-none focus:border-[hsl(var(--bc-primary))] resize-none"
                     rows={2}
                   />
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs" style={{ color: 'hsl(var(--bc-text-muted))' }}>{statusText.length}/280</span>
+                    <span className="text-xs text-[hsl(var(--bc-text-muted))]">{statusText.length}/280</span>
                     <button
                       onClick={handlePostStatus}
                       disabled={postingStatus || !statusText.trim()}
-                      className="bc-btn bc-btn-info bc-btn-sm"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition"
                     >
-                      {postingStatus ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          Post Status
-                        </>
-                      )}
+                      {postingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Post
                     </button>
                   </div>
                 </div>
@@ -765,348 +792,273 @@ export default function ForumDashboard() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="space-y-4">
-              {/* Daily Reward */}
-              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Package className="w-5 h-5 text-purple-500" />
-                  <h2 className="font-semibold text-[hsl(var(--bc-text))]">Daily Reward</h2>
+          {/* Daily Rewards Card */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
+              <Gift className="w-5 h-5 text-purple-500" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Daily Rewards</h3>
+            </div>
+            <div className="p-4 space-y-3">
+              {canClaimReward() ? (
+                <button
+                  onClick={handleClaimReward}
+                  disabled={claiming}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  {claiming ? <Loader2 className="w-5 h-5 animate-spin" /> : <Package className="w-5 h-5" />}
+                  Claim Daily Reward
+                </button>
+              ) : (
+                <div className="flex items-center justify-center gap-2 py-3 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] rounded-xl">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">Next claim in {getTimeUntilClaim()}</span>
                 </div>
-                
-                {canClaimReward() ? (
-                  <button
-                    onClick={handleClaimReward}
-                    disabled={claiming}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3 rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    {claiming ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Package className="w-5 h-5" />
-                        Claim Reward
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <div className="text-center py-3">
-                    <div className="flex items-center justify-center gap-2 text-[hsl(var(--bc-text-muted))]">
-                      <Clock className="w-4 h-4" />
-                      <span>Next claim in {getTimeUntilClaim()}</span>
-                    </div>
-                  </div>
-                )}
+              )}
+
+              {canClaimDailyXp() && (
+                <button
+                  onClick={handleClaimDailyXp}
+                  disabled={claimingXp}
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2"
+                >
+                  {claimingXp ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+                  Claim +50 XP
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Level Progress */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Level Progress</h3>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  {xpProgress.current.toLocaleString()} / {xpProgress.required.toLocaleString()} XP
+                </span>
+                <span className="text-sm font-medium text-[hsl(var(--bc-primary))]">{xpProgress.percentage}%</span>
               </div>
+              <Progress value={xpProgress.percentage} className="h-2" />
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] text-center mt-2">to Level {userLevel + 1}</p>
+            </div>
+          </div>
 
-              {/* My Level */}
-              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="w-5 h-5 text-blue-500" />
-                  <h2 className="font-semibold text-[hsl(var(--bc-text))]">My Level</h2>
+          {/* Referral System */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
+              <Users className="w-5 h-5 text-[hsl(var(--bc-green))]" />
+              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Refer Friends</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-3">
+                Earn 10 coins for each friend who signs up!
+              </p>
+              <div className="flex gap-2">
+                <div className="flex-1 bg-[hsl(var(--bc-bg-light))] rounded-lg px-3 py-2.5 text-sm font-mono text-[hsl(var(--bc-text))] truncate border border-[hsl(var(--bc-border))]">
+                  {referralCode}
                 </div>
-                
-                <div className="text-center mb-4">
-                  <div className="text-4xl font-bold text-[hsl(var(--bc-primary))]">{userLevel}</div>
-                  <div className="text-sm text-[hsl(var(--bc-text-muted))]">Level {userLevel}</div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[hsl(var(--bc-text-muted))]">{xpProgress.current.toLocaleString()} / {xpProgress.required.toLocaleString()} XP</span>
-                    <span className="text-[hsl(var(--bc-primary))] font-medium">{xpProgress.percentage}%</span>
-                  </div>
-                  <Progress value={xpProgress.percentage} className="h-2" />
-                  <div className="text-xs text-[hsl(var(--bc-text-muted))] text-center">To Next Level</div>
-                </div>
-
-                {/* How to earn XP */}
-                <div className="border-t border-[hsl(var(--bc-border))] pt-3 mt-3">
-                  <h3 className="text-sm font-medium text-[hsl(var(--bc-text))] mb-2">How to earn XP</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))]">
-                        <Zap className="w-4 h-4 text-yellow-500" />
-                        <span>Daily Login</span>
-                      </div>
-                      <span className="text-green-500 font-medium">+50 XP daily</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))]">
-                        <FileText className="w-4 h-4 text-blue-500" />
-                        <span>Create Content</span>
-                      </div>
-                      <span className="text-green-500 font-medium">+25 XP per item</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-[hsl(var(--bc-text-muted))]">
-                        <PenSquare className="w-4 h-4 text-purple-500" />
-                        <span>Write Posts</span>
-                      </div>
-                      <span className="text-green-500 font-medium">+5 XP per post</span>
-                    </div>
-                  </div>
-
-                  {canClaimDailyXp() && (
-                    <button
-                      onClick={handleClaimDailyXp}
-                      disabled={claimingXp}
-                      className="w-full mt-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium py-2 rounded-lg transition flex items-center justify-center gap-2 text-sm"
-                    >
-                      {claimingXp ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4" />
-                          Claim Daily +50 XP
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+                <button
+                  onClick={copyReferralLink}
+                  className="p-2.5 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90 text-white rounded-lg transition"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
-
-              {/* Referral System */}
-              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Users className="w-5 h-5 text-green-500" />
-                  <h2 className="font-semibold text-[hsl(var(--bc-text))]">Refer Friends</h2>
-                </div>
-                
-                <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-3">
-                  Earn 10 coins for each friend who signs up! ({referralCount}/5 referrals)
-                </p>
-
-                <div className="flex gap-2 mb-3">
-                  <div className="flex-1 bg-[hsl(var(--bc-bg-light))] rounded-lg px-3 py-2 text-sm font-mono text-[hsl(var(--bc-text))] truncate">
-                    {referralCode}
-                  </div>
-                  <button
-                    onClick={copyReferralLink}
-                    className="p-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/80 text-white rounded-lg transition"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {referralCount >= 5 ? (
-                  <div className="text-center py-2 text-sm text-green-500 font-medium">
-                    ✓ Maximum referrals reached!
-                  </div>
-                ) : (
-                  <div className="text-xs text-[hsl(var(--bc-text-muted))] text-center">
-                    Share your link to earn coins!
-                  </div>
-                )}
-
-                {referrals.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-[hsl(var(--bc-border))]">
-                    <h4 className="text-xs font-medium text-[hsl(var(--bc-text-muted))] mb-2">Your Referrals</h4>
-                    <div className="space-y-2">
-                      {referrals.slice(0, 3).map(ref => (
-                        <div key={ref.id} className="flex items-center gap-2 text-sm">
-                          <div className="w-6 h-6 rounded-full bg-[hsl(var(--bc-bg-light))] overflow-hidden">
-                            {ref.referred_user?.avatar_url ? (
-                              <img src={ref.referred_user.avatar_url} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <User className="w-3 h-3 text-[hsl(var(--bc-text-muted))]" />
-                              </div>
-                            )}
+              {referrals.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-[hsl(var(--bc-border))]">
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mb-2">Recent referrals</p>
+                  <div className="flex -space-x-2">
+                    {referrals.slice(0, 5).map(ref => (
+                      <div key={ref.id} className="w-8 h-8 rounded-full bg-[hsl(var(--bc-bg-light))] border-2 border-[hsl(var(--bc-bg-card))] overflow-hidden">
+                        {ref.referred_user?.avatar_url ? (
+                          <img src={ref.referred_user.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
                           </div>
-                          <span className="text-[hsl(var(--bc-text))]">{ref.referred_user?.username || 'User'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Friend Requests */}
-              {friendRequests.length > 0 && (
-                <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="w-5 h-5 text-blue-500" />
-                    <h2 className="font-semibold text-[hsl(var(--bc-text))]">Friend Requests</h2>
-                    <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {friendRequests.length}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {friendRequests.slice(0, 3).map(request => (
-                      <div key={request.id} className="flex items-center gap-3">
-                        <Link to={`/${request.sender.serial_id}/${request.sender.username}/profile`}>
-                          <UserAvatar
-                            avatarUrl={request.sender.avatar_url}
-                            username={request.sender.username}
-                            size="sm"
-                            membershipTier={request.sender.membership_tier}
-                          />
-                        </Link>
-                        <div className="flex-1 min-w-0">
-                          <Link 
-                            to={`/${request.sender.serial_id}/${request.sender.username}/profile`}
-                            className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] text-sm truncate block"
-                          >
-                            {request.sender.username}
-                          </Link>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleAcceptFriend(request.id)}
-                            className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeclineFriend(request.id)}
-                            className="p-1.5 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] rounded-lg transition"
-                          >
-                            <AlertTriangle className="w-4 h-4" />
-                          </button>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Right Column - Friend Feed */}
-            <div className="md:col-span-2">
-              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl">
-                <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
-                  <h2 className="font-semibold text-[hsl(var(--bc-text))]">Friends' Statuses</h2>
-                  <Link 
-                    to="/settings"
-                    className="text-sm text-[hsl(var(--bc-primary))] hover:underline flex items-center gap-1"
-                  >
-                    Update your status
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </div>
-
-                {friendStatuses.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <MessageCircle className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-3 opacity-50" />
-                    <p className="text-[hsl(var(--bc-text-muted))]">No friend statuses yet</p>
-                    <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">
-                      Add friends to see their updates here!
-                    </p>
+          {/* Friend Requests */}
+          {friendRequests.length > 0 && (
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
+                <UsersRound className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+                <h3 className="font-semibold text-[hsl(var(--bc-text))]">Friend Requests</h3>
+                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                  {friendRequests.length}
+                </span>
+              </div>
+              <div className="divide-y divide-[hsl(var(--bc-border))]">
+                {friendRequests.slice(0, 3).map(request => (
+                  <div key={request.id} className="p-3 flex items-center gap-3">
+                    <Link to={`/${request.sender.serial_id}/${request.sender.username}/profile`}>
+                      <UserAvatar
+                        avatarUrl={request.sender.avatar_url}
+                        username={request.sender.username}
+                        size="sm"
+                        membershipTier={request.sender.membership_tier}
+                      />
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <Link 
+                        to={`/${request.sender.serial_id}/${request.sender.username}/profile`}
+                        className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] text-sm truncate block"
+                      >
+                        {request.sender.username}
+                      </Link>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleAcceptFriend(request.id)}
+                        className="p-1.5 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 text-white rounded-lg transition"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeclineFriend(request.id)}
+                        className="p-1.5 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] rounded-lg transition"
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                ) : (
-                  <div className="divide-y divide-[hsl(var(--bc-border))]">
-                    {friendStatuses.map(friend => (
-                      <div key={friend.id} className="p-4">
-                        <div className="flex gap-3">
-                          <Link to={`/${friend.serial_id}/${friend.username}/profile`}>
-                            <UserAvatar
-                              avatarUrl={friend.avatar_url}
-                              username={friend.username}
-                              size="md"
-                              effect={friend.avatar_effect}
-                              membershipTier={friend.membership_tier}
-                            />
-                          </Link>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Link 
-                                to={`/${friend.serial_id}/${friend.username}/profile`}
-                                className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))]"
-                              >
-                                {friend.username}
-                              </Link>
-                              <span className="text-xs text-[hsl(var(--bc-text-muted))]">
-                                {formatTimeAgo(friend.status_updated_at)}
-                              </span>
-                            </div>
-                            
-                            <div className="relative bg-[hsl(var(--bc-bg-light))] rounded-xl p-3 mt-2">
-                              <div className="absolute -top-2 left-4 w-3 h-3 bg-[hsl(var(--bc-bg-light))] rotate-45" />
-                              <p className="text-[hsl(var(--bc-text))]">{friend.status_text}</p>
-                            </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
-                            <div className="flex items-center gap-3 mt-2">
+        {/* Right Column - Friend Feed (takes 2 cols) */}
+        <div className="lg:col-span-2">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+                <h3 className="font-semibold text-[hsl(var(--bc-text))]">Friends' Statuses</h3>
+              </div>
+              <Link 
+                to="/friends"
+                className="text-sm text-[hsl(var(--bc-primary))] hover:underline flex items-center gap-1"
+              >
+                View all friends
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {friendStatuses.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-[hsl(var(--bc-bg-light))] flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="w-8 h-8 text-[hsl(var(--bc-text-muted))]" />
+                </div>
+                <h4 className="font-medium text-[hsl(var(--bc-text))] mb-2">No friend statuses yet</h4>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] max-w-xs mx-auto">
+                  Add friends to see their updates here!
+                </p>
+                <Link
+                  to="/users"
+                  className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90 text-white rounded-xl text-sm font-medium transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  Find Friends
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-[hsl(var(--bc-border))]">
+                {friendStatuses.map(friend => (
+                  <div key={friend.id} className="p-4 hover:bg-[hsl(var(--bc-bg-light))]/50 transition">
+                    <div className="flex gap-3">
+                      <Link to={`/${friend.serial_id}/${friend.username}/profile`}>
+                        <UserAvatar
+                          avatarUrl={friend.avatar_url}
+                          username={friend.username}
+                          size="md"
+                          effect={friend.avatar_effect}
+                          membershipTier={friend.membership_tier}
+                        />
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Link 
+                            to={`/${friend.serial_id}/${friend.username}/profile`}
+                            className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition"
+                          >
+                            {friend.username}
+                          </Link>
+                          {friend.is_verified && <VerifiedBadge />}
+                          <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                            {formatTimeAgo(friend.status_updated_at)}
+                          </span>
+                        </div>
+                        
+                        <div className="relative bg-[hsl(var(--bc-bg-light))] rounded-xl p-3 mt-2 border border-[hsl(var(--bc-border))]">
+                          <p className="text-[hsl(var(--bc-text))] text-sm">{friend.status_text}</p>
+                        </div>
+
+                        <div className="flex items-center gap-4 mt-3">
+                          <button
+                            onClick={() => handleLikeStatus(friend.id, friend.is_liked)}
+                            className={`flex items-center gap-1.5 text-sm transition ${
+                              friend.is_liked 
+                                ? 'text-red-500' 
+                                : 'text-[hsl(var(--bc-text-muted))] hover:text-red-500'
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 ${friend.is_liked ? 'fill-current' : ''}`} />
+                            <span>{friend.like_count > 0 ? friend.like_count : 'Like'}</span>
+                          </button>
+                          
+                          {reportingStatus === friend.id ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <input
+                                type="text"
+                                value={reportReason}
+                                onChange={(e) => setReportReason(e.target.value)}
+                                placeholder="Reason for report..."
+                                className="flex-1 text-sm bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-1.5 text-[hsl(var(--bc-text))] focus:outline-none focus:border-[hsl(var(--bc-primary))]"
+                              />
                               <button
-                                onClick={() => handleLikeStatus(friend.id, friend.is_liked)}
-                                className={`flex items-center gap-1 text-sm transition ${
-                                  friend.is_liked 
-                                    ? 'text-red-500' 
-                                    : 'text-[hsl(var(--bc-text-muted))] hover:text-red-500'
-                                }`}
+                                onClick={() => handleReportStatus(friend.id)}
+                                className="text-sm text-red-500 hover:text-red-600 font-medium"
                               >
-                                <Heart className={`w-4 h-4 ${friend.is_liked ? 'fill-current' : ''}`} />
-                                {friend.like_count > 0 && friend.like_count}
+                                Submit
                               </button>
-                              
-                              {reportingStatus === friend.id ? (
-                                <div className="flex items-center gap-2 flex-1">
-                                  <input
-                                    type="text"
-                                    value={reportReason}
-                                    onChange={(e) => setReportReason(e.target.value)}
-                                    placeholder="Reason for report..."
-                                    className="flex-1 text-sm bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded px-2 py-1 text-[hsl(var(--bc-text))]"
-                                  />
-                                  <button
-                                    onClick={() => handleReportStatus(friend.id)}
-                                    className="text-sm text-red-500 hover:text-red-600"
-                                  >
-                                    Submit
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setReportingStatus(null);
-                                      setReportReason('');
-                                    }}
-                                    className="text-sm text-[hsl(var(--bc-text-muted))]"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => setReportingStatus(friend.id)}
-                                  className="flex items-center gap-1 text-sm text-[hsl(var(--bc-text-muted))] hover:text-red-500 transition"
-                                >
-                                  <Flag className="w-4 h-4" />
-                                </button>
-                              )}
+                              <button
+                                onClick={() => {
+                                  setReportingStatus(null);
+                                  setReportReason('');
+                                }}
+                                className="text-sm text-[hsl(var(--bc-text-muted))]"
+                              >
+                                Cancel
+                              </button>
                             </div>
-                          </div>
+                          ) : (
+                            <button
+                              onClick={() => setReportingStatus(friend.id)}
+                              className="flex items-center gap-1.5 text-sm text-[hsl(var(--bc-text-muted))] hover:text-red-500 transition"
+                            >
+                              <Flag className="w-4 h-4" />
+                              <span>Report</span>
+                            </button>
+                          )}
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Sidebar with Skyscraper Ad */}
-        <div className="hidden lg:block w-44 flex-shrink-0 space-y-4">
-          <UserAdBanner type="skyscraper" />
-        </div>
-        
-        {/* Right Sidebar */}
-        <div className="hidden lg:block w-72 flex-shrink-0 space-y-4">
-          <Link
-            to="/forum/leaderboard"
-            className="block bg-[hsl(var(--bc-bg-card))] hover:bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))] rounded-xl p-4 transition group"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[hsla(var(--bc-accent),0.1)] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Leaderboard</h3>
-                <p className="text-xs text-[hsl(var(--bc-text-muted))]">View top players</p>
-              </div>
-            </div>
-          </Link>
         </div>
       </div>
     </div>
