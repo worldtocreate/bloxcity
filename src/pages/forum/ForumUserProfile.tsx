@@ -691,7 +691,7 @@ export default function ForumUserProfile() {
                 )}
                 {areFriends && (
                   <button 
-                    onClick={() => navigate(`/trading?with=${profile.username}`)}
+                    onClick={() => navigate(`/trading?friend=${profile.id}`)}
                     className="bc-btn bc-btn-sm justify-center bg-amber-500 hover:bg-amber-600 text-white"
                   >
                     <ArrowRightLeft className="w-4 h-4" />
