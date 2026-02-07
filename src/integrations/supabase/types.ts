@@ -4629,6 +4629,10 @@ export type Database = {
         Args: { p_receiver_items: string[]; p_trade_id: string }
         Returns: Json
       }
+      admin_refund_currency: {
+        Args: { p_cash?: number; p_coins?: number; p_forum_user_id: string }
+        Returns: boolean
+      }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
