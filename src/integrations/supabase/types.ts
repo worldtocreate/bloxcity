@@ -1529,6 +1529,7 @@ export type Database = {
           is_under_review: boolean | null
           max_players: number | null
           play_count: number | null
+          serial_id: number
           thumbnail_denial_reason: string | null
           thumbnail_status: string | null
           thumbnail_url: string | null
@@ -1546,6 +1547,7 @@ export type Database = {
           is_under_review?: boolean | null
           max_players?: number | null
           play_count?: number | null
+          serial_id?: number
           thumbnail_denial_reason?: string | null
           thumbnail_status?: string | null
           thumbnail_url?: string | null
@@ -1563,6 +1565,7 @@ export type Database = {
           is_under_review?: boolean | null
           max_players?: number | null
           play_count?: number | null
+          serial_id?: number
           thumbnail_denial_reason?: string | null
           thumbnail_status?: string | null
           thumbnail_url?: string | null
@@ -3906,6 +3909,7 @@ export type Database = {
           price_coins: number | null
           rap: number | null
           sales_count: number | null
+          serial_id: number
           texture_url: string | null
           thumbnail_url: string | null
           updated_at: string | null
@@ -3929,6 +3933,7 @@ export type Database = {
           price_coins?: number | null
           rap?: number | null
           sales_count?: number | null
+          serial_id?: number
           texture_url?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
@@ -3952,6 +3957,7 @@ export type Database = {
           price_coins?: number | null
           rap?: number | null
           sales_count?: number | null
+          serial_id?: number
           texture_url?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null

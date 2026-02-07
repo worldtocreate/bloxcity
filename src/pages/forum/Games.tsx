@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 interface Game {
   id: string;
+  serial_id: number;
   title: string;
   description: string | null;
   category: string;
@@ -19,7 +20,13 @@ interface Game {
   creator?: {
     username: string;
     avatar_url: string | null;
+    serial_id: number;
   };
+}
+
+function getGameUrl(game: Game): string {
+  const slug = game.title.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return `/game/${game.serial_id}/${slug}`;
 }
 
 const GAME_CATEGORIES = [
@@ -66,12 +73,12 @@ export default function Games() {
       .from('forum_games')
       .select(`
         *,
-        creator:creator_id (username, avatar_url)
+        creator:creator_id (username, avatar_url, serial_id)
       `)
       .eq('is_private', false)
       .order('created_at', { ascending: false });
     
-    setGames(data || []);
+    setGames((data || []) as Game[]);
     setLoading(false);
   };
 
@@ -206,7 +213,7 @@ export default function Games() {
           ) : (
             <div className="games-grid">
               {filteredGames.map(game => (
-                <Link key={game.id} to={`/game/${game.id}`} className="game-card">
+                <Link key={game.id} to={getGameUrl(game)} className="game-card">
                   {game.thumbnail_url ? (
                     <img
                       src={game.thumbnail_url}
@@ -224,7 +231,7 @@ export default function Games() {
                   <div className="game-card-title">{game.title}</div>
                   {game.creator && (
                     <div className="game-card-creator">
-                      By <Link to={`/id/${game.creator.username}/profile`} onClick={(e) => e.stopPropagation()}>@{game.creator.username}</Link>
+                      By <Link to={`/${game.creator.serial_id}/${game.creator.username}/profile`} onClick={(e) => e.stopPropagation()}>@{game.creator.username}</Link>
                     </div>
                   )}
                 </Link>
