@@ -5,7 +5,7 @@ import {
   User, Calendar, MessageSquare, MessageCircle, Ban, Loader2, 
   Clock, Users, MoreVertical, Flag, Award, Frown, Rocket, Medal,
   UserPlus, Globe, ShieldCheck, X, Gamepad2, Play, Heart, UserMinus,
-  Send, Crown, BadgeCheck
+  Send, Crown, BadgeCheck, ArrowRightLeft
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -665,10 +665,19 @@ export default function ForumUserProfile() {
                 {profile.allow_dms && (
                   <button 
                     onClick={() => navigate(`/messages?to=${profile.username}`)}
-                    className="bc-btn bc-btn-success bc-btn-sm col-span-2 justify-center"
+                    className="bc-btn bc-btn-success bc-btn-sm justify-center"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>Message</span>
+                  </button>
+                )}
+                {areFriends && (
+                  <button 
+                    onClick={() => navigate(`/trading?with=${profile.username}`)}
+                    className="bc-btn bc-btn-sm justify-center bg-amber-500 hover:bg-amber-600 text-white"
+                  >
+                    <ArrowRightLeft className="w-4 h-4" />
+                    <span>Trade</span>
                   </button>
                 )}
               </div>
