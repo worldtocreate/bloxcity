@@ -4629,9 +4629,32 @@ export type Database = {
         Args: { p_receiver_items: string[]; p_trade_id: string }
         Returns: Json
       }
+      admin_award_item: {
+        Args: { p_forum_user_id: string; p_item_id: string; p_reason?: string }
+        Returns: Json
+      }
+      admin_get_user_inventory: {
+        Args: { p_forum_user_id: string }
+        Returns: {
+          acquired_at: string
+          acquired_from: string
+          inventory_id: string
+          is_for_sale: boolean
+          is_limited: boolean
+          item_id: string
+          item_name: string
+          item_thumbnail: string
+          sale_price: number
+          serial_number: number
+        }[]
+      }
       admin_refund_currency: {
         Args: { p_cash?: number; p_coins?: number; p_forum_user_id: string }
         Returns: boolean
+      }
+      admin_remove_item: {
+        Args: { p_inventory_id: string; p_reason?: string }
+        Returns: Json
       }
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
