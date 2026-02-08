@@ -362,6 +362,9 @@ import ForumLogin from "./pages/forum/ForumLogin";
 import ForumRegister from "./pages/forum/ForumRegister";
 import ForumForgotPassword from "./pages/forum/ForumForgotPassword";
 import ForumSettings from "./pages/forum/ForumSettings";
+import Bugs from "./pages/forum/Bugs";
+import Blog from "./pages/forum/Blog";
+import BlogPost from "./pages/forum/BlogPost";
 import ForumUserProfile from "./pages/forum/ForumUserProfile";
 import ForumMessages from "./pages/forum/ForumMessages";
 import ForumFAQ from "./pages/forum/ForumFAQ";
@@ -4248,7 +4251,10 @@ const App = () => (
               <Route path="money" element={<Convert />} />
               <Route path="accept-affiliate" element={<AcceptAffiliate />} />
               <Route path="g0dfrey" element={<GodfreyPanel />} />
-               <Route path="jobs" element={<Jobs />} />
+              <Route path="jobs" element={<Jobs />} />
+              <Route path="bugs" element={<Bugs />} />
+              <Route path="blog" element={<Blog />} />
+              <Route path="blog/:slug" element={<BlogPost />} />
             </Route>
 
             {/* Suspended page - outside ForumLayout */}
