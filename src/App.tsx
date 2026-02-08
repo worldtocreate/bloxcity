@@ -486,17 +486,20 @@ function BlogPost() {
     setLoading(false);
   };
 
-  // Convert plain text with line breaks to HTML paragraphs
+  // Convert content to properly formatted HTML with paragraphs
   const formatContent = (content: string) => {
-    // If content already has HTML tags, return as-is
-    if (/<[a-z][\s\S]*>/i.test(content)) {
-      return content;
-    }
-    // Otherwise, convert line breaks to paragraphs
+    // Always split by double newlines to create paragraphs
+    // This preserves any inline HTML like <b> while adding proper paragraph structure
     return content
       .split(/\n\n+/)
-      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br/>')}</p>`)
-      .join('');
+      .map(paragraph => {
+        const trimmed = paragraph.trim();
+        if (!trimmed) return '';
+        // Convert single newlines within paragraph to <br/>
+        return `<p>${trimmed.replace(/\n/g, '<br/>')}</p>`;
+      })
+      .filter(p => p)
+      .join('\n');
   };
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
