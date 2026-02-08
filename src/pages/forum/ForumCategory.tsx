@@ -85,8 +85,10 @@ export default function ForumCategory() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (slug) fetchCategory();
-  }, [slug]);
+    if (slug && !maintenanceLoading) {
+      fetchCategory();
+    }
+  }, [slug, maintenanceLoading]);
 
   // Show maintenance page if page is under maintenance (unless admin)
   if (maintenanceLoading) {
