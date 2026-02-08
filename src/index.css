@@ -2773,3 +2773,13 @@ textarea.bc-input {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

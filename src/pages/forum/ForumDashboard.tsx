@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   Coins, Heart, Flag, MessageCircle, Clock, Users, 
   Loader2, Sparkles, ChevronRight, AlertTriangle, CheckCircle, Send, User, UsersRound, Gift, DollarSign,
-  Package, Copy, TrendingUp, Zap, FileText, PenSquare, Star, Plus, Flame
+  Package, Copy, TrendingUp, Zap, FileText, PenSquare, Star, Plus, Flame, Gamepad2, Trophy, ShoppingBag
 } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
@@ -15,6 +15,120 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
 import UserAdBanner from '@/components/forum/UserAdBanner';
 import { Progress } from '@/components/ui/progress';
+
+// Inlined RecentBlogPosts component
+interface BlogPostData {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  thumbnail_url: string | null;
+  published_at: string;
+}
+
+function RecentBlogPosts() {
+  const [posts, setPosts] = useState<BlogPostData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('id, title, slug, excerpt, thumbnail_url, published_at')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false })
+        .limit(6);
+      
+      if (data) setPosts(data);
+      setLoading(false);
+    };
+
+    fetchPosts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-3xl p-6">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="w-6 h-6 text-[hsl(var(--bc-primary))] animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (posts.length === 0) return null;
+
+  return (
+    <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-3xl overflow-hidden">
+      <div className="flex items-center justify-between p-5 border-b border-[hsl(var(--bc-border))]">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-lg shadow-pink-500/20">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg text-[hsl(var(--bc-text))]">Latest News</h3>
+            <p className="text-sm text-[hsl(var(--bc-text-muted))]">Stay updated!</p>
+          </div>
+        </div>
+        <Link 
+          to="/blog" 
+          className="flex items-center gap-1 px-4 py-2 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-primary))] hover:text-white text-sm font-bold text-[hsl(var(--bc-text))] rounded-xl transition-all"
+        >
+          View All
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      <div className="p-5">
+        <div className="flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
+          {posts.map((post, index) => (
+            <Link
+              key={post.id}
+              to={`/blog/${post.slug}`}
+              className="group flex-shrink-0 w-72 bg-gradient-to-b from-[hsl(var(--bc-bg-light))] to-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden hover:border-[hsl(var(--bc-primary))]/50 hover:shadow-2xl hover:shadow-[hsl(var(--bc-primary))]/10 transition-all hover:-translate-y-2"
+            >
+              <div className="relative h-36 bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-pink-500/20">
+                {post.thumbnail_url ? (
+                  <img 
+                    src={post.thumbnail_url} 
+                    alt={post.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[hsl(var(--bc-primary))] to-purple-600">
+                    <FileText className="w-16 h-16 text-white/30" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                {index === 0 && (
+                  <div className="absolute top-3 left-3">
+                    <span className="inline-block px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
+                      ✨ NEW
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4">
+                <h4 className="font-bold text-[hsl(var(--bc-text))] line-clamp-2 group-hover:text-[hsl(var(--bc-primary))] transition mb-2">
+                  {post.title}
+                </h4>
+                {post.excerpt && (
+                  <p className="text-sm text-[hsl(var(--bc-text-muted))] line-clamp-2">
+                    {post.excerpt}
+                  </p>
+                )}
+                <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-3 font-medium">
+                  📅 {new Date(post.published_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Inlined CompensationDialog to fix module resolution issues
 function CompensationDialog({ forumUserId, userCreatedAt }: { forumUserId: string; userCreatedAt: string }) {
@@ -526,77 +640,100 @@ export default function ForumDashboard() {
   // Not logged in - show public dashboard
   if (!user) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <WelcomeDialog isLoggedIn={false} />
         
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--bc-primary))] via-[hsl(var(--bc-primary))]/80 to-[hsl(var(--bc-accent))] p-6 md:p-8">
-          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1.5' cy='1.5' r='1.5' fill='rgba(255,255,255,0.1)'/%3E%3C/svg%3E\")" }} />
-          <div className="relative z-10 text-center py-4">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+        {/* Hero Section - Roblox-inspired */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[hsl(var(--bc-primary))] via-blue-500 to-cyan-400 p-8 md:p-12">
+          {/* Decorative elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='4' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E\")" }} />
+          
+          <div className="relative z-10 text-center py-6">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6">
+              <Sparkles className="w-5 h-5 text-yellow-300" />
+              <span className="text-white font-semibold">Join the adventure!</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg">
               Welcome to BLOX City
             </h1>
-            <p className="text-white/80 max-w-lg mx-auto mb-6">
-              Join our community to connect with friends, earn coins, and redeem exclusive memberships!
+            <p className="text-white/90 max-w-lg mx-auto mb-8 text-lg">
+              Join millions of players, create amazing games, and make new friends!
             </p>
             <div className="flex justify-center gap-4">
               <Link 
                 to="/login" 
-                className="px-6 py-2.5 bg-white text-[hsl(var(--bc-primary))] rounded-xl font-semibold hover:bg-white/90 transition-all hover:scale-105"
+                className="group px-8 py-3.5 bg-white text-[hsl(var(--bc-primary))] rounded-2xl font-bold shadow-lg shadow-black/20 hover:shadow-xl hover:scale-105 transition-all"
               >
                 Log In
               </Link>
               <Link 
                 to="/register" 
-                className="px-6 py-2.5 bg-white/20 backdrop-blur text-white rounded-xl font-semibold hover:bg-white/30 transition-all"
+                className="group px-8 py-3.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-2xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-xl hover:scale-105 transition-all"
               >
-                Sign Up
+                Sign Up Free
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Quick Links */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Recent Blog Posts */}
+        <RecentBlogPosts />
+
+        {/* Quick Links - Game-style cards */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Link
             to="/forum"
-            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-primary))]/50 hover:shadow-lg hover:shadow-[hsl(var(--bc-primary))]/5 transition-all"
+            className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl p-6 hover:shadow-2xl hover:shadow-blue-500/30 transition-all hover:-translate-y-2"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 flex items-center justify-center mb-3">
-              <MessageCircle className="w-6 h-6 text-[hsl(var(--bc-primary))]" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">Forums</h3>
+              <p className="text-white/70 text-sm">Join discussions</p>
             </div>
-            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">Browse Forums</h3>
-            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Explore community discussions</p>
           </Link>
           <Link
             to="/groups"
-            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-accent))]/50 hover:shadow-lg hover:shadow-[hsl(var(--bc-accent))]/5 transition-all"
+            className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-3xl p-6 hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:-translate-y-2"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-accent))]/20 to-[hsl(var(--bc-accent))]/5 flex items-center justify-center mb-3">
-              <UsersRound className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <UsersRound className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">Groups</h3>
+              <p className="text-white/70 text-sm">Find your squad</p>
             </div>
-            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-accent))] transition">Browse Groups</h3>
-            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Join community groups</p>
           </Link>
           <Link
             to="/games"
-            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-green))]/50 hover:shadow-lg hover:shadow-[hsl(var(--bc-green))]/5 transition-all"
+            className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-3xl p-6 hover:shadow-2xl hover:shadow-green-500/30 transition-all hover:-translate-y-2"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-green))]/20 to-[hsl(var(--bc-green))]/5 flex items-center justify-center mb-3">
-              <Flame className="w-6 h-6 text-[hsl(var(--bc-green))]" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Gamepad2 className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">Games</h3>
+              <p className="text-white/70 text-sm">Play now</p>
             </div>
-            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-green))] transition">Play Games</h3>
-            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">Discover fun experiences</p>
           </Link>
           <Link
             to="/forum/leaderboard"
-            className="group bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-amber-500/50 hover:shadow-lg hover:shadow-amber-500/5 transition-all"
+            className="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 hover:shadow-2xl hover:shadow-amber-500/30 transition-all hover:-translate-y-2"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 flex items-center justify-center mb-3">
-              <Star className="w-6 h-6 text-amber-500" />
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+            <div className="relative">
+              <div className="w-14 h-14 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Trophy className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="font-bold text-white text-lg mb-1">Leaderboard</h3>
+              <p className="text-white/70 text-sm">Top players</p>
             </div>
-            <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-amber-500 transition">Leaderboard</h3>
-            <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1">View top players</p>
           </Link>
         </div>
       </div>
@@ -612,7 +749,7 @@ export default function ForumDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Compensation Dialog for existing users */}
       {forumUser && (
         <CompensationDialog 
@@ -623,32 +760,32 @@ export default function ForumDashboard() {
 
       {/* Reward Dialog */}
       <Dialog open={showRewardDialog} onOpenChange={setShowRewardDialog}>
-        <DialogContent className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))]">
+        <DialogContent className="bg-[hsl(var(--bc-bg-card))] border-[hsl(var(--bc-border))] rounded-3xl">
           <DialogHeader>
-            <DialogTitle className="text-[hsl(var(--bc-text))] flex items-center gap-2">
-              <Gift className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+            <DialogTitle className="text-[hsl(var(--bc-text))] flex items-center gap-2 text-xl">
+              <Gift className="w-6 h-6 text-[hsl(var(--bc-accent))]" />
               Daily Reward!
             </DialogTitle>
           </DialogHeader>
-          <div className="text-center py-6">
+          <div className="text-center py-8">
             {rewardResult && (
               <>
-                <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                <div className={`w-24 h-24 mx-auto mb-6 rounded-3xl flex items-center justify-center shadow-xl ${
                   rewardResult.type === 'coins' 
-                    ? 'bg-yellow-500/20' 
-                    : 'bg-green-500/20'
+                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-yellow-500/30' 
+                    : 'bg-gradient-to-br from-green-400 to-emerald-600 shadow-green-500/30'
                 }`}>
                   {rewardResult.type === 'coins' ? (
-                    <Coins className="w-10 h-10 text-yellow-500" />
+                    <Coins className="w-12 h-12 text-white" />
                   ) : (
-                    <DollarSign className="w-10 h-10 text-green-500" />
+                    <DollarSign className="w-12 h-12 text-white" />
                   )}
                 </div>
-                <h3 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">
+                <h3 className="text-3xl font-extrabold text-[hsl(var(--bc-text))] mb-2">
                   +{rewardResult.amount} {rewardResult.type === 'coins' ? 'Coins' : 'Cash'}!
                 </h3>
                 <p className="text-[hsl(var(--bc-text-muted))]">
-                  Come back tomorrow for another reward!
+                  Come back tomorrow for another reward! 🎁
                 </p>
               </>
             )}
@@ -658,92 +795,154 @@ export default function ForumDashboard() {
 
       <UserAdBanner type="banner" />
       
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(var(--bc-primary))] via-[hsl(var(--bc-primary))]/80 to-[hsl(var(--bc-accent))] p-6">
-        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1.5' cy='1.5' r='1.5' fill='rgba(255,255,255,0.1)'/%3E%3C/svg%3E\")" }} />
+      {/* Hero Section - Roblox style */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[hsl(var(--bc-primary))] via-blue-500 to-cyan-400 p-6 md:p-8">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='4' fill='rgba(255,255,255,0.2)'/%3E%3C/svg%3E\")" }} />
+        
         <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <Link to={`/${forumUser?.serial_id}/${forumUser?.username}/profile`} className="shrink-0 group">
                 {forumUser?.avatar_url ? (
-                  <img 
-                    src={forumUser.avatar_url} 
-                    alt={forumUser.username}
-                    className="w-16 h-16 rounded-xl object-cover border-2 border-white/30 shadow-lg"
-                  />
+                  <div className="relative">
+                    <img 
+                      src={forumUser.avatar_url} 
+                      alt={forumUser.username}
+                      className="w-20 h-20 rounded-2xl object-cover border-4 border-white/30 shadow-xl group-hover:scale-105 transition-transform"
+                    />
+                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                      {userLevel}
+                    </div>
+                  </div>
                 ) : (
-                  <div className="w-16 h-16 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center border border-white/30">
-                    <User className="w-8 h-8 text-white" />
+                  <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center border-2 border-white/30">
+                    <User className="w-10 h-10 text-white" />
                   </div>
                 )}
               </Link>
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-xl md:text-2xl font-bold text-white">
-                    Welcome back, {forumUser?.username}!
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-2xl md:text-3xl font-extrabold text-white drop-shadow-lg">
+                    Hey, {forumUser?.username}! 👋
                   </h1>
                   {forumUser?.is_verified && <VerifiedBadge size="lg" />}
                 </div>
-                <p className="text-white/80 text-sm">Check out what your friends are up to</p>
+                <p className="text-white/80 text-sm font-medium">Ready for today's adventure?</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-white/30 transition border border-white/10">
-                <Coins className="w-5 h-5 text-yellow-300" />
-                <span className="font-bold text-white">{coins.toLocaleString()}</span>
+              <Link to="/convert" className="group bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center gap-3 hover:bg-white/30 transition-all border border-white/20 hover:scale-105">
+                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <Coins className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-2xl font-extrabold text-white">{coins.toLocaleString()}</div>
+                  <div className="text-xs text-white/70 font-medium">Coins</div>
+                </div>
               </Link>
-              <Link to="/convert" className="bg-white/20 backdrop-blur rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-white/30 transition border border-white/10">
-                <DollarSign className="w-5 h-5 text-green-300" />
-                <span className="font-bold text-white">{cash}</span>
+              <Link to="/convert" className="group bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3 flex items-center gap-3 hover:bg-white/30 transition-all border border-white/20 hover:scale-105">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <DollarSign className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <div className="text-2xl font-extrabold text-white">{cash}</div>
+                  <div className="text-xs text-white/70 font-medium">Cash</div>
+                </div>
               </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Bar */}
+      {/* Quick Actions - Game style tiles */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link to="/games" className="group relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-5 hover:shadow-xl hover:shadow-green-500/20 transition-all hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+          <div className="relative">
+            <Gamepad2 className="w-8 h-8 text-white mb-3" />
+            <h3 className="font-bold text-white">Play Games</h3>
+            <p className="text-white/70 text-sm">Discover fun</p>
+          </div>
+        </Link>
+        <Link to="/market" className="group relative overflow-hidden bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-5 hover:shadow-xl hover:shadow-purple-500/20 transition-all hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+          <div className="relative">
+            <ShoppingBag className="w-8 h-8 text-white mb-3" />
+            <h3 className="font-bold text-white">Marketplace</h3>
+            <p className="text-white/70 text-sm">Shop items</p>
+          </div>
+        </Link>
+        <Link to="/groups" className="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl p-5 hover:shadow-xl hover:shadow-blue-500/20 transition-all hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+          <div className="relative">
+            <UsersRound className="w-8 h-8 text-white mb-3" />
+            <h3 className="font-bold text-white">Groups</h3>
+            <p className="text-white/70 text-sm">Join clans</p>
+          </div>
+        </Link>
+        <Link to="/create" className="group relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 hover:shadow-xl hover:shadow-amber-500/20 transition-all hover:-translate-y-1">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+          <div className="relative">
+            <Plus className="w-8 h-8 text-white mb-3" />
+            <h3 className="font-bold text-white">Create</h3>
+            <p className="text-white/70 text-sm">Build games</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Recent Blog Posts */}
+      <RecentBlogPosts />
+
+      {/* Stats Bar - Roblox game stats style */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-primary))]/20 to-[hsl(var(--bc-primary))]/5 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
+        <div className="relative overflow-hidden bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-5 hover:border-[hsl(var(--bc-primary))]/30 transition-all group">
+          <div className="absolute -top-8 -right-8 w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <TrendingUp className="w-7 h-7 text-white" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{userLevel}</div>
-              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Level</div>
+              <div className="text-3xl font-extrabold text-[hsl(var(--bc-text))]">{userLevel}</div>
+              <div className="text-sm font-medium text-[hsl(var(--bc-text-muted))]">Level</div>
             </div>
           </div>
         </div>
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-purple-500" />
+        <div className="relative overflow-hidden bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-5 hover:border-purple-500/30 transition-all group">
+          <div className="absolute -top-8 -right-8 w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <Zap className="w-7 h-7 text-white" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{userXp.toLocaleString()}</div>
-              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Total XP</div>
+              <div className="text-3xl font-extrabold text-[hsl(var(--bc-text))]">{userXp.toLocaleString()}</div>
+              <div className="text-sm font-medium text-[hsl(var(--bc-text-muted))]">Total XP</div>
             </div>
           </div>
         </div>
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-green))]/20 to-[hsl(var(--bc-green))]/5 flex items-center justify-center">
-              <Users className="w-5 h-5 text-[hsl(var(--bc-green))]" />
+        <div className="relative overflow-hidden bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-5 hover:border-green-500/30 transition-all group">
+          <div className="absolute -top-8 -right-8 w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/20">
+              <Users className="w-7 h-7 text-white" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{friendStatuses.length}</div>
-              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Friends Online</div>
+              <div className="text-3xl font-extrabold text-[hsl(var(--bc-text))]">{friendStatuses.length}</div>
+              <div className="text-sm font-medium text-[hsl(var(--bc-text-muted))]">Friends Online</div>
             </div>
           </div>
         </div>
-        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-accent))]/20 to-[hsl(var(--bc-accent))]/5 flex items-center justify-center">
-              <Star className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
+        <div className="relative overflow-hidden bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl p-5 hover:border-amber-500/30 transition-all group">
+          <div className="absolute -top-8 -right-8 w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Star className="w-7 h-7 text-white" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-[hsl(var(--bc-text))]">{referralCount}/5</div>
-              <div className="text-xs text-[hsl(var(--bc-text-muted))]">Referrals</div>
+              <div className="text-3xl font-extrabold text-[hsl(var(--bc-text))]">{referralCount}/5</div>
+              <div className="text-sm font-medium text-[hsl(var(--bc-text-muted))]">Referrals</div>
             </div>
           </div>
         </div>
@@ -752,12 +951,14 @@ export default function ForumDashboard() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Actions & Progress */}
-        <div className="space-y-4">
-          {/* Status Update */}
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
-              <PenSquare className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Update Status</h3>
+        <div className="space-y-5">
+          {/* Status Update - Roblox style */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                <PenSquare className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-bold text-[hsl(var(--bc-text))]">Post Status</h3>
             </div>
             <div className="p-4">
               <div className="flex gap-3">
@@ -772,16 +973,16 @@ export default function ForumDashboard() {
                   <textarea
                     value={statusText}
                     onChange={(e) => setStatusText(e.target.value.slice(0, 280))}
-                    placeholder="What's on your mind?"
-                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-2 text-sm text-[hsl(var(--bc-text))] placeholder:text-[hsl(var(--bc-text-muted))] focus:outline-none focus:border-[hsl(var(--bc-primary))] resize-none"
+                    placeholder="What's happening? 🎮"
+                    className="w-full bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl px-4 py-3 text-sm text-[hsl(var(--bc-text))] placeholder:text-[hsl(var(--bc-text-muted))] focus:outline-none focus:border-[hsl(var(--bc-primary))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))]/20 resize-none transition-all"
                     rows={2}
                   />
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-[hsl(var(--bc-text-muted))]">{statusText.length}/280</span>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-xs text-[hsl(var(--bc-text-muted))] font-medium">{statusText.length}/280</span>
                     <button
                       onClick={handlePostStatus}
                       disabled={postingStatus || !statusText.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition"
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-xl hover:scale-105"
                     >
                       {postingStatus ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       Post
@@ -792,26 +993,31 @@ export default function ForumDashboard() {
             </div>
           </div>
 
-          {/* Daily Rewards Card */}
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
-              <Gift className="w-5 h-5 text-purple-500" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Daily Rewards</h3>
+          {/* Daily Rewards Card - Game style */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Gift className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-[hsl(var(--bc-text))]">Daily Rewards</h3>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">Claim your goodies!</p>
+              </div>
             </div>
             <div className="p-4 space-y-3">
               {canClaimReward() ? (
                 <button
                   onClick={handleClaimReward}
                   disabled={claiming}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-purple-500/20 hover:shadow-xl hover:scale-[1.02]"
                 >
-                  {claiming ? <Loader2 className="w-5 h-5 animate-spin" /> : <Package className="w-5 h-5" />}
-                  Claim Daily Reward
+                  {claiming ? <Loader2 className="w-6 h-6 animate-spin" /> : <Package className="w-6 h-6" />}
+                  🎁 Claim Daily Reward
                 </button>
               ) : (
-                <div className="flex items-center justify-center gap-2 py-3 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] rounded-xl">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-sm">Next claim in {getTimeUntilClaim()}</span>
+                <div className="flex items-center justify-center gap-3 py-4 text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] rounded-2xl border border-[hsl(var(--bc-border))]">
+                  <Clock className="w-5 h-5" />
+                  <span className="font-medium">Next claim in {getTimeUntilClaim()}</span>
                 </div>
               )}
 
@@ -819,65 +1025,74 @@ export default function ForumDashboard() {
                 <button
                   onClick={handleClaimDailyXp}
                   disabled={claimingXp}
-                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium py-3 rounded-xl transition flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-orange-500/20 hover:shadow-xl hover:scale-[1.02]"
                 >
-                  {claimingXp ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                  Claim +50 XP
+                  {claimingXp ? <Loader2 className="w-6 h-6 animate-spin" /> : <Zap className="w-6 h-6" />}
+                  ⚡ Claim +50 XP
                 </button>
               )}
             </div>
           </div>
 
-          {/* Level Progress */}
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-[hsl(var(--bc-primary))]" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Level Progress</h3>
+          {/* Level Progress - Game style */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <h3 className="font-bold text-[hsl(var(--bc-text))]">Level Progress</h3>
             </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-[hsl(var(--bc-text-muted))]">
+            <div className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-[hsl(var(--bc-text-muted))]">
                   {xpProgress.current.toLocaleString()} / {xpProgress.required.toLocaleString()} XP
                 </span>
-                <span className="text-sm font-medium text-[hsl(var(--bc-primary))]">{xpProgress.percentage}%</span>
+                <span className="text-sm font-bold text-[hsl(var(--bc-primary))]">{xpProgress.percentage}%</span>
               </div>
-              <Progress value={xpProgress.percentage} className="h-2" />
-              <p className="text-xs text-[hsl(var(--bc-text-muted))] text-center mt-2">to Level {userLevel + 1}</p>
+              <div className="h-4 bg-[hsl(var(--bc-bg-light))] rounded-full overflow-hidden border border-[hsl(var(--bc-border))]">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all"
+                  style={{ width: `${xpProgress.percentage}%` }}
+                />
+              </div>
+              <p className="text-sm text-[hsl(var(--bc-text-muted))] text-center mt-3 font-medium">🚀 Level {userLevel + 1} awaits!</p>
             </div>
           </div>
 
-          {/* Referral System */}
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
-              <Users className="w-5 h-5 text-[hsl(var(--bc-green))]" />
-              <h3 className="font-semibold text-[hsl(var(--bc-text))]">Refer Friends</h3>
+          {/* Referral System - Game style */}
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden">
+            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-[hsl(var(--bc-text))]">Invite Friends</h3>
+                <p className="text-xs text-[hsl(var(--bc-text-muted))]">Earn 10 coins each!</p>
+              </div>
             </div>
             <div className="p-4">
-              <p className="text-sm text-[hsl(var(--bc-text-muted))] mb-3">
-                Earn 10 coins for each friend who signs up!
-              </p>
               <div className="flex gap-2">
-                <div className="flex-1 bg-[hsl(var(--bc-bg-light))] rounded-lg px-3 py-2.5 text-sm font-mono text-[hsl(var(--bc-text))] truncate border border-[hsl(var(--bc-border))]">
+                <div className="flex-1 bg-[hsl(var(--bc-bg-light))] rounded-xl px-4 py-3 text-sm font-mono text-[hsl(var(--bc-text))] truncate border border-[hsl(var(--bc-border))]">
                   {referralCode}
                 </div>
                 <button
                   onClick={copyReferralLink}
-                  className="p-2.5 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90 text-white rounded-lg transition"
+                  className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-green-500/20 hover:scale-105"
                 >
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-5 h-5" />
                 </button>
               </div>
               {referrals.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-[hsl(var(--bc-border))]">
-                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mb-2">Recent referrals</p>
+                <div className="mt-4 pt-4 border-t border-[hsl(var(--bc-border))]">
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mb-3 font-medium">Recent recruits 🎉</p>
                   <div className="flex -space-x-2">
                     {referrals.slice(0, 5).map(ref => (
-                      <div key={ref.id} className="w-8 h-8 rounded-full bg-[hsl(var(--bc-bg-light))] border-2 border-[hsl(var(--bc-bg-card))] overflow-hidden">
+                      <div key={ref.id} className="w-10 h-10 rounded-full bg-[hsl(var(--bc-bg-light))] border-3 border-[hsl(var(--bc-bg-card))] overflow-hidden shadow-lg">
                         {ref.referred_user?.avatar_url ? (
                           <img src={ref.referred_user.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-400 to-gray-500">
+                            <User className="w-5 h-5 text-white" />
                           </div>
                         )}
                       </div>
@@ -888,19 +1103,21 @@ export default function ForumDashboard() {
             </div>
           </div>
 
-          {/* Friend Requests */}
+          {/* Friend Requests - Game style */}
           {friendRequests.length > 0 && (
-            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-2">
-                <UsersRound className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
-                <h3 className="font-semibold text-[hsl(var(--bc-text))]">Friend Requests</h3>
-                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+            <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <UsersRound className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-bold text-[hsl(var(--bc-text))]">Friend Requests</h3>
+                <span className="ml-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full font-bold shadow-lg">
                   {friendRequests.length}
                 </span>
               </div>
               <div className="divide-y divide-[hsl(var(--bc-border))]">
                 {friendRequests.slice(0, 3).map(request => (
-                  <div key={request.id} className="p-3 flex items-center gap-3">
+                  <div key={request.id} className="p-4 flex items-center gap-3 hover:bg-[hsl(var(--bc-bg-light))]/50 transition">
                     <Link to={`/${request.sender.serial_id}/${request.sender.username}/profile`}>
                       <UserAvatar
                         avatarUrl={request.sender.avatar_url}
@@ -912,21 +1129,21 @@ export default function ForumDashboard() {
                     <div className="flex-1 min-w-0">
                       <Link 
                         to={`/${request.sender.serial_id}/${request.sender.username}/profile`}
-                        className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] text-sm truncate block"
+                        className="font-bold text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] text-sm truncate block"
                       >
                         {request.sender.username}
                       </Link>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleAcceptFriend(request.id)}
-                        className="p-1.5 bg-[hsl(var(--bc-green))] hover:bg-[hsl(var(--bc-green))]/90 text-white rounded-lg transition"
+                        className="p-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl transition-all shadow-lg hover:scale-105"
                       >
                         <CheckCircle className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeclineFriend(request.id)}
-                        className="p-1.5 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] rounded-lg transition"
+                        className="p-2 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-border))] text-[hsl(var(--bc-text-muted))] rounded-xl transition"
                       >
                         <AlertTriangle className="w-4 h-4" />
                       </button>
@@ -938,46 +1155,51 @@ export default function ForumDashboard() {
           )}
         </div>
 
-        {/* Right Column - Friend Feed (takes 2 cols) */}
+        {/* Right Column - Friend Feed (takes 2 cols) - Roblox style */}
         <div className="lg:col-span-2">
-          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[hsl(var(--bc-accent))]" />
-                <h3 className="font-semibold text-[hsl(var(--bc-text))]">Friends' Statuses</h3>
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden">
+            <div className="p-5 border-b border-[hsl(var(--bc-border))] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-[hsl(var(--bc-text))]">Friend Activity</h3>
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))]">What your squad is up to</p>
+                </div>
               </div>
               <Link 
                 to="/friends"
-                className="text-sm text-[hsl(var(--bc-primary))] hover:underline flex items-center gap-1"
+                className="flex items-center gap-1 px-4 py-2 bg-[hsl(var(--bc-bg-light))] hover:bg-[hsl(var(--bc-primary))] hover:text-white text-sm font-bold text-[hsl(var(--bc-text))] rounded-xl transition-all"
               >
-                View all friends
+                All Friends
                 <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
 
             {friendStatuses.length === 0 ? (
               <div className="p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-[hsl(var(--bc-bg-light))] flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle className="w-8 h-8 text-[hsl(var(--bc-text-muted))]" />
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center mx-auto mb-5 shadow-lg">
+                  <MessageCircle className="w-10 h-10 text-[hsl(var(--bc-text-muted))]" />
                 </div>
-                <h4 className="font-medium text-[hsl(var(--bc-text))] mb-2">No friend statuses yet</h4>
-                <p className="text-sm text-[hsl(var(--bc-text-muted))] max-w-xs mx-auto">
-                  Add friends to see their updates here!
+                <h4 className="font-bold text-xl text-[hsl(var(--bc-text))] mb-2">No friend activity yet</h4>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))] max-w-xs mx-auto mb-6">
+                  Add friends to see what they're up to!
                 </p>
                 <Link
                   to="/users"
-                  className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[hsl(var(--bc-primary))] hover:bg-[hsl(var(--bc-primary))]/90 text-white rounded-xl text-sm font-medium transition"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-2xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 hover:shadow-xl hover:scale-105"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   Find Friends
                 </Link>
               </div>
             ) : (
               <div className="divide-y divide-[hsl(var(--bc-border))]">
                 {friendStatuses.map(friend => (
-                  <div key={friend.id} className="p-4 hover:bg-[hsl(var(--bc-bg-light))]/50 transition">
-                    <div className="flex gap-3">
-                      <Link to={`/${friend.serial_id}/${friend.username}/profile`}>
+                  <div key={friend.id} className="p-5 hover:bg-[hsl(var(--bc-bg-light))]/50 transition">
+                    <div className="flex gap-4">
+                      <Link to={`/${friend.serial_id}/${friend.username}/profile`} className="shrink-0">
                         <UserAvatar
                           avatarUrl={friend.avatar_url}
                           username={friend.username}
@@ -987,30 +1209,30 @@ export default function ForumDashboard() {
                         />
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-2">
                           <Link 
                             to={`/${friend.serial_id}/${friend.username}/profile`}
-                            className="font-medium text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition"
+                            className="font-bold text-[hsl(var(--bc-text))] hover:text-[hsl(var(--bc-primary))] transition"
                           >
                             {friend.username}
                           </Link>
                           {friend.is_verified && <VerifiedBadge />}
-                          <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          <span className="text-xs text-[hsl(var(--bc-text-muted))] bg-[hsl(var(--bc-bg-light))] px-2 py-0.5 rounded-full">
                             {formatTimeAgo(friend.status_updated_at)}
                           </span>
                         </div>
                         
-                        <div className="relative bg-[hsl(var(--bc-bg-light))] rounded-xl p-3 mt-2 border border-[hsl(var(--bc-border))]">
-                          <p className="text-[hsl(var(--bc-text))] text-sm">{friend.status_text}</p>
+                        <div className="relative bg-gradient-to-br from-[hsl(var(--bc-bg-light))] to-[hsl(var(--bc-bg-card))] rounded-2xl p-4 border border-[hsl(var(--bc-border))]">
+                          <p className="text-[hsl(var(--bc-text))]">{friend.status_text}</p>
                         </div>
 
-                        <div className="flex items-center gap-4 mt-3">
+                        <div className="flex items-center gap-4 mt-4">
                           <button
                             onClick={() => handleLikeStatus(friend.id, friend.is_liked)}
-                            className={`flex items-center gap-1.5 text-sm transition ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-all ${
                               friend.is_liked 
-                                ? 'text-red-500' 
-                                : 'text-[hsl(var(--bc-text-muted))] hover:text-red-500'
+                                ? 'bg-red-500/10 text-red-500' 
+                                : 'bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:bg-red-500/10 hover:text-red-500'
                             }`}
                           >
                             <Heart className={`w-4 h-4 ${friend.is_liked ? 'fill-current' : ''}`} />
@@ -1024,11 +1246,11 @@ export default function ForumDashboard() {
                                 value={reportReason}
                                 onChange={(e) => setReportReason(e.target.value)}
                                 placeholder="Reason for report..."
-                                className="flex-1 text-sm bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-lg px-3 py-1.5 text-[hsl(var(--bc-text))] focus:outline-none focus:border-[hsl(var(--bc-primary))]"
+                                className="flex-1 text-sm bg-[hsl(var(--bc-bg-light))] border border-[hsl(var(--bc-border))] rounded-xl px-4 py-2 text-[hsl(var(--bc-text))] focus:outline-none focus:border-[hsl(var(--bc-primary))] focus:ring-2 focus:ring-[hsl(var(--bc-primary))]/20"
                               />
                               <button
                                 onClick={() => handleReportStatus(friend.id)}
-                                className="text-sm text-red-500 hover:text-red-600 font-medium"
+                                className="px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-500/10 rounded-xl transition"
                               >
                                 Submit
                               </button>
@@ -1037,7 +1259,7 @@ export default function ForumDashboard() {
                                   setReportingStatus(null);
                                   setReportReason('');
                                 }}
-                                className="text-sm text-[hsl(var(--bc-text-muted))]"
+                                className="px-4 py-2 text-sm text-[hsl(var(--bc-text-muted))] hover:bg-[hsl(var(--bc-bg-light))] rounded-xl transition"
                               >
                                 Cancel
                               </button>
@@ -1045,7 +1267,7 @@ export default function ForumDashboard() {
                           ) : (
                             <button
                               onClick={() => setReportingStatus(friend.id)}
-                              className="flex items-center gap-1.5 text-sm text-[hsl(var(--bc-text-muted))] hover:text-red-500 transition"
+                              className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text-muted))] hover:text-red-500 hover:bg-red-500/10 transition-all"
                             >
                               <Flag className="w-4 h-4" />
                               <span>Report</span>
