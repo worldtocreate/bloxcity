@@ -159,7 +159,7 @@ function Bugs() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from('bug_reports').insert({ forum_user_id: forumUser.id, title: title.trim(), description: description.trim() });
+    const { error } = await supabase.from('bug_reports').insert({ forum_user_id: forumUser.id, title: title.trim(), description: description.trim(), status: 'received' });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
