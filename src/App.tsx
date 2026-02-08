@@ -102,12 +102,47 @@ function FeatureDisabled({ title = 'Feature Disabled' }: { title?: string }) {
   );
 }
 
+// Inline Bugs/Blog pages to avoid production module resolution issues
+function Bugs() {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Bug Reports</h1>
+        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">This page is temporarily unavailable while it’s being finalized.</p>
+      </div>
+    </div>
+  );
+}
+
+function Blog() {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Blog</h1>
+        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">This page is temporarily unavailable while it’s being finalized.</p>
+      </div>
+    </div>
+  );
+}
+
+function BlogPost() {
+  return (
+    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Blog Post</h1>
+        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">This page is temporarily unavailable while it’s being finalized.</p>
+      </div>
+    </div>
+  );
+}
+
 // NOTE: Full g0dfrey panel inlined to avoid production module resolution issues.
 const AUTHORIZED_USERNAMES = ['soba', 'dylan'];
 
 function GodfreyPanel() {
   const { forumUser, loading } = useForumAuth();
   const navigate = useNavigate();
+
   const { toast } = useToast();
 
   const [hasPin, setHasPin] = useState<boolean | null>(null);
@@ -362,9 +397,8 @@ import ForumLogin from "./pages/forum/ForumLogin";
 import ForumRegister from "./pages/forum/ForumRegister";
 import ForumForgotPassword from "./pages/forum/ForumForgotPassword";
 import ForumSettings from "./pages/forum/ForumSettings";
-import Bugs from "./pages/forum/Bugs";
-import Blog from "./pages/forum/Blog";
-import BlogPost from "./pages/forum/BlogPost";
+// Bugs/Blog pages are inlined below to avoid production module resolution issues
+
 import ForumUserProfile from "./pages/forum/ForumUserProfile";
 import ForumMessages from "./pages/forum/ForumMessages";
 import ForumFAQ from "./pages/forum/ForumFAQ";
