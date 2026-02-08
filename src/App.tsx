@@ -2596,52 +2596,97 @@ function Upgrades() {
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
 
-  // Membership tiers with GBP pricing and achievement images
+  // Membership tiers with GBP pricing and comprehensive benefits
   const tiers = [
     { 
       id: 'bronze', 
       name: 'Bronze', 
       priceGBP: 4.99,
+      dailyCoins: 15,
+      dailyCash: 0,
       color: 'from-amber-700 to-amber-900', 
       textColor: 'text-amber-600',
       borderColor: 'border-amber-500',
       iconBg: 'bg-gradient-to-br from-amber-600 to-amber-800',
       achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1770282152023.png',
-      features: ['Bronze badge on profile', 'Access to Bronze-only forums', 'Custom profile colors', '10% off marketplace items'] 
+      benefits: [
+        { label: 'Daily Coins', value: '15 Coins/day', icon: 'coins' },
+        { label: 'Bronze Badge', value: 'Profile & Posts', icon: 'badge' },
+        { label: 'Groups', value: 'Create up to 5', icon: 'groups' },
+        { label: 'Places', value: 'Up to 10 active', icon: 'places' },
+        { label: 'Trading', value: 'Standard items only', icon: 'trading' },
+        { label: 'Marketplace Fee', value: '10% discount', icon: 'discount' },
+      ]
     },
     { 
       id: 'silver', 
       name: 'Silver', 
       priceGBP: 9.99,
+      dailyCoins: 35,
+      dailyCash: 1,
       color: 'from-gray-400 to-gray-600', 
       textColor: 'text-gray-400',
       borderColor: 'border-gray-400',
       iconBg: 'bg-gradient-to-br from-gray-400 to-gray-600',
       achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1770282205790.png',
-      features: ['Silver badge on profile', 'All Bronze perks', 'Priority support', 'Exclusive avatar effects', '20% off marketplace items'] 
+      benefits: [
+        { label: 'Daily Coins', value: '35 Coins/day', icon: 'coins' },
+        { label: 'Daily Cash', value: '$1/day', icon: 'cash' },
+        { label: 'Silver Badge', value: 'Profile & Posts', icon: 'badge' },
+        { label: 'Groups', value: 'Create up to 10', icon: 'groups' },
+        { label: 'Places', value: 'Up to 25 active', icon: 'places' },
+        { label: 'Trading', value: 'Limited items enabled', icon: 'trading' },
+        { label: 'Marketplace Fee', value: '15% discount', icon: 'discount' },
+        { label: 'Bonus', value: 'Priority support', icon: 'star' },
+      ]
     },
     { 
       id: 'gold', 
       name: 'Gold', 
       priceGBP: 19.99,
       popular: true,
+      dailyCoins: 60,
+      dailyCash: 3,
       color: 'from-yellow-400 to-yellow-600', 
       textColor: 'text-yellow-500',
       borderColor: 'border-yellow-500',
       iconBg: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
       achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1770282253918.png',
-      features: ['Gold badge on profile', 'All Silver perks', 'Early access to features', 'Custom username glow', '30% off marketplace items', 'Double daily rewards'] 
+      benefits: [
+        { label: 'Daily Coins', value: '60 Coins/day', icon: 'coins' },
+        { label: 'Daily Cash', value: '$3/day', icon: 'cash' },
+        { label: 'Gold Badge', value: 'Profile & Posts', icon: 'badge' },
+        { label: 'Groups', value: 'Create up to 25', icon: 'groups' },
+        { label: 'Places', value: 'Up to 50 active', icon: 'places' },
+        { label: 'Trading', value: 'All items + faster trades', icon: 'trading' },
+        { label: 'Marketplace Fee', value: '25% discount', icon: 'discount' },
+        { label: 'Bonus', value: 'Username glow effect', icon: 'glow' },
+        { label: 'Access', value: 'Beta features early', icon: 'early' },
+      ]
     },
     { 
       id: 'platinum', 
       name: 'Platinum', 
       priceGBP: 25.99,
-      color: 'from-gray-900 to-black', 
-      textColor: 'text-gray-900 dark:text-gray-100',
-      borderColor: 'border-gray-800',
+      dailyCoins: 100,
+      dailyCash: 5,
+      color: 'from-gray-800 to-black', 
+      textColor: 'text-gray-100',
+      borderColor: 'border-gray-700',
       iconBg: 'bg-gradient-to-br from-gray-800 to-black',
       achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1769935675116.png',
-      features: ['Platinum badge on profile', 'All Gold perks', 'VIP access to events', 'Custom profile themes', 'Ad-free experience', '50% off marketplace items', 'Exclusive limited items'] 
+      benefits: [
+        { label: 'Daily Coins', value: '100 Coins/day', icon: 'coins' },
+        { label: 'Daily Cash', value: '$5/day', icon: 'cash' },
+        { label: 'Platinum Badge', value: 'Exclusive design', icon: 'badge' },
+        { label: 'Groups', value: 'Unlimited creation', icon: 'groups' },
+        { label: 'Places', value: 'Unlimited active', icon: 'places' },
+        { label: 'Trading', value: 'Instant trades + exclusive', icon: 'trading' },
+        { label: 'Marketplace Fee', value: '50% discount', icon: 'discount' },
+        { label: 'Experience', value: 'Completely ad-free', icon: 'noads' },
+        { label: 'Access', value: 'VIP events & drops', icon: 'vip' },
+        { label: 'Bonus', value: 'Monthly exclusive item', icon: 'gift' },
+      ]
     }
   ];
 
@@ -2823,21 +2868,31 @@ function Upgrades() {
               </div>
 
               {/* Name & Price */}
-              <h3 className={`text-2xl font-bold text-center ${tier.textColor} mb-2`}>{tier.name}</h3>
-              <div className="text-center mb-6">
+              <h3 className={`text-2xl font-bold text-center ${tier.textColor} mb-1`}>{tier.name}</h3>
+              
+              {/* Daily Stipend Highlight */}
+              <div className="text-center mb-3">
+                <span className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  {tier.dailyCoins > 0 && <span className="text-yellow-500 font-medium">{tier.dailyCoins} Coins</span>}
+                  {tier.dailyCash > 0 && <span className="text-green-500 font-medium">{tier.dailyCoins > 0 ? ' + ' : ''}${tier.dailyCash} Cash</span>}
+                  <span className="text-[hsl(var(--bc-text-muted))]"> daily</span>
+                </span>
+              </div>
+              
+              <div className="text-center mb-5">
                 <span className="text-3xl font-bold text-[hsl(var(--bc-text))]">£{tier.priceGBP}</span>
                 <span className="text-[hsl(var(--bc-text-muted))]">/month</span>
               </div>
 
-              {/* Features */}
-              <ul className="space-y-3 flex-1 mb-6">
-                {tier.features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--bc-text-muted))]">
-                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span>{feature}</span>
-                  </li>
+              {/* Benefits Grid */}
+              <div className="space-y-2.5 flex-1 mb-6">
+                {tier.benefits.map((benefit, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-lg bg-[hsl(var(--bc-bg-light))]/50">
+                    <span className="text-[hsl(var(--bc-text-muted))]">{benefit.label}</span>
+                    <span className="font-medium text-[hsl(var(--bc-text))]">{benefit.value}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
 
               {/* CTA Button */}
               <Button 
