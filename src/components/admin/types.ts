@@ -99,4 +99,6 @@ export type AdminTab =
   | "jobs"
   | "marketplace"
   | "inventory"
+  | "bugs"
+  | "blog"
   | "settings";
