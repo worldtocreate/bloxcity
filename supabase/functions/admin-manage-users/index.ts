@@ -52,7 +52,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { action, targetUserId, role, email, requestId, forumUserId, requestType, approved, reason } = await req.json();
+    const {
+      action,
+      targetUserId,
+      role,
+      email,
+      requestId,
+      forumUserId,
+      requestType,
+      approved,
+      reason,
+      newEmail,
+    } = await req.json();
 
     // ========== SEND VERIFICATION REQUEST EMAIL ==========
     if (action === "send_verification_email") {
@@ -601,8 +612,6 @@ Deno.serve(async (req) => {
 
     // ========== UPDATE USER EMAIL ==========
     if (action === "update_email") {
-      const { newEmail } = await req.json().catch(() => ({}));
-      
       if (!forumUserId || !newEmail) {
         return new Response(
           JSON.stringify({ error: "forumUserId and newEmail are required" }),
