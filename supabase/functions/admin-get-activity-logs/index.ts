@@ -37,14 +37,26 @@ Deno.serve(async (req) => {
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
-      _user_id: user.id,
-      _role: "admin",
-    });
+    
+    // Get the forum_user for current auth user
+    const { data: forumUser } = await supabaseAdmin
+      .from('forum_users')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
 
-    if (!isAdmin) {
+    // Check if user has an admin account and if it's Ben's email
+    const { data: userAdminAccount } = await supabaseAdmin
+      .from('admin_accounts')
+      .select('email')
+      .eq('forum_user_id', forumUser?.id)
+      .eq('is_active', true)
+      .single();
+
+    // Only Ben can view logs
+    if (!userAdminAccount || userAdminAccount.email !== 'maxtorapple36@yahoo.co.uk') {
       return new Response(
-        JSON.stringify({ error: "Not authorized" }),
+        JSON.stringify({ error: "Not authorized - Only the primary administrator can view logs" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -68,10 +80,27 @@ Deno.serve(async (req) => {
       throw logsError;
     }
 
-    console.log(`Fetched ${logs?.length || 0} activity logs`);
+    // Enrich logs with admin username from forum_users
+    const enrichedLogs = await Promise.all((logs || []).map(async (log) => {
+      let adminUsername = null;
+      if (log.admin_user_id) {
+        const { data: adminForumUser } = await supabaseAdmin
+          .from('forum_users')
+          .select('username')
+          .eq('user_id', log.admin_user_id)
+          .single();
+        adminUsername = adminForumUser?.username || null;
+      }
+      return {
+        ...log,
+        admin_username: adminUsername,
+      };
+    }));
+
+    console.log(`Fetched ${enrichedLogs.length} activity logs for Ben`);
 
     return new Response(
-      JSON.stringify({ logs: logs || [] }),
+      JSON.stringify({ logs: enrichedLogs }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {

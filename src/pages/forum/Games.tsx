@@ -5,22 +5,9 @@ import { Plus, Loader2, Search, Gamepad2, Wrench } from 'lucide-react';
 import { ForumUser } from '@/hooks/useForumAuth';
 import { toast } from 'sonner';
 
-// Inline page maintenance hook
-function usePageMaintenance(pageKey: string) {
-  const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const check = async () => {
-      try {
-        const { data, error } = await supabase.from('admin_settings').select('value').eq('key', 'page_maintenance').single();
-        if (error) setIsUnderMaintenance(false);
-        else if (data?.value) setIsUnderMaintenance((data.value as Record<string, boolean>)[pageKey] === true);
-      } catch { setIsUnderMaintenance(false); }
-      finally { setLoading(false); }
-    };
-    check();
-  }, [pageKey]);
-  return { isUnderMaintenance, loading };
+// Games page is permanently under maintenance
+function usePageMaintenance() {
+  return { isUnderMaintenance: true, loading: false };
 }
 
 function PageMaintenance({ pageName }: { pageName: string }) {
@@ -74,7 +61,7 @@ const GAME_CATEGORIES = [
 ];
 
 export default function Games() {
-  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance('games');
+  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance();
   
   const context = useOutletContext<{
     user: any;

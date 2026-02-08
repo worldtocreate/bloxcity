@@ -6,16 +6,16 @@ import { ForumUser } from '@/hooks/useForumAuth';
 import UserAvatar from '@/components/forum/UserAvatar';
 import { getRelativeTime } from '@/lib/timeUtils';
 
-// Inline page maintenance hook
+// Use secure RPC function for maintenance check
 function usePageMaintenance(pageKey: string) {
   const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const check = async () => {
       try {
-        const { data, error } = await supabase.from('admin_settings').select('value').eq('key', 'page_maintenance').single();
+        const { data, error } = await supabase.rpc('get_page_maintenance_status');
         if (error) setIsUnderMaintenance(false);
-        else if (data?.value) setIsUnderMaintenance((data.value as Record<string, boolean>)[pageKey] === true);
+        else if (data) setIsUnderMaintenance((data as Record<string, boolean>)[pageKey] === true);
       } catch { setIsUnderMaintenance(false); }
       finally { setLoading(false); }
     };

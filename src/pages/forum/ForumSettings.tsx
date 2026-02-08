@@ -169,6 +169,7 @@ export default function ForumSettings() {
       setBio((forumUser as any).bio || '');
       setSignature(forumUser.signature || '');
       setAllowDms(forumUser.allow_dms);
+      setAllowTrades((forumUser as any).allow_trades ?? true);
       setSocialDiscord((forumUser as any).social_discord || '');
       setSocialX((forumUser as any).social_x || '');
       setSelectedAvatarEffect((forumUser as any).avatar_effect || null);
@@ -421,7 +422,7 @@ export default function ForumSettings() {
     setSavingPrivacy(true);
     const { error } = await supabase
       .from('forum_users')
-      .update({ allow_dms: allowDms })
+      .update({ allow_dms: allowDms, allow_trades: allowTrades })
       .eq('id', forumUser.id);
     if (error) {
       toast.error('Failed to save privacy settings');

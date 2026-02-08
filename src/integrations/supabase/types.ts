@@ -3186,6 +3186,7 @@ export type Database = {
         Row: {
           allow_dms: boolean | null
           allow_friend_requests: boolean | null
+          allow_trades: boolean | null
           avatar_effect: string | null
           avatar_url: string | null
           bio: string | null
@@ -3254,6 +3255,7 @@ export type Database = {
         Insert: {
           allow_dms?: boolean | null
           allow_friend_requests?: boolean | null
+          allow_trades?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -3322,6 +3324,7 @@ export type Database = {
         Update: {
           allow_dms?: boolean | null
           allow_friend_requests?: boolean | null
+          allow_trades?: boolean | null
           avatar_effect?: string | null
           avatar_url?: string | null
           bio?: string | null
@@ -4680,9 +4683,17 @@ export type Database = {
         Args: { ad_id: string; clicker_agent: string; clicker_ip: string }
         Returns: Json
       }
+      convert_currency: {
+        Args: { p_amount: number; p_direction: string }
+        Returns: Json
+      }
       decline_trade: { Args: { p_trade_id: string }; Returns: Json }
       delete_inventory_item: { Args: { p_inventory_id: string }; Returns: Json }
       execute_trade: { Args: { p_trade_id: string }; Returns: Json }
+      get_admin_email_by_user_id: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_affiliate_info: {
         Args: { _forum_user_id: string }
         Returns: {
