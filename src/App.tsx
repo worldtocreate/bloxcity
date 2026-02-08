@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext, useParams } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users, Store } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users, Store, Plus, Calendar, Image } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserAvatar from "@/components/forum/UserAvatar";
 import MembershipBadge from "@/components/forum/MembershipBadge";
@@ -118,6 +118,24 @@ function Bugs() {
     if (forumUser) fetchData();
   }, [forumUser]);
 
+  // Subscribe to realtime updates for bug status changes
+  useEffect(() => {
+    if (!forumUser) return;
+    
+    const channel = supabase
+      .channel('bug-reports-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bug_reports', filter: `forum_user_id=eq.${forumUser.id}` },
+        (payload) => {
+          setReports(prev => prev.map(r => r.id === payload.new.id ? { ...r, ...payload.new } : r));
+        }
+      )
+      .subscribe();
+    
+    return () => { supabase.removeChannel(channel); };
+  }, [forumUser]);
+
   const fetchData = async () => {
     if (!forumUser) return;
     setLoading(true);
@@ -153,48 +171,148 @@ function Bugs() {
     setSubmitting(false);
   };
 
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'open': return { label: 'Received', color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', icon: '📩' };
+      case 'in_review': return { label: 'Investigating', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', icon: '🔍' };
+      case 'fixed': return { label: 'Patched', color: 'bg-green-500/10 text-green-600 border-green-500/20', icon: '✅' };
+      case 'closed': return { label: 'Closed', color: 'bg-gray-500/10 text-gray-600 border-gray-500/20', icon: '🔒' };
+      default: return { label: status, color: 'bg-gray-500/10 text-gray-600', icon: '📝' };
+    }
+  };
+
   if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
-  if (!forumUser) return <div className="max-w-2xl mx-auto p-6"><div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center"><AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" /><h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Login Required</h1><p className="text-[hsl(var(--bc-text-muted))] mb-4">You must be logged in to submit bug reports.</p><Link to="/login"><Button>Login</Button></Link></div></div>;
+  
+  if (!forumUser) return (
+    <div className="max-w-2xl mx-auto p-6">
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+        <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+        <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Login Required</h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mb-4">You must be logged in to submit bug reports.</p>
+        <Link to="/login"><Button>Login</Button></Link>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Bug Reports</h1>
-          <p className="text-[hsl(var(--bc-text-muted))]">Help us improve BLOX City by reporting bugs ({reportCount}/5 today)</p>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-primary-dark))] rounded-2xl p-6 mb-6 text-white">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              🐛 Bug Reports
+            </h1>
+            <p className="text-white/80 mt-1">Help us squash bugs and improve BLOX City</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="text-2xl font-bold">{reportCount}/5</div>
+              <div className="text-xs text-white/70">Reports today</div>
+            </div>
+            <Button 
+              onClick={() => setShowCreate(true)} 
+              disabled={reportCount >= 5}
+              className="bg-white text-[hsl(var(--bc-primary))] hover:bg-white/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Report Bug
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setShowCreate(true)} disabled={reportCount >= 5}>Report a Bug</Button>
       </div>
 
+      {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 w-full max-w-lg space-y-4">
-            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Submit Bug Report</h2>
-            <div><Label>Title</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief description of the bug" maxLength={100} /></div>
-            <div><Label>Description</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Detailed steps to reproduce, expected behavior, etc." className="min-h-[120px]" maxLength={2000} /></div>
-            <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button><Button onClick={handleSubmit} disabled={submitting || !title.trim() || !description.trim()}>{submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit'}</Button></div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-xl">🐛</div>
+              <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Submit Bug Report</h2>
+            </div>
+            <div>
+              <Label className="text-[hsl(var(--bc-text))]">Title</Label>
+              <Input 
+                value={title} 
+                onChange={e => setTitle(e.target.value)} 
+                placeholder="Brief description of the bug" 
+                maxLength={100}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-[hsl(var(--bc-text))]">Description</Label>
+              <Textarea 
+                value={description} 
+                onChange={e => setDescription(e.target.value)} 
+                placeholder="Steps to reproduce, expected behavior, screenshots, etc." 
+                className="min-h-[140px] mt-1" 
+                maxLength={2000}
+              />
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-1">{description.length}/2000 characters</p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={submitting || !title.trim() || !description.trim()}>
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Submit Report
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Reports List */}
       {loading ? (
-        <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+        </div>
       ) : reports.length === 0 ? (
-        <div className="bc-card p-8 text-center"><FileText className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" /><h3 className="font-semibold text-[hsl(var(--bc-text))]">No bug reports yet</h3><p className="text-[hsl(var(--bc-text-muted))]">Found a bug? Click "Report a Bug" to let us know.</p></div>
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-[hsl(var(--bc-bg-light))] flex items-center justify-center mx-auto mb-4 text-3xl">
+            🔍
+          </div>
+          <h3 className="font-semibold text-[hsl(var(--bc-text))] text-lg">No bug reports yet</h3>
+          <p className="text-[hsl(var(--bc-text-muted))] mt-2 max-w-sm mx-auto">
+            Found something that doesn't work right? Click "Report Bug" to let us know and help improve the platform.
+          </p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {reports.map((report) => (
-            <div key={report.id} className="bc-card p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-[hsl(var(--bc-text))]">{report.title}</h3>
-                  <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-2">{report.description}</p>
-                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-2">{new Date(report.created_at).toLocaleDateString()}</p>
+          <h2 className="text-sm font-medium text-[hsl(var(--bc-text-muted))] uppercase tracking-wide">Your Reports</h2>
+          <div className="grid gap-4">
+            {reports.map((report) => {
+              const status = getStatusInfo(report.status);
+              return (
+                <div 
+                  key={report.id} 
+                  className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-5 hover:border-[hsl(var(--bc-primary))/30] transition"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="text-2xl">{status.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${status.color}`}>
+                          {status.label}
+                        </span>
+                        <span className="text-xs text-[hsl(var(--bc-text-muted))]">
+                          {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-[hsl(var(--bc-text))]">{report.title}</h3>
+                      <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-2">{report.description}</p>
+                      {report.admin_notes && (
+                        <div className="mt-3 p-3 bg-[hsl(var(--bc-bg-light))] rounded-lg">
+                          <p className="text-xs font-medium text-[hsl(var(--bc-text-muted))] mb-1">Admin Response:</p>
+                          <p className="text-sm text-[hsl(var(--bc-text))]">{report.admin_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <span className={`px-3 py-1 text-xs font-medium rounded-full ${report.status === 'open' ? 'bg-blue-500/10 text-blue-500' : report.status === 'in_review' ? 'bg-yellow-500/10 text-yellow-500' : report.status === 'fixed' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>{report.status}</span>
-              </div>
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -221,32 +339,127 @@ function Blog() {
 
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
 
+  // Get featured post (first/latest post)
+  const featuredPost = posts[0];
+  const otherPosts = posts.slice(1);
+
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Blog</h1>
-        <p className="text-[hsl(var(--bc-text-muted))]">News, updates, and announcements from BLOX City</p>
+    <div className="max-w-5xl mx-auto p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[hsl(var(--bc-text))] flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-primary-dark))] flex items-center justify-center text-white">
+            <FileText className="w-5 h-5" />
+          </div>
+          Blog
+        </h1>
+        <p className="text-[hsl(var(--bc-text-muted))] mt-2">News, updates, and announcements from BLOX City</p>
       </div>
 
       {posts.length === 0 ? (
-        <div className="bc-card p-8 text-center"><FileText className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" /><h3 className="font-semibold text-[hsl(var(--bc-text))]">No posts yet</h3><p className="text-[hsl(var(--bc-text-muted))]">Check back soon for updates!</p></div>
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-[hsl(var(--bc-bg-light))] flex items-center justify-center mx-auto mb-4 text-3xl">
+            📝
+          </div>
+          <h3 className="font-semibold text-[hsl(var(--bc-text))] text-lg">No posts yet</h3>
+          <p className="text-[hsl(var(--bc-text-muted))] mt-2">Check back soon for news and updates!</p>
+        </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          {posts.map((post) => (
-            <Link key={post.id} to={`/blog/${post.slug}`} className="bc-card overflow-hidden hover:border-[hsl(var(--bc-primary))] transition group">
-              {post.thumbnail_url && <img src={post.thumbnail_url} alt={post.title} className="w-full h-48 object-cover" />}
-              <div className="p-4">
-                <h2 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">{post.title}</h2>
-                {post.excerpt && <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-2 line-clamp-2">{post.excerpt}</p>}
-                <div className="flex items-center gap-2 mt-3 text-xs text-[hsl(var(--bc-text-muted))]">
-                  {post.author?.avatar_url && <img src={post.author.avatar_url} alt="" className="w-5 h-5 rounded-full" />}
-                  <span>{post.author?.username || 'Unknown'}</span>
-                  <span>•</span>
-                  <span>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</span>
+        <div className="space-y-8">
+          {/* Featured Post */}
+          {featuredPost && (
+            <Link 
+              to={`/blog/${featuredPost.slug}`} 
+              className="block group"
+            >
+              <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-2xl overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all hover:shadow-lg">
+                <div className="grid md:grid-cols-2 gap-0">
+                  <div className="relative aspect-video md:aspect-auto">
+                    {featuredPost.thumbnail_url ? (
+                      <img 
+                        src={featuredPost.thumbnail_url} 
+                        alt={featuredPost.title} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full min-h-[200px] bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-primary-dark))] flex items-center justify-center">
+                        <FileText className="w-16 h-16 text-white/30" />
+                      </div>
+                    )}
+                    <div className="absolute top-4 left-4">
+                      <span className="px-3 py-1 text-xs font-semibold bg-[hsl(var(--bc-primary))] text-white rounded-full">
+                        Latest
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 flex flex-col justify-center">
+                    <h2 className="text-2xl font-bold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition mb-3">
+                      {featuredPost.title}
+                    </h2>
+                    {featuredPost.excerpt && (
+                      <p className="text-[hsl(var(--bc-text-muted))] mb-4 line-clamp-3">{featuredPost.excerpt}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-auto">
+                      {featuredPost.author?.avatar_url ? (
+                        <img src={featuredPost.author.avatar_url} alt="" className="w-8 h-8 rounded-full" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-bg-light))] flex items-center justify-center">
+                          <User className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-[hsl(var(--bc-text))]">{featuredPost.author?.username || 'BLOX City'}</p>
+                        <p className="text-xs text-[hsl(var(--bc-text-muted))] flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {featuredPost.published_at ? new Date(featuredPost.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Link>
-          ))}
+          )}
+
+          {/* Other Posts Grid */}
+          {otherPosts.length > 0 && (
+            <>
+              <h2 className="text-sm font-medium text-[hsl(var(--bc-text-muted))] uppercase tracking-wide">More Posts</h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {otherPosts.map((post) => (
+                  <Link 
+                    key={post.id} 
+                    to={`/blog/${post.slug}`} 
+                    className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl overflow-hidden hover:border-[hsl(var(--bc-primary))] transition-all group hover:shadow-md"
+                  >
+                    <div className="aspect-video relative">
+                      {post.thumbnail_url ? (
+                        <img src={post.thumbnail_url} alt={post.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[hsl(var(--bc-bg-light))] to-[hsl(var(--bc-bg))] flex items-center justify-center">
+                          <FileText className="w-10 h-10 text-[hsl(var(--bc-text-muted))]" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition line-clamp-2">
+                        {post.title}
+                      </h3>
+                      {post.excerpt && (
+                        <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-2 line-clamp-2">{post.excerpt}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-3 text-xs text-[hsl(var(--bc-text-muted))]">
+                        {post.author?.avatar_url && <img src={post.author.avatar_url} alt="" className="w-5 h-5 rounded-full" />}
+                        <span>{post.author?.username || 'Unknown'}</span>
+                        <span>•</span>
+                        <span>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -273,23 +486,93 @@ function BlogPost() {
     setLoading(false);
   };
 
+  // Convert plain text with line breaks to HTML paragraphs
+  const formatContent = (content: string) => {
+    // If content already has HTML tags, return as-is
+    if (/<[a-z][\s\S]*>/i.test(content)) {
+      return content;
+    }
+    // Otherwise, convert line breaks to paragraphs
+    return content
+      .split(/\n\n+/)
+      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br/>')}</p>`)
+      .join('');
+  };
+
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
-  if (!post) return <div className="max-w-2xl mx-auto p-6 text-center"><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Post Not Found</h1><p className="text-[hsl(var(--bc-text-muted))] mt-2">This blog post doesn't exist or has been removed.</p><Link to="/blog" className="mt-4 inline-block text-[hsl(var(--bc-primary))]">← Back to Blog</Link></div>;
+  
+  if (!post) return (
+    <div className="max-w-2xl mx-auto p-6 text-center">
+      <div className="w-16 h-16 rounded-full bg-[hsl(var(--bc-bg-light))] flex items-center justify-center mx-auto mb-4 text-3xl">
+        📄
+      </div>
+      <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Post Not Found</h1>
+      <p className="text-[hsl(var(--bc-text-muted))] mt-2">This blog post doesn't exist or has been removed.</p>
+      <Link to="/blog" className="mt-4 inline-block text-[hsl(var(--bc-primary))] hover:underline">← Back to Blog</Link>
+    </div>
+  );
 
   return (
-    <div className="max-w-3xl mx-auto p-4 sm:p-6">
-      <Link to="/blog" className="text-[hsl(var(--bc-primary))] hover:underline mb-6 inline-block">← Back to Blog</Link>
-      {post.thumbnail_url && <img src={post.thumbnail_url} alt={post.title} className="w-full h-64 object-cover rounded-xl mb-6" />}
-      <h1 className="text-3xl font-bold text-[hsl(var(--bc-text))] mb-4">{post.title}</h1>
-      <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[hsl(var(--bc-border))]">
-        {post.author?.avatar_url && <img src={post.author.avatar_url} alt="" className="w-10 h-10 rounded-full" />}
+    <article className="max-w-3xl mx-auto p-4 sm:p-6">
+      {/* Back Button */}
+      <Link to="/blog" className="inline-flex items-center gap-2 text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] transition mb-6">
+        ← Back to Blog
+      </Link>
+      
+      {/* Thumbnail */}
+      {post.thumbnail_url && (
+        <div className="rounded-2xl overflow-hidden mb-8">
+          <img src={post.thumbnail_url} alt={post.title} className="w-full aspect-video object-cover" />
+        </div>
+      )}
+      
+      {/* Title */}
+      <h1 className="text-3xl sm:text-4xl font-bold text-[hsl(var(--bc-text))] leading-tight mb-6">
+        {post.title}
+      </h1>
+      
+      {/* Author & Date */}
+      <div className="flex items-center gap-4 mb-8 pb-8 border-b border-[hsl(var(--bc-border))]">
+        {post.author?.avatar_url ? (
+          <img src={post.author.avatar_url} alt="" className="w-12 h-12 rounded-full" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[hsl(var(--bc-primary))] to-[hsl(var(--bc-primary-dark))] flex items-center justify-center text-white font-semibold">
+            {(post.author?.username || 'B')[0].toUpperCase()}
+          </div>
+        )}
         <div>
-          <p className="font-medium text-[hsl(var(--bc-text))]">{post.author?.username || 'Unknown'}</p>
-          <p className="text-sm text-[hsl(var(--bc-text-muted))]">{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</p>
+          <p className="font-semibold text-[hsl(var(--bc-text))]">{post.author?.username || 'BLOX City'}</p>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))] flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'Date unknown'}
+          </p>
         </div>
       </div>
-      <div className="prose prose-invert max-w-none text-[hsl(var(--bc-text))]" dangerouslySetInnerHTML={{ __html: post.content }} />
-    </div>
+      
+      {/* Content */}
+      <div 
+        className="prose prose-lg max-w-none 
+          prose-headings:text-[hsl(var(--bc-text))] prose-headings:font-bold
+          prose-p:text-[hsl(var(--bc-text))] prose-p:leading-relaxed
+          prose-a:text-[hsl(var(--bc-primary))] prose-a:no-underline hover:prose-a:underline
+          prose-strong:text-[hsl(var(--bc-text))]
+          prose-li:text-[hsl(var(--bc-text))]
+          prose-blockquote:border-l-[hsl(var(--bc-primary))] prose-blockquote:text-[hsl(var(--bc-text-muted))]
+          prose-code:text-[hsl(var(--bc-primary))] prose-code:bg-[hsl(var(--bc-bg-light))] prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+          [&_p]:mb-4 [&_p]:last:mb-0"
+        dangerouslySetInnerHTML={{ __html: formatContent(post.content) }} 
+      />
+      
+      {/* Footer */}
+      <div className="mt-12 pt-8 border-t border-[hsl(var(--bc-border))]">
+        <Link 
+          to="/blog" 
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--bc-bg-light))] text-[hsl(var(--bc-text))] rounded-lg hover:bg-[hsl(var(--bc-primary))] hover:text-white transition"
+        >
+          ← More Posts
+        </Link>
+      </div>
+    </article>
   );
 }
 
