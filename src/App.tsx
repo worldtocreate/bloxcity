@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserAvatar from "@/components/forum/UserAvatar";
 import MembershipBadge from "@/components/forum/MembershipBadge";
 import UserLevelBadge from "@/components/forum/UserLevelBadge";
+import VerifiedBadge from "@/components/forum/VerifiedBadge";
 import TwoFactorSetup from "@/components/forum/TwoFactorSetup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -330,7 +331,13 @@ function Blog() {
   const fetchPosts = async () => {
     const { data } = await supabase
       .from('blog_posts')
-      .select('id, title, slug, excerpt, thumbnail_url, published_at, author:author_id(username, avatar_url)')
+      .select(`
+        id, title, slug, excerpt, thumbnail_url, published_at, 
+        author:author_id(id, username, avatar_url, is_verified),
+        collaborators:blog_post_collaborators(
+          forum_user:forum_user_id(id, username, avatar_url, is_verified)
+        )
+      `)
       .eq('is_published', true)
       .order('published_at', { ascending: false });
     setPosts(data || []);
@@ -408,12 +415,34 @@ function Blog() {
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-[hsl(var(--bc-text))]">{featuredPost.author?.username || 'BLOX City'}</p>
+                        <p className="text-sm font-medium text-[hsl(var(--bc-text))] flex items-center gap-1">
+                          {featuredPost.author?.username || 'BLOX City'}
+                          {featuredPost.author?.is_verified && <VerifiedBadge size="sm" />}
+                        </p>
                         <p className="text-xs text-[hsl(var(--bc-text-muted))] flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {featuredPost.published_at ? new Date(featuredPost.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
                         </p>
                       </div>
+                      {/* Collaborators */}
+                      {featuredPost.collaborators && featuredPost.collaborators.length > 0 && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <span className="text-xs text-[hsl(var(--bc-text-muted))]">with</span>
+                          <div className="flex -space-x-1">
+                            {featuredPost.collaborators.slice(0, 3).map((collab: any, i: number) => (
+                              <div key={i} className="relative">
+                                {collab.forum_user?.avatar_url ? (
+                                  <img src={collab.forum_user.avatar_url} alt="" className="w-6 h-6 rounded-full border-2 border-[hsl(var(--bc-bg-card))]" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-[hsl(var(--bc-bg-light))] border-2 border-[hsl(var(--bc-bg-card))] flex items-center justify-center">
+                                    <User className="w-3 h-3 text-[hsl(var(--bc-text-muted))]" />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -450,7 +479,15 @@ function Blog() {
                       )}
                       <div className="flex items-center gap-2 mt-3 text-xs text-[hsl(var(--bc-text-muted))]">
                         {post.author?.avatar_url && <img src={post.author.avatar_url} alt="" className="w-5 h-5 rounded-full" />}
-                        <span>{post.author?.username || 'Unknown'}</span>
+                        <span className="flex items-center gap-1">
+                          {post.author?.username || 'Unknown'}
+                          {post.author?.is_verified && <VerifiedBadge size="sm" />}
+                        </span>
+                        {post.collaborators && post.collaborators.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            +{post.collaborators.length}
+                          </span>
+                        )}
                         <span>•</span>
                         <span>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</span>
                       </div>
@@ -478,7 +515,13 @@ function BlogPost() {
   const fetchPost = async () => {
     const { data } = await supabase
       .from('blog_posts')
-      .select('*, author:author_id(username, avatar_url)')
+      .select(`
+        *, 
+        author:author_id(id, username, avatar_url, is_verified),
+        collaborators:blog_post_collaborators(
+          forum_user:forum_user_id(id, username, avatar_url, is_verified)
+        )
+      `)
       .eq('slug', slug)
       .eq('is_published', true)
       .single();
@@ -543,13 +586,45 @@ function BlogPost() {
             {(post.author?.username || 'B')[0].toUpperCase()}
           </div>
         )}
-        <div>
-          <p className="font-semibold text-[hsl(var(--bc-text))]">{post.author?.username || 'BLOX City'}</p>
+        <div className="flex-1">
+          <p className="font-semibold text-[hsl(var(--bc-text))] flex items-center gap-1.5">
+            {post.author?.username || 'BLOX City'}
+            {post.author?.is_verified && <VerifiedBadge size="sm" />}
+          </p>
           <p className="text-sm text-[hsl(var(--bc-text-muted))] flex items-center gap-2">
             <Calendar className="w-4 h-4" />
             {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'Date unknown'}
           </p>
         </div>
+        {/* Collaborators */}
+        {post.collaborators && post.collaborators.length > 0 && (
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="text-right">
+              <p className="text-xs text-[hsl(var(--bc-text-muted))] font-medium">Collaborators</p>
+              <div className="flex -space-x-2 mt-1">
+                {post.collaborators.map((collab: any, i: number) => (
+                  <div key={i} className="relative group/collab">
+                    {collab.forum_user?.avatar_url ? (
+                      <img 
+                        src={collab.forum_user.avatar_url} 
+                        alt={collab.forum_user?.username} 
+                        className="w-8 h-8 rounded-full border-2 border-[hsl(var(--bc-bg-card))]" 
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--bc-bg-light))] border-2 border-[hsl(var(--bc-bg-card))] flex items-center justify-center">
+                        <User className="w-4 h-4 text-[hsl(var(--bc-text-muted))]" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-lg text-xs font-medium text-[hsl(var(--bc-text))] whitespace-nowrap opacity-0 group-hover/collab:opacity-100 transition pointer-events-none flex items-center gap-1">
+                      {collab.forum_user?.username}
+                      {collab.forum_user?.is_verified && <VerifiedBadge size="sm" />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Content */}
