@@ -150,6 +150,12 @@ const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
   const [isPublished, setIsPublished] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  // Collaborator state
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [collabSearch, setCollabSearch] = useState('');
+  const [collabResults, setCollabResults] = useState<any[]>([]);
+  const [searchingCollab, setSearchingCollab] = useState(false);
+  const [addingCollab, setAddingCollab] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => { fetchPosts(); }, []);
@@ -159,6 +165,62 @@ const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
     setPosts(data || []); 
     setLoading(false); 
   };
+
+  const fetchCollaborators = async (postId: string) => {
+    const { data } = await supabase
+      .from('blog_post_collaborators')
+      .select('*, forum_user:forum_user_id(id, username, avatar_url)')
+      .eq('blog_post_id', postId);
+    setCollaborators(data || []);
+  };
+
+  const searchUsers = async (query: string) => {
+    if (query.length < 2) {
+      setCollabResults([]);
+      return;
+    }
+    setSearchingCollab(true);
+    const { data } = await supabase
+      .from('forum_users')
+      .select('id, username, avatar_url')
+      .ilike('username', `%${query}%`)
+      .limit(10);
+    // Filter out existing collaborators and the author
+    const existingIds = collaborators.map(c => c.forum_user_id);
+    if (editingPost?.author_id) existingIds.push(editingPost.author_id);
+    setCollabResults((data || []).filter(u => !existingIds.includes(u.id)));
+    setSearchingCollab(false);
+  };
+
+  const addCollaborator = async (userId: string) => {
+    if (!editingPost) return;
+    setAddingCollab(true);
+    const { error } = await supabase
+      .from('blog_post_collaborators')
+      .insert({ blog_post_id: editingPost.id, forum_user_id: userId });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Collaborator added' });
+      fetchCollaborators(editingPost.id);
+      setCollabSearch('');
+      setCollabResults([]);
+    }
+    setAddingCollab(false);
+  };
+
+  const removeCollaborator = async (collabId: string) => {
+    const { error } = await supabase
+      .from('blog_post_collaborators')
+      .delete()
+      .eq('id', collabId);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Collaborator removed' });
+      setCollaborators(prev => prev.filter(c => c.id !== collabId));
+    }
+  };
   
   const openEditor = (post?: any) => { 
     if (post) { 
@@ -167,15 +229,19 @@ const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
       setContent(post.content); 
       setExcerpt(post.excerpt || ''); 
       setThumbnailUrl(post.thumbnail_url || '');
-      setIsPublished(post.is_published); 
+      setIsPublished(post.is_published);
+      fetchCollaborators(post.id);
     } else { 
       setEditingPost(null); 
       setTitle(''); 
       setContent(''); 
       setExcerpt(''); 
       setThumbnailUrl('');
-      setIsPublished(false); 
+      setIsPublished(false);
+      setCollaborators([]);
     } 
+    setCollabSearch('');
+    setCollabResults([]);
     setShowEditor(true); 
   };
   
@@ -307,6 +373,72 @@ const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
                 className="w-full px-3 py-2 border rounded-lg min-h-[250px] font-mono text-sm dark:bg-gray-700 dark:border-gray-600" 
               />
             </div>
+
+            {/* Collaborators Section - only show when editing existing post */}
+            {editingPost && (
+              <div className="space-y-3 border-t pt-4">
+                <label className="block text-sm font-medium">Collaborators</label>
+                
+                {/* Current collaborators */}
+                {collaborators.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {collaborators.map((c) => (
+                      <div key={c.id} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full">
+                        {c.forum_user?.avatar_url && (
+                          <img src={c.forum_user.avatar_url} alt="" className="w-5 h-5 rounded-full" />
+                        )}
+                        <span className="text-sm">{c.forum_user?.username || 'Unknown'}</span>
+                        <button 
+                          onClick={() => removeCollaborator(c.id)}
+                          className="text-red-500 hover:text-red-600 ml-1"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Search to add */}
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <input
+                      value={collabSearch}
+                      onChange={(e) => {
+                        setCollabSearch(e.target.value);
+                        searchUsers(e.target.value);
+                      }}
+                      placeholder="Search username to add..."
+                      className="flex-1 px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    />
+                    {searchingCollab && <Loader2 className="w-5 h-5 animate-spin absolute right-3 top-2.5" />}
+                  </div>
+                  
+                  {/* Search results dropdown */}
+                  {collabResults.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {collabResults.map((user) => (
+                        <button
+                          key={user.id}
+                          onClick={() => addCollaborator(user.id)}
+                          disabled={addingCollab}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-left"
+                        >
+                          {user.avatar_url ? (
+                            <img src={user.avatar_url} alt="" className="w-6 h-6 rounded-full" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600" />
+                          )}
+                          <span>{user.username}</span>
+                          <UserPlus className="w-4 h-4 ml-auto text-blue-500" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">Collaborators will be shown as co-authors on the post.</p>
+              </div>
+            )}
             
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="w-4 h-4" />
