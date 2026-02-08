@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams, Link, useNavigate, Outlet, useOutletContext, useParams } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, XCircle, BadgeCheck, Crown, Shield, Mail, AlertTriangle, Coins, DollarSign, ArrowRightLeft, Info, User, Lock as LockIcon, Gamepad2, FileText, Lock, Users, Store } from "lucide-react";
@@ -104,34 +104,191 @@ function FeatureDisabled({ title = 'Feature Disabled' }: { title?: string }) {
 
 // Inline Bugs/Blog pages to avoid production module resolution issues
 function Bugs() {
+  const { forumUser, loading: authLoading } = useForumAuth();
+  const { toast } = useToast();
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [reportCount, setReportCount] = useState(0);
+
+  useEffect(() => {
+    if (forumUser) fetchData();
+  }, [forumUser]);
+
+  const fetchData = async () => {
+    if (!forumUser) return;
+    setLoading(true);
+    const { data: countData } = await supabase.rpc('get_bug_report_count_today', { p_forum_user_id: forumUser.id });
+    setReportCount(countData || 0);
+    const { data } = await supabase
+      .from('bug_reports')
+      .select('*')
+      .eq('forum_user_id', forumUser.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setReports(data || []);
+    setLoading(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!forumUser || !title.trim() || !description.trim()) return;
+    if (reportCount >= 5) {
+      toast({ title: 'Daily limit reached', description: 'You can only submit 5 bug reports per day.', variant: 'destructive' });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.from('bug_reports').insert({ forum_user_id: forumUser.id, title: title.trim(), description: description.trim() });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Bug report submitted!', description: 'Thank you for helping improve BLOX City.' });
+      setTitle('');
+      setDescription('');
+      setShowCreate(false);
+      fetchData();
+    }
+    setSubmitting(false);
+  };
+
+  if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (!forumUser) return <div className="max-w-2xl mx-auto p-6"><div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center"><AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" /><h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Login Required</h1><p className="text-[hsl(var(--bc-text-muted))] mb-4">You must be logged in to submit bug reports.</p><Link to="/login"><Button>Login</Button></Link></div></div>;
+
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Bug Reports</h1>
-        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">This page is temporarily unavailable while it’s being finalized.</p>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Bug Reports</h1>
+          <p className="text-[hsl(var(--bc-text-muted))]">Help us improve BLOX City by reporting bugs ({reportCount}/5 today)</p>
+        </div>
+        <Button onClick={() => setShowCreate(true)} disabled={reportCount >= 5}>Report a Bug</Button>
       </div>
+
+      {showCreate && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6 w-full max-w-lg space-y-4">
+            <h2 className="text-lg font-semibold text-[hsl(var(--bc-text))]">Submit Bug Report</h2>
+            <div><Label>Title</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief description of the bug" maxLength={100} /></div>
+            <div><Label>Description</Label><Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Detailed steps to reproduce, expected behavior, etc." className="min-h-[120px]" maxLength={2000} /></div>
+            <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button><Button onClick={handleSubmit} disabled={submitting || !title.trim() || !description.trim()}>{submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit'}</Button></div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>
+      ) : reports.length === 0 ? (
+        <div className="bc-card p-8 text-center"><FileText className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" /><h3 className="font-semibold text-[hsl(var(--bc-text))]">No bug reports yet</h3><p className="text-[hsl(var(--bc-text-muted))]">Found a bug? Click "Report a Bug" to let us know.</p></div>
+      ) : (
+        <div className="space-y-4">
+          {reports.map((report) => (
+            <div key={report.id} className="bc-card p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-[hsl(var(--bc-text))]">{report.title}</h3>
+                  <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-1 line-clamp-2">{report.description}</p>
+                  <p className="text-xs text-[hsl(var(--bc-text-muted))] mt-2">{new Date(report.created_at).toLocaleDateString()}</p>
+                </div>
+                <span className={`px-3 py-1 text-xs font-medium rounded-full ${report.status === 'open' ? 'bg-blue-500/10 text-blue-500' : report.status === 'in_review' ? 'bg-yellow-500/10 text-yellow-500' : report.status === 'fixed' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'}`}>{report.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function Blog() {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('id, title, slug, excerpt, thumbnail_url, published_at, author:author_id(username, avatar_url)')
+      .eq('is_published', true)
+      .order('published_at', { ascending: false });
+    setPosts(data || []);
+    setLoading(false);
+  };
+
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+      <div>
         <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Blog</h1>
-        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">This page is temporarily unavailable while it’s being finalized.</p>
+        <p className="text-[hsl(var(--bc-text-muted))]">News, updates, and announcements from BLOX City</p>
       </div>
+
+      {posts.length === 0 ? (
+        <div className="bc-card p-8 text-center"><FileText className="w-12 h-12 text-[hsl(var(--bc-text-muted))] mx-auto mb-4" /><h3 className="font-semibold text-[hsl(var(--bc-text))]">No posts yet</h3><p className="text-[hsl(var(--bc-text-muted))]">Check back soon for updates!</p></div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {posts.map((post) => (
+            <Link key={post.id} to={`/blog/${post.slug}`} className="bc-card overflow-hidden hover:border-[hsl(var(--bc-primary))] transition group">
+              {post.thumbnail_url && <img src={post.thumbnail_url} alt={post.title} className="w-full h-48 object-cover" />}
+              <div className="p-4">
+                <h2 className="font-semibold text-[hsl(var(--bc-text))] group-hover:text-[hsl(var(--bc-primary))] transition">{post.title}</h2>
+                {post.excerpt && <p className="text-sm text-[hsl(var(--bc-text-muted))] mt-2 line-clamp-2">{post.excerpt}</p>}
+                <div className="flex items-center gap-2 mt-3 text-xs text-[hsl(var(--bc-text-muted))]">
+                  {post.author?.avatar_url && <img src={post.author.avatar_url} alt="" className="w-5 h-5 rounded-full" />}
+                  <span>{post.author?.username || 'Unknown'}</span>
+                  <span>•</span>
+                  <span>{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function BlogPost() {
+  const { slug } = useParams<{ slug: string }>();
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (slug) fetchPost();
+  }, [slug]);
+
+  const fetchPost = async () => {
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*, author:author_id(username, avatar_url)')
+      .eq('slug', slug)
+      .eq('is_published', true)
+      .single();
+    setPost(data);
+    setLoading(false);
+  };
+
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
+  if (!post) return <div className="max-w-2xl mx-auto p-6 text-center"><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Post Not Found</h1><p className="text-[hsl(var(--bc-text-muted))] mt-2">This blog post doesn't exist or has been removed.</p><Link to="/blog" className="mt-4 inline-block text-[hsl(var(--bc-primary))]">← Back to Blog</Link></div>;
+
   return (
-    <div className="min-h-screen bg-[hsl(var(--bc-bg))] p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-[hsl(var(--bc-text))]">Blog Post</h1>
-        <p className="mt-2 text-[hsl(var(--bc-text-muted))]">This page is temporarily unavailable while it’s being finalized.</p>
+    <div className="max-w-3xl mx-auto p-4 sm:p-6">
+      <Link to="/blog" className="text-[hsl(var(--bc-primary))] hover:underline mb-6 inline-block">← Back to Blog</Link>
+      {post.thumbnail_url && <img src={post.thumbnail_url} alt={post.title} className="w-full h-64 object-cover rounded-xl mb-6" />}
+      <h1 className="text-3xl font-bold text-[hsl(var(--bc-text))] mb-4">{post.title}</h1>
+      <div className="flex items-center gap-3 mb-6 pb-6 border-b border-[hsl(var(--bc-border))]">
+        {post.author?.avatar_url && <img src={post.author.avatar_url} alt="" className="w-10 h-10 rounded-full" />}
+        <div>
+          <p className="font-medium text-[hsl(var(--bc-text))]">{post.author?.username || 'Unknown'}</p>
+          <p className="text-sm text-[hsl(var(--bc-text-muted))]">{post.published_at ? new Date(post.published_at).toLocaleDateString() : ''}</p>
+        </div>
       </div>
+      <div className="prose prose-invert max-w-none text-[hsl(var(--bc-text))]" dangerouslySetInnerHTML={{ __html: post.content }} />
     </div>
   );
 }
