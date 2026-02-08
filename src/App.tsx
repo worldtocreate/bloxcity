@@ -2596,7 +2596,7 @@ function Upgrades() {
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
 
-  // Membership tiers with GBP pricing
+  // Membership tiers with GBP pricing and achievement images
   const tiers = [
     { 
       id: 'bronze', 
@@ -2606,6 +2606,7 @@ function Upgrades() {
       textColor: 'text-amber-600',
       borderColor: 'border-amber-500',
       iconBg: 'bg-gradient-to-br from-amber-600 to-amber-800',
+      achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1770282152023.png',
       features: ['Bronze badge on profile', 'Access to Bronze-only forums', 'Custom profile colors', '10% off marketplace items'] 
     },
     { 
@@ -2616,6 +2617,7 @@ function Upgrades() {
       textColor: 'text-gray-400',
       borderColor: 'border-gray-400',
       iconBg: 'bg-gradient-to-br from-gray-400 to-gray-600',
+      achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1770282205790.png',
       features: ['Silver badge on profile', 'All Bronze perks', 'Priority support', 'Exclusive avatar effects', '20% off marketplace items'] 
     },
     { 
@@ -2627,18 +2629,32 @@ function Upgrades() {
       textColor: 'text-yellow-500',
       borderColor: 'border-yellow-500',
       iconBg: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+      achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1770282253918.png',
       features: ['Gold badge on profile', 'All Silver perks', 'Early access to features', 'Custom username glow', '30% off marketplace items', 'Double daily rewards'] 
     },
     { 
       id: 'platinum', 
       name: 'Platinum', 
       priceGBP: 25.99,
-      color: 'from-cyan-400 to-cyan-600', 
-      textColor: 'text-cyan-400',
-      borderColor: 'border-cyan-400',
-      iconBg: 'bg-gradient-to-br from-cyan-400 to-cyan-600',
+      color: 'from-gray-900 to-black', 
+      textColor: 'text-gray-900 dark:text-gray-100',
+      borderColor: 'border-gray-800',
+      iconBg: 'bg-gradient-to-br from-gray-800 to-black',
+      achievementImage: 'https://mmugfnagubtmxetcpjkb.supabase.co/storage/v1/object/public/forum-avatars/achievements/achievement_1769935675116.png',
       features: ['Platinum badge on profile', 'All Gold perks', 'VIP access to events', 'Custom profile themes', 'Ad-free experience', '50% off marketplace items', 'Exclusive limited items'] 
     }
+  ];
+
+  // Currency packs for purchase
+  const currencyPacks = [
+    { id: 'coins_500', type: 'coins', amount: 500, priceGBP: 2.99, bonus: 0 },
+    { id: 'coins_1000', type: 'coins', amount: 1000, priceGBP: 4.99, bonus: 100 },
+    { id: 'coins_2500', type: 'coins', amount: 2500, priceGBP: 9.99, bonus: 500 },
+    { id: 'coins_5000', type: 'coins', amount: 5000, priceGBP: 17.99, bonus: 1500 },
+    { id: 'cash_50', type: 'cash', amount: 50, priceGBP: 4.99, bonus: 0 },
+    { id: 'cash_100', type: 'cash', amount: 100, priceGBP: 8.99, bonus: 10 },
+    { id: 'cash_250', type: 'cash', amount: 250, priceGBP: 19.99, bonus: 50 },
+    { id: 'cash_500', type: 'cash', amount: 500, priceGBP: 34.99, bonus: 150 },
   ];
 
   useEffect(() => {
@@ -2797,9 +2813,13 @@ function Upgrades() {
                 </div>
               )}
 
-              {/* Icon */}
-              <div className={`w-16 h-16 ${tier.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                <Crown className="w-8 h-8 text-white" />
+              {/* Achievement Badge Image */}
+              <div className="w-20 h-20 mx-auto mb-4">
+                <img 
+                  src={tier.achievementImage} 
+                  alt={`${tier.name} Badge`} 
+                  className="w-full h-full object-contain drop-shadow-lg"
+                />
               </div>
 
               {/* Name & Price */}
@@ -2839,17 +2859,111 @@ function Upgrades() {
         })}
       </div>
 
+      {/* Currency Packs Section */}
+      <div className="pt-8 border-t border-[hsl(var(--bc-border))]">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">
+            Buy Currency
+          </h2>
+          <p className="text-[hsl(var(--bc-text-muted))]">
+            Purchase Coins and Cash to use in the marketplace
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Coins Packs */}
+          <div>
+            <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+              <Coins className="w-5 h-5 text-yellow-500" />
+              Coins
+            </h3>
+            <div className="space-y-3">
+              {currencyPacks.filter(p => p.type === 'coins').map((pack) => (
+                <div 
+                  key={pack.id}
+                  className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 flex items-center justify-between hover:border-yellow-500/50 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                      <Coins className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-[hsl(var(--bc-text))]">
+                        {pack.amount.toLocaleString()} Coins
+                        {pack.bonus > 0 && (
+                          <span className="ml-2 text-green-500 text-sm">+{pack.bonus.toLocaleString()} Bonus!</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-[hsl(var(--bc-text-muted))]">
+                        £{pack.priceGBP.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm"
+                    className="bg-gradient-to-r from-yellow-400 to-yellow-600 hover:opacity-90"
+                    onClick={() => toast({ title: 'Coming Soon', description: 'Currency purchases will be available soon!' })}
+                  >
+                    Buy
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cash Packs */}
+          <div>
+            <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))] mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-500" />
+              Cash
+            </h3>
+            <div className="space-y-3">
+              {currencyPacks.filter(p => p.type === 'cash').map((pack) => (
+                <div 
+                  key={pack.id}
+                  className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-4 flex items-center justify-between hover:border-green-500/50 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-[hsl(var(--bc-text))]">
+                        ${pack.amount.toLocaleString()} Cash
+                        {pack.bonus > 0 && (
+                          <span className="ml-2 text-green-500 text-sm">+${pack.bonus.toLocaleString()} Bonus!</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-[hsl(var(--bc-text-muted))]">
+                        £{pack.priceGBP.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm"
+                    className="bg-gradient-to-r from-green-500 to-green-700 hover:opacity-90"
+                    onClick={() => toast({ title: 'Coming Soon', description: 'Currency purchases will be available soon!' })}
+                  >
+                    Buy
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Info */}
       <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-[hsl(var(--bc-primary))] flex-shrink-0 mt-0.5" />
           <div className="text-sm text-[hsl(var(--bc-text-muted))]">
-            <p className="font-medium text-[hsl(var(--bc-text))] mb-2">Subscription Information</p>
+            <p className="font-medium text-[hsl(var(--bc-text))] mb-2">Payment Information</p>
             <ul className="space-y-1">
               <li>• All payments are processed securely via Stripe</li>
               <li>• Subscriptions renew automatically each month</li>
               <li>• Cancel anytime from your subscription management page</li>
-              <li>• Membership benefits are applied instantly after purchase</li>
+              <li>• Membership benefits and currency are applied instantly after purchase</li>
             </ul>
           </div>
         </div>
