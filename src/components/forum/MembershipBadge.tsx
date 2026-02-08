@@ -29,7 +29,7 @@ const tierConfig = {
     gradientTo: '#B8860B',
   },
   platinum: {
-    label: 'Premium',
+    label: 'Platinum',
     icon: Crown,
     bgColor: '#1a1a1a',
     gradientFrom: '#2d2d2d',
