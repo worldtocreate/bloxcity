@@ -599,6 +599,71 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ========== UPDATE USER EMAIL ==========
+    if (action === "update_email") {
+      const { newEmail } = await req.json().catch(() => ({}));
+      
+      if (!forumUserId || !newEmail) {
+        return new Response(
+          JSON.stringify({ error: "forumUserId and newEmail are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`Admin updating email for forum user ${forumUserId} to ${newEmail}`);
+
+      // Get forum user's auth user_id
+      const { data: forumUser } = await supabaseAdmin
+        .from("forum_users")
+        .select("id, username, user_id")
+        .eq("id", forumUserId)
+        .single();
+
+      if (!forumUser || !forumUser.user_id) {
+        return new Response(
+          JSON.stringify({ error: "Forum user not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update email in auth.users
+      const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+        forumUser.user_id,
+        { email: newEmail, email_confirm: true }
+      );
+
+      if (updateError) {
+        console.error("Failed to update auth email:", updateError);
+        return new Response(
+          JSON.stringify({ error: updateError.message || "Failed to update email" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update email in profiles table
+      await supabaseAdmin
+        .from("profiles")
+        .update({ email: newEmail.toLowerCase().trim() })
+        .eq("user_id", forumUser.user_id);
+
+      // Log the action
+      await supabaseAdmin.from("admin_activity_logs").insert({
+        admin_user_id: user.id,
+        admin_email: user.email,
+        action: "update_user_email",
+        target_type: "forum_user",
+        target_id: forumUserId,
+        details: { username: forumUser.username, new_email: newEmail }
+      });
+
+      console.log(`Email updated successfully for ${forumUser.username}`);
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Email updated successfully" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Invalid action" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
