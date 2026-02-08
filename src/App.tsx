@@ -3641,17 +3641,38 @@ function ForumResetPassword() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) setHasValidSession(true);
-      setChecking(false);
-    });
+    let subscription: { unsubscribe: () => void } | null = null;
 
-    supabase.auth.getSession().then(({ data: sessionData }) => {
-      if (sessionData.session) setHasValidSession(true);
-      setChecking(false);
-    });
+    const init = async () => {
+      try {
+        // Password reset links redirect back with a short-lived auth code in the URL.
+        // We must exchange it for a session before calling updateUser().
+        const code = new URLSearchParams(window.location.search).get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('Failed to exchange code for session:', error);
+          }
+        }
 
-    return () => data.subscription.unsubscribe();
+        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (session) setHasValidSession(true);
+          setChecking(false);
+        });
+        subscription = data.subscription;
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) setHasValidSession(true);
+        setChecking(false);
+      } catch (e) {
+        console.error('Reset password init failed:', e);
+        setChecking(false);
+      }
+    };
+
+    void init();
+
+    return () => subscription?.unsubscribe();
   }, []);
 
   const onSubmit = async (e: FormEvent) => {
