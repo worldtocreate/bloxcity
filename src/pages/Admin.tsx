@@ -23,6 +23,8 @@ import ReportsTab from "@/components/admin/ReportsTab";
 import AdsTab from "@/components/admin/AdsTab";
 import AchievementsTab from "@/components/admin/AchievementsTab";
 import GroupsTab from "@/components/admin/GroupsTab";
+import BugsTab from "@/components/admin/BugsTab";
+import BlogTab from "@/components/admin/BlogTab";
 // InventoryManagementTab is inlined below due to module resolution issues
 import { useToast } from "@/hooks/use-toast";
 import { Crown, Trash2 as TrashIcon, Check as CheckIcon, X as XIcon } from "lucide-react";
@@ -3561,6 +3563,12 @@ const Admin = () => {
         
         {/* Inventory Management Tab */}
         {activeTab === "inventory" && <InventoryManagementTab />}
+        
+        {/* Bug Reports Tab */}
+        {activeTab === "bugs" && <BugsTab darkMode={darkMode} />}
+        
+        {/* Blog Tab */}
+        {activeTab === "blog" && <BlogTab darkMode={darkMode} />}
         
         {/* Admin Users Tab */}
         {activeTab === "admins" && (
