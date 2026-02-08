@@ -2,7 +2,8 @@ import {
   BarChart3, Users, Mail, Ban, Shield, Activity, 
   Globe, Settings, MessageSquare, FileText, Wrench, UserCog, 
   Megaphone, Flag, Award, UsersRound, BadgeCheck, Crown, 
-  Headphones, Gamepad2, ChevronLeft, Menu, Briefcase, ShoppingBag, Package
+  Headphones, Gamepad2, ChevronLeft, Menu, Briefcase, ShoppingBag, Package,
+  Bug, BookOpen
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { AdminTab } from "./types";
@@ -25,6 +26,7 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "content-mod", label: "Content Moderation", icon: FileText, category: "Users" },
   { id: "reports", label: "Reports", icon: Flag, category: "Users" },
   { id: "support-tickets", label: "Support Tickets", icon: Headphones, category: "Users" },
+  { id: "bugs", label: "Bug Reports", icon: Bug, category: "Users" },
   
   // Verification
   { id: "gold-checkmarks", label: "Gold Checkmarks", icon: Crown, category: "Verification" },
@@ -40,6 +42,7 @@ const tabs: { id: AdminTab; label: string; icon: ComponentType<{ className?: str
   { id: "jobs", label: "Jobs", icon: Briefcase, category: "Content" },
   { id: "marketplace", label: "Marketplace", icon: ShoppingBag, category: "Content" },
   { id: "inventory", label: "Inventory Mgmt", icon: Package, category: "Content" },
+  { id: "blog", label: "Blog", icon: BookOpen, category: "Content" },
   
   // Moderation
   { id: "banned", label: "Banned Words", icon: Ban, category: "Moderation" },

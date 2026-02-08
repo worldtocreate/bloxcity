@@ -4879,10 +4879,12 @@ export type Database = {
         Args: { p_item_id: string; p_use_coins?: boolean }
         Returns: Json
       }
-      purchase_resale_item: {
-        Args: { p_inventory_id: string; p_use_coins?: boolean }
-        Returns: Json
-      }
+      purchase_resale_item:
+        | { Args: { p_inventory_id: string }; Returns: Json }
+        | {
+            Args: { p_inventory_id: string; p_use_coins?: boolean }
+            Returns: Json
+          }
       redeem_membership: { Args: { tier_name: string }; Returns: undefined }
       save_maintenance_settings: {
         Args: { p_enabled: boolean; p_message: string; p_password: string }
