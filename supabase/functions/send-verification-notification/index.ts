@@ -30,6 +30,14 @@ const TIER_DAILY_REWARDS: Record<string, { coins: number; cash: number }> = {
   platinum: { coins: 100, cash: 5 },
 };
 
+// Achievement IDs per tier
+const TIER_ACHIEVEMENTS: Record<string, string> = {
+  bronze: "cb5dbce9-ebd6-453c-8889-851ed2618a3b",
+  silver: "80998a60-a2eb-4e58-95db-d609a8d1d59c",
+  gold: "b5bb330b-6e53-4253-9e7f-c9a6e578c302",
+  platinum: "18eb532f-7dbe-4a05-9cc9-6c12a7472e87",
+};
+
 // Currency packs (one-time payments)
 const CURRENCY_PACK_TO_PRICE: Record<string, string> = {
   coins_500: "price_1SyfiZHHbW88ITTRXMAAjpR3",
@@ -305,6 +313,26 @@ Deno.serve(async (req) => {
       if (updateError) {
         console.error("[stripe] Failed to update membership:", updateError);
         return json(500, { error: "Failed to update membership" });
+      }
+
+      // Award tier achievement
+      const achievementId = TIER_ACHIEVEMENTS[tier];
+      if (achievementId) {
+        // Check if user already has this achievement
+        const { data: existingAchievement } = await supabaseAdmin
+          .from("forum_user_achievements")
+          .select("id")
+          .eq("forum_user_id", forumUser.id)
+          .eq("achievement_id", achievementId)
+          .maybeSingle();
+
+        if (!existingAchievement) {
+          await supabaseAdmin.from("forum_user_achievements").insert({
+            forum_user_id: forumUser.id,
+            achievement_id: achievementId,
+          });
+          console.log("[stripe] Achievement awarded:", tier);
+        }
       }
 
       console.log("[stripe] Membership activated:", tier, "Awarded:", rewards);
