@@ -7,6 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Membership tiers (subscriptions)
 const TIER_TO_PRICE: Record<string, string> = {
   bronze: "price_1SySzrHHbW88ITTRv8CLOQMs",
   silver: "price_1SyT13HHbW88ITTRuDJQTJJ6",
@@ -19,6 +20,38 @@ const PRODUCT_TO_TIER: Record<string, string> = {
   prod_TwLiMWaoBRqYCN: "silver",
   prod_TwLiwjTCCRWWEv: "gold",
   prod_TwLjezgrOf7FKj: "platinum",
+};
+
+// Daily rewards per tier
+const TIER_DAILY_REWARDS: Record<string, { coins: number; cash: number }> = {
+  bronze: { coins: 15, cash: 0 },
+  silver: { coins: 35, cash: 1 },
+  gold: { coins: 60, cash: 3 },
+  platinum: { coins: 100, cash: 5 },
+};
+
+// Currency packs (one-time payments)
+const CURRENCY_PACK_TO_PRICE: Record<string, string> = {
+  coins_500: "price_1SyfiZHHbW88ITTRXMAAjpR3",
+  coins_1000: "price_1SyfiiHHbW88ITTRUKURYCXL",
+  coins_2500: "price_1SyfiiHHbW88ITTRlzeUtqof",
+  coins_5000: "price_1SyfijHHbW88ITTRGQw52bhW",
+  cash_50: "price_1SyfikHHbW88ITTR9TxbpxIS",
+  cash_100: "price_1SyfilHHbW88ITTRvYKbJhAl",
+  cash_250: "price_1SyfimHHbW88ITTRsR9aVmfk",
+  cash_500: "price_1SyfinHHbW88ITTRmU9PLm5l",
+};
+
+// Amount to award for each pack (including bonuses)
+const CURRENCY_PACK_AMOUNTS: Record<string, { type: "coins" | "cash"; amount: number }> = {
+  coins_500: { type: "coins", amount: 500 },
+  coins_1000: { type: "coins", amount: 1100 }, // 1000 + 100 bonus
+  coins_2500: { type: "coins", amount: 3000 }, // 2500 + 500 bonus
+  coins_5000: { type: "coins", amount: 6500 }, // 5000 + 1500 bonus
+  cash_50: { type: "cash", amount: 50 },
+  cash_100: { type: "cash", amount: 110 }, // 100 + 10 bonus
+  cash_250: { type: "cash", amount: 300 }, // 250 + 50 bonus
+  cash_500: { type: "cash", amount: 650 }, // 500 + 150 bonus
 };
 
 function json(status: number, body: unknown) {
@@ -45,14 +78,21 @@ Deno.serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    // Client for user authentication
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
     });
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    // Admin client for database updates
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
+
+    const { data: userData, error: userError } = await supabaseUser.auth.getUser();
     if (userError || !userData?.user?.email) {
       console.error("[stripe] User not authenticated", userError);
       return json(401, { error: "Not authenticated" });
@@ -68,7 +108,7 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const origin = req.headers.get("origin") || "";
 
-    // ========== CREATE CHECKOUT ==========
+    // ========== CREATE CHECKOUT (Membership Subscription) ==========
     if (action === "create-checkout") {
       const tier = body.tier as string;
       if (!tier || !TIER_TO_PRICE[tier]) {
@@ -92,7 +132,7 @@ Deno.serve(async (req) => {
         customer: customerId,
         customer_email: customerId ? undefined : userData.user.email,
         line_items: [{ price: TIER_TO_PRICE[tier], quantity: 1 }],
-        success_url: `${origin}/upgrades?success=true&tier=${encodeURIComponent(tier)}`,
+        success_url: `${origin}/upgrades?success=true&tier=${encodeURIComponent(tier)}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${origin}/upgrades?canceled=true`,
         client_reference_id: userData.user.id,
         allow_promotion_codes: true,
@@ -101,6 +141,175 @@ Deno.serve(async (req) => {
       console.log("[stripe] Checkout session created:", session.id);
 
       return json(200, { url: session.url });
+    }
+
+    // ========== CREATE CURRENCY CHECKOUT (One-time Payment) ==========
+    if (action === "create-currency-checkout") {
+      const packId = body.packId as string;
+      if (!packId || !CURRENCY_PACK_TO_PRICE[packId]) {
+        console.error("[stripe] Invalid pack ID:", packId);
+        return json(400, { error: "Invalid currency pack" });
+      }
+      if (!origin) {
+        console.error("[stripe] Missing Origin header");
+        return json(400, { error: "Missing Origin header" });
+      }
+
+      console.log("[stripe] Creating currency checkout for pack:", packId);
+
+      const customers = await stripe.customers.list({ email: userData.user.email, limit: 1 });
+      const customerId = customers.data[0]?.id;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        customer: customerId,
+        customer_email: customerId ? undefined : userData.user.email,
+        line_items: [{ price: CURRENCY_PACK_TO_PRICE[packId], quantity: 1 }],
+        success_url: `${origin}/upgrades?currency_success=true&pack=${encodeURIComponent(packId)}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/upgrades?canceled=true`,
+        client_reference_id: userData.user.id,
+      });
+
+      console.log("[stripe] Currency checkout session created:", session.id);
+
+      return json(200, { url: session.url });
+    }
+
+    // ========== FULFILL CURRENCY PURCHASE ==========
+    if (action === "fulfill-currency") {
+      const sessionId = body.sessionId as string;
+      const packId = body.packId as string;
+
+      if (!sessionId || !packId) {
+        return json(400, { error: "Missing sessionId or packId" });
+      }
+
+      console.log("[stripe] Fulfilling currency purchase:", packId, sessionId);
+
+      // Verify the session is paid
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (session.payment_status !== "paid") {
+        console.error("[stripe] Payment not completed:", session.payment_status);
+        return json(400, { error: "Payment not completed" });
+      }
+
+      // Check if already fulfilled (prevent double-spending)
+      const { data: existing } = await supabaseAdmin
+        .from("currency_purchases")
+        .select("id")
+        .eq("stripe_session_id", sessionId)
+        .maybeSingle();
+
+      if (existing) {
+        console.log("[stripe] Already fulfilled:", sessionId);
+        return json(200, { success: true, already_fulfilled: true });
+      }
+
+      // Get the forum user
+      const { data: forumUser, error: fuError } = await supabaseAdmin
+        .from("forum_users")
+        .select("id, coins, cash")
+        .eq("user_id", userData.user.id)
+        .single();
+
+      if (fuError || !forumUser) {
+        console.error("[stripe] Forum user not found:", fuError);
+        return json(400, { error: "Forum user not found" });
+      }
+
+      const packInfo = CURRENCY_PACK_AMOUNTS[packId];
+      if (!packInfo) {
+        return json(400, { error: "Invalid pack" });
+      }
+
+      // Award the currency
+      const updateData = packInfo.type === "coins"
+        ? { coins: forumUser.coins + packInfo.amount }
+        : { cash: forumUser.cash + packInfo.amount };
+
+      const { error: updateError } = await supabaseAdmin
+        .from("forum_users")
+        .update(updateData)
+        .eq("id", forumUser.id);
+
+      if (updateError) {
+        console.error("[stripe] Failed to update currency:", updateError);
+        return json(500, { error: "Failed to award currency" });
+      }
+
+      // Record the purchase to prevent double-fulfillment
+      await supabaseAdmin.from("currency_purchases").insert({
+        forum_user_id: forumUser.id,
+        stripe_session_id: sessionId,
+        pack_id: packId,
+        currency_type: packInfo.type,
+        amount: packInfo.amount,
+      });
+
+      console.log("[stripe] Currency awarded:", packInfo.type, packInfo.amount);
+
+      return json(200, { success: true, type: packInfo.type, amount: packInfo.amount });
+    }
+
+    // ========== FULFILL MEMBERSHIP ==========
+    if (action === "fulfill-membership") {
+      const sessionId = body.sessionId as string;
+      const tier = body.tier as string;
+
+      if (!sessionId || !tier) {
+        return json(400, { error: "Missing sessionId or tier" });
+      }
+
+      console.log("[stripe] Fulfilling membership:", tier, sessionId);
+
+      // Verify the session
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (session.status !== "complete") {
+        console.error("[stripe] Session not complete:", session.status);
+        return json(400, { error: "Session not complete" });
+      }
+
+      // Get the forum user
+      const { data: forumUser, error: fuError } = await supabaseAdmin
+        .from("forum_users")
+        .select("id, coins, cash, membership_tier")
+        .eq("user_id", userData.user.id)
+        .single();
+
+      if (fuError || !forumUser) {
+        console.error("[stripe] Forum user not found:", fuError);
+        return json(400, { error: "Forum user not found" });
+      }
+
+      // Check if already on this tier (prevent double rewards)
+      if (forumUser.membership_tier === tier) {
+        console.log("[stripe] Already on this tier:", tier);
+        return json(200, { success: true, already_active: true });
+      }
+
+      // Get daily rewards for this tier
+      const rewards = TIER_DAILY_REWARDS[tier] || { coins: 0, cash: 0 };
+
+      // Update membership and award first day's currency
+      const { error: updateError } = await supabaseAdmin
+        .from("forum_users")
+        .update({
+          membership_tier: tier,
+          coins: forumUser.coins + rewards.coins,
+          cash: forumUser.cash + rewards.cash,
+        })
+        .eq("id", forumUser.id);
+
+      if (updateError) {
+        console.error("[stripe] Failed to update membership:", updateError);
+        return json(500, { error: "Failed to update membership" });
+      }
+
+      console.log("[stripe] Membership activated:", tier, "Awarded:", rewards);
+
+      return json(200, { success: true, tier, coins_awarded: rewards.coins, cash_awarded: rewards.cash });
     }
 
     // ========== CHECK SUBSCRIPTION ==========

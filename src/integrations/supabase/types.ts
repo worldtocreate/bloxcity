@@ -455,6 +455,51 @@ export type Database = {
           },
         ]
       }
+      currency_purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          currency_type: string
+          forum_user_id: string
+          id: string
+          pack_id: string
+          stripe_session_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency_type: string
+          forum_user_id: string
+          id?: string
+          pack_id: string
+          stripe_session_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency_type?: string
+          forum_user_id?: string
+          id?: string
+          pack_id?: string
+          stripe_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "currency_purchases_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "currency_purchases_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_2fa_codes: {
         Row: {
           code: string

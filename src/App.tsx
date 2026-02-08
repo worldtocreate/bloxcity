@@ -2592,6 +2592,7 @@ function Upgrades() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [fulfillingPurchase, setFulfillingPurchase] = useState(false);
   const [subscription, setSubscription] = useState<{ subscribed: boolean; tier: string | null; subscription_end: string | null } | null>(null);
   const [checkingSubscription, setCheckingSubscription] = useState(true);
   const [managingSubscription, setManagingSubscription] = useState(false);
@@ -2710,12 +2711,76 @@ function Upgrades() {
     // Handle success/cancel from Stripe
     const success = searchParams.get('success');
     const tier = searchParams.get('tier');
-    if (success === 'true' && tier) {
-      toast({ title: 'Subscription Activated!', description: `Welcome to ${tier.charAt(0).toUpperCase() + tier.slice(1)} membership!` });
-      checkSubscription();
-      refreshForumUser();
+    const sessionId = searchParams.get('session_id');
+    const currencySuccess = searchParams.get('currency_success');
+    const packId = searchParams.get('pack');
+    
+    // Membership subscription success
+    if (success === 'true' && tier && sessionId && !fulfillingPurchase) {
+      fulfillMembership(tier, sessionId);
+    }
+    
+    // Currency purchase success
+    if (currencySuccess === 'true' && packId && sessionId && !fulfillingPurchase) {
+      fulfillCurrency(packId, sessionId);
     }
   }, [searchParams]);
+  
+  const fulfillMembership = async (tier: string, sessionId: string) => {
+    setFulfillingPurchase(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-notification', {
+        body: { action: 'fulfill-membership', tier, sessionId }
+      });
+      if (error) throw error;
+      
+      if (data?.already_active) {
+        toast({ title: 'Already Active', description: `You're already on the ${tier.charAt(0).toUpperCase() + tier.slice(1)} plan.` });
+      } else {
+        const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+        toast({ 
+          title: `${tierName} Membership Activated!`, 
+          description: `You've received ${data?.coins_awarded || 0} coins and $${data?.cash_awarded || 0} cash as your first day's reward!` 
+        });
+      }
+      checkSubscription();
+      refreshForumUser();
+      // Clear URL params
+      window.history.replaceState({}, '', '/upgrades');
+    } catch (err: any) {
+      console.error('Failed to fulfill membership:', err);
+      toast({ title: 'Error', description: err.message || 'Failed to activate membership', variant: 'destructive' });
+    }
+    setFulfillingPurchase(false);
+  };
+  
+  const fulfillCurrency = async (packId: string, sessionId: string) => {
+    setFulfillingPurchase(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-notification', {
+        body: { action: 'fulfill-currency', packId, sessionId }
+      });
+      if (error) throw error;
+      
+      if (data?.already_fulfilled) {
+        toast({ title: 'Already Claimed', description: 'This purchase has already been fulfilled.' });
+      } else {
+        const currencyName = data?.type === 'coins' ? 'Coins' : 'Cash';
+        const symbol = data?.type === 'coins' ? '' : '$';
+        toast({ 
+          title: 'Purchase Complete!', 
+          description: `${symbol}${data?.amount?.toLocaleString()} ${currencyName} have been added to your account!` 
+        });
+      }
+      refreshForumUser();
+      // Clear URL params
+      window.history.replaceState({}, '', '/upgrades');
+    } catch (err: any) {
+      console.error('Failed to fulfill currency:', err);
+      toast({ title: 'Error', description: err.message || 'Failed to award currency', variant: 'destructive' });
+    }
+    setFulfillingPurchase(false);
+  };
 
   const checkSubscription = async () => {
     setCheckingSubscription(true);
@@ -2738,6 +2803,23 @@ function Upgrades() {
     try {
       const { data, error } = await supabase.functions.invoke('send-verification-notification', {
         body: { action: 'create-checkout', tier: tierId }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to start checkout', variant: 'destructive' });
+    }
+    setPurchasing(null);
+  };
+
+  const handleCurrencyPurchase = async (packId: string) => {
+    if (!user) return;
+    setPurchasing(packId);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-verification-notification', {
+        body: { action: 'create-currency-checkout', packId }
       });
       if (error) throw error;
       if (data?.url) {
@@ -2957,9 +3039,10 @@ function Upgrades() {
                   <Button 
                     size="sm"
                     className="bg-gradient-to-r from-yellow-400 to-yellow-600 hover:opacity-90"
-                    onClick={() => toast({ title: 'Coming Soon', description: 'Currency purchases will be available soon!' })}
+                    onClick={() => handleCurrencyPurchase(pack.id)}
+                    disabled={!!purchasing}
                   >
-                    Buy
+                    {purchasing === pack.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buy'}
                   </Button>
                 </div>
               ))}
@@ -2997,9 +3080,10 @@ function Upgrades() {
                   <Button 
                     size="sm"
                     className="bg-gradient-to-r from-green-500 to-green-700 hover:opacity-90"
-                    onClick={() => toast({ title: 'Coming Soon', description: 'Currency purchases will be available soon!' })}
+                    onClick={() => handleCurrencyPurchase(pack.id)}
+                    disabled={!!purchasing}
                   >
-                    Buy
+                    {purchasing === pack.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buy'}
                   </Button>
                 </div>
               ))}
