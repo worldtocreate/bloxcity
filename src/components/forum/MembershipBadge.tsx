@@ -1,7 +1,7 @@
 import { Crown, Medal, Star } from 'lucide-react';
 
 interface MembershipBadgeProps {
-  tier: 'bronze' | 'silver' | 'platinum' | null | undefined;
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum' | null | undefined;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
 }
@@ -21,10 +21,17 @@ const tierConfig = {
     gradientFrom: '#C0C0C0',
     gradientTo: '#808080',
   },
+  gold: {
+    label: 'Gold',
+    icon: Crown,
+    bgColor: '#FFD700',
+    gradientFrom: '#FFD700',
+    gradientTo: '#B8860B',
+  },
   platinum: {
     label: 'Premium',
     icon: Crown,
-    bgColor: '#1a1a1a', // Black
+    bgColor: '#1a1a1a',
     gradientFrom: '#2d2d2d',
     gradientTo: '#000000',
   },
