@@ -2246,12 +2246,28 @@ function Convert() {
   const handleConvert = async () => {
     if (!forumUser || !isValid) return;
     setConverting(true);
-    let newCoins = coins, newCash = cash;
-    if (direction === "coins-to-cash") { newCoins = coins - inputAmount; newCash = cash + Math.floor(outputAmount); }
-    else { newCash = cash - inputAmount; newCoins = coins + outputAmount; }
-    const { error } = await supabase.from("forum_users").update({ coins: newCoins, cash: newCash }).eq("id", forumUser.id);
-    if (error) toast({ title: "Conversion Failed", description: error.message, variant: "destructive" });
-    else { toast({ title: "Conversion Successful", description: direction === "coins-to-cash" ? `Converted ${inputAmount} coins to $${Math.floor(outputAmount)} cash` : `Converted $${inputAmount} to ${outputAmount} coins` }); setAmount(""); refreshForumUser(); }
+    try {
+      const { data, error } = await supabase.rpc('convert_currency', {
+        p_direction: direction,
+        p_amount: inputAmount
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; output_amount?: number };
+      if (result && !result.success) {
+        toast({ title: "Conversion Failed", description: result.error || "Unknown error", variant: "destructive" });
+      } else if (result?.success) {
+        toast({ 
+          title: "Conversion Successful", 
+          description: direction === "coins-to-cash" 
+            ? `Converted ${inputAmount} coins to $${result.output_amount} cash` 
+            : `Converted $${inputAmount} to ${result.output_amount} coins` 
+        });
+        setAmount("");
+        refreshForumUser();
+      }
+    } catch (err: any) {
+      toast({ title: "Conversion Failed", description: err.message, variant: "destructive" });
+    }
     setConverting(false);
   };
 
@@ -2376,56 +2392,273 @@ function AcceptAffiliate() {
   );
 }
 
-// Inline Upgrades component to avoid module persistence issues
+// Inline Upgrades component with Stripe payments
 function Upgrades() {
   const { user, forumUser, loading: authLoading, refreshForumUser } = useForumAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<{ subscribed: boolean; tier: string | null; subscription_end: string | null } | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  const [managingSubscription, setManagingSubscription] = useState(false);
 
+  // Membership tiers with GBP pricing
   const tiers = [
-    { id: 'bronze', name: 'Bronze', price: 500, color: 'text-orange-400', bg: 'bg-orange-500/20', features: ['Bronze badge on profile', 'Access to Bronze-only forums', 'Custom profile colors'] },
-    { id: 'silver', name: 'Silver', price: 1500, color: 'text-gray-300', bg: 'bg-gray-400/20', features: ['Silver badge on profile', 'All Bronze perks', 'Priority support', 'Exclusive avatar effects'] },
-    { id: 'platinum', name: 'Platinum', price: 5000, color: 'text-cyan-300', bg: 'bg-cyan-400/20', features: ['Platinum badge on profile', 'All Silver perks', 'VIP access to events', 'Custom username colors', 'Ad-free experience'] }
+    { 
+      id: 'bronze', 
+      name: 'Bronze', 
+      priceGBP: 4.99,
+      color: 'from-amber-700 to-amber-900', 
+      textColor: 'text-amber-600',
+      borderColor: 'border-amber-500',
+      iconBg: 'bg-gradient-to-br from-amber-600 to-amber-800',
+      features: ['Bronze badge on profile', 'Access to Bronze-only forums', 'Custom profile colors', '10% off marketplace items'] 
+    },
+    { 
+      id: 'silver', 
+      name: 'Silver', 
+      priceGBP: 9.99,
+      color: 'from-gray-400 to-gray-600', 
+      textColor: 'text-gray-400',
+      borderColor: 'border-gray-400',
+      iconBg: 'bg-gradient-to-br from-gray-400 to-gray-600',
+      features: ['Silver badge on profile', 'All Bronze perks', 'Priority support', 'Exclusive avatar effects', '20% off marketplace items'] 
+    },
+    { 
+      id: 'gold', 
+      name: 'Gold', 
+      priceGBP: 19.99,
+      popular: true,
+      color: 'from-yellow-400 to-yellow-600', 
+      textColor: 'text-yellow-500',
+      borderColor: 'border-yellow-500',
+      iconBg: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+      features: ['Gold badge on profile', 'All Silver perks', 'Early access to features', 'Custom username glow', '30% off marketplace items', 'Double daily rewards'] 
+    },
+    { 
+      id: 'platinum', 
+      name: 'Platinum', 
+      priceGBP: 25.99,
+      color: 'from-cyan-400 to-cyan-600', 
+      textColor: 'text-cyan-400',
+      borderColor: 'border-cyan-400',
+      iconBg: 'bg-gradient-to-br from-cyan-400 to-cyan-600',
+      features: ['Platinum badge on profile', 'All Gold perks', 'VIP access to events', 'Custom profile themes', 'Ad-free experience', '50% off marketplace items', 'Exclusive limited items'] 
+    }
   ];
 
-  const handlePurchase = async (tier: typeof tiers[0]) => {
-    if (!forumUser) return;
-    if (forumUser.coins < tier.price) { toast({ title: 'Insufficient Coins', description: `You need ${tier.price - forumUser.coins} more coins.`, variant: 'destructive' }); return; }
-    if (forumUser.membership_tier === tier.id) { toast({ title: 'Already Owned', description: `You already have ${tier.name} membership.`, variant: 'destructive' }); return; }
-    setPurchasing(tier.id);
-    const { error } = await supabase.from('forum_users').update({ coins: forumUser.coins - tier.price, membership_tier: tier.id }).eq('id', forumUser.id);
-    if (error) { toast({ title: 'Purchase Failed', description: error.message, variant: 'destructive' }); }
-    else { await supabase.from('forum_membership_redemptions').insert({ forum_user_id: forumUser.id, tier: tier.id, coins_spent: tier.price }); toast({ title: 'Purchase Successful!', description: `You are now a ${tier.name} member!` }); refreshForumUser(); }
+  useEffect(() => {
+    if (user) checkSubscription();
+  }, [user]);
+
+  useEffect(() => {
+    // Handle success/cancel from Stripe
+    const success = searchParams.get('success');
+    const tier = searchParams.get('tier');
+    if (success === 'true' && tier) {
+      toast({ title: 'Subscription Activated!', description: `Welcome to ${tier.charAt(0).toUpperCase() + tier.slice(1)} membership!` });
+      checkSubscription();
+      refreshForumUser();
+    }
+  }, [searchParams]);
+
+  const checkSubscription = async () => {
+    setCheckingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (!error && data) {
+        setSubscription(data);
+      }
+    } catch (err) {
+      console.error('Failed to check subscription:', err);
+    }
+    setCheckingSubscription(false);
+  };
+
+  const handlePurchase = async (tierId: string) => {
+    if (!user) return;
+    setPurchasing(tierId);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { tier: tierId }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to start checkout', variant: 'destructive' });
+    }
     setPurchasing(null);
   };
 
-  if (authLoading) return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" /></div>;
-  if (!user || !forumUser) return <div className="max-w-2xl mx-auto p-6"><div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center"><AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" /><h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Login Required</h1><p className="text-[hsl(var(--bc-text-muted))] mb-4">You must be logged in to view upgrades.</p><Link to="/login"><Button>Login</Button></Link></div></div>;
+  const handleManageSubscription = async () => {
+    setManagingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to open subscription management', variant: 'destructive' });
+    }
+    setManagingSubscription(false);
+  };
+
+  if (authLoading || checkingSubscription) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
+      </div>
+    );
+  }
+
+  if (!user || !forumUser) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-[hsl(var(--bc-text))] mb-2">Login Required</h1>
+          <p className="text-[hsl(var(--bc-text-muted))] mb-4">You must be logged in to view upgrades.</p>
+          <Link to="/login"><Button>Login</Button></Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentTier = subscription?.tier || forumUser.membership_tier;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="text-center mb-8"><h1 className="text-2xl font-bold text-[hsl(var(--bc-text))] mb-2">Upgrade Your Membership</h1><p className="text-[hsl(var(--bc-text-muted))]">Unlock exclusive perks and features</p><p className="text-lg font-medium text-[hsl(var(--bc-text))] mt-4"><Coins className="w-5 h-5 inline text-yellow-500 mr-1" />{forumUser.coins.toLocaleString()} coins available</p></div>
-      <div className="grid md:grid-cols-3 gap-6">
-        {tiers.map(tier => {
-          const isOwned = forumUser.membership_tier === tier.id;
-          const canAfford = forumUser.coins >= tier.price;
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h1 className="text-3xl sm:text-4xl font-bold text-[hsl(var(--bc-text))] mb-3">
+          Upgrade Your Experience
+        </h1>
+        <p className="text-[hsl(var(--bc-text-muted))] text-lg max-w-2xl mx-auto">
+          Unlock exclusive perks, badges, and features with a BLOX City membership
+        </p>
+      </div>
+
+      {/* Current Subscription Status */}
+      {subscription?.subscribed && (
+        <div className="bg-gradient-to-r from-[hsl(var(--bc-primary))]/10 to-[hsl(var(--bc-accent))]/10 border border-[hsl(var(--bc-primary))]/30 rounded-2xl p-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-[hsl(var(--bc-primary))] flex items-center justify-center">
+                <Crown className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[hsl(var(--bc-text))]">
+                  Active {subscription.tier?.charAt(0).toUpperCase()}{subscription.tier?.slice(1)} Membership
+                </h3>
+                <p className="text-sm text-[hsl(var(--bc-text-muted))]">
+                  Renews on {subscription.subscription_end ? new Date(subscription.subscription_end).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={handleManageSubscription}
+              disabled={managingSubscription}
+              variant="outline"
+            >
+              {managingSubscription ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Manage Subscription
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Pricing Cards */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {tiers.map((tier) => {
+          const isActive = currentTier === tier.id;
           return (
-            <div key={tier.id} className={`bg-[hsl(var(--bc-bg-card))] border ${isOwned ? 'border-green-500' : 'border-[hsl(var(--bc-border))]'} rounded-xl p-6 flex flex-col`}>
-              <div className={`w-16 h-16 ${tier.bg} rounded-full flex items-center justify-center mx-auto mb-4`}><Crown className={`w-8 h-8 ${tier.color}`} /></div>
-              <h3 className={`text-xl font-bold text-center ${tier.color} mb-1`}>{tier.name}</h3>
-              <p className="text-2xl font-bold text-center text-[hsl(var(--bc-text))] mb-4">{tier.price.toLocaleString()} <span className="text-sm text-[hsl(var(--bc-text-muted))]">coins</span></p>
-              <ul className="space-y-2 flex-1 mb-6">{tier.features.map((f, i) => <li key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--bc-text-muted))]"><CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />{f}</li>)}</ul>
-              <Button onClick={() => handlePurchase(tier)} disabled={isOwned || !canAfford || !!purchasing} className="w-full" variant={isOwned ? 'outline' : 'default'}>
-                {purchasing === tier.id ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</> : isOwned ? 'Current Plan' : !canAfford ? 'Not Enough Coins' : `Purchase ${tier.name}`}
+            <div 
+              key={tier.id} 
+              className={`relative bg-[hsl(var(--bc-bg-card))] border-2 rounded-2xl p-6 flex flex-col transition-all hover:shadow-xl ${
+                isActive ? tier.borderColor + ' shadow-lg' : 'border-[hsl(var(--bc-border))] hover:border-[hsl(var(--bc-primary))]/50'
+              }`}
+            >
+              {/* Popular Badge */}
+              {tier.popular && !isActive && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1 bg-[hsl(var(--bc-primary))] text-white text-xs font-bold rounded-full">
+                    MOST POPULAR
+                  </span>
+                </div>
+              )}
+
+              {/* Active Badge */}
+              {isActive && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="px-4 py-1 bg-green-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> YOUR PLAN
+                  </span>
+                </div>
+              )}
+
+              {/* Icon */}
+              <div className={`w-16 h-16 ${tier.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                <Crown className="w-8 h-8 text-white" />
+              </div>
+
+              {/* Name & Price */}
+              <h3 className={`text-2xl font-bold text-center ${tier.textColor} mb-2`}>{tier.name}</h3>
+              <div className="text-center mb-6">
+                <span className="text-3xl font-bold text-[hsl(var(--bc-text))]">£{tier.priceGBP}</span>
+                <span className="text-[hsl(var(--bc-text-muted))]">/month</span>
+              </div>
+
+              {/* Features */}
+              <ul className="space-y-3 flex-1 mb-6">
+                {tier.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--bc-text-muted))]">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA Button */}
+              <Button 
+                onClick={() => handlePurchase(tier.id)}
+                disabled={isActive || !!purchasing}
+                className={`w-full ${isActive ? '' : `bg-gradient-to-r ${tier.color} hover:opacity-90`}`}
+                variant={isActive ? 'outline' : 'default'}
+              >
+                {purchasing === tier.id ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                ) : isActive ? (
+                  'Current Plan'
+                ) : (
+                  `Subscribe to ${tier.name}`
+                )}
               </Button>
             </div>
           );
         })}
       </div>
+
+      {/* Info */}
+      <div className="bg-[hsl(var(--bc-bg-card))] border border-[hsl(var(--bc-border))] rounded-xl p-6">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-[hsl(var(--bc-primary))] flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-[hsl(var(--bc-text-muted))]">
+            <p className="font-medium text-[hsl(var(--bc-text))] mb-2">Subscription Information</p>
+            <ul className="space-y-1">
+              <li>• All payments are processed securely via Stripe</li>
+              <li>• Subscriptions renew automatically each month</li>
+              <li>• Cancel anytime from your subscription management page</li>
+              <li>• Membership benefits are applied instantly after purchase</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
-
 // Inline Support component to avoid module persistence issues  
 function Support() {
   const { user, forumUser, loading: authLoading } = useForumAuth();

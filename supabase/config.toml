@@ -77,6 +77,15 @@ verify_jwt = false
 
 [functions.godfrey-award-currency]
 verify_jwt = false
- 
- [functions.admin-reset-password]
- verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.check-subscription]
+verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false

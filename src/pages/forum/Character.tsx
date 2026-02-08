@@ -7,35 +7,10 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { User, Box, RefreshCw, X, Loader2, Wrench, Twitter, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Inline page maintenance hook - uses secure RPC to avoid RLS issues
-function usePageMaintenance(pageKey: string) {
-  const [isUnderMaintenance, setIsUnderMaintenance] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkMaintenance = async () => {
-      try {
-        // Use the secure RPC function that bypasses RLS
-        const { data, error } = await supabase.rpc('get_page_maintenance_status');
-
-        if (error) {
-          console.error('Maintenance check error:', error);
-          setIsUnderMaintenance(false);
-        } else if (data) {
-          const settings = data as Record<string, boolean>;
-          setIsUnderMaintenance(settings[pageKey] === true);
-        }
-      } catch (err) {
-        console.error('Maintenance check exception:', err);
-        setIsUnderMaintenance(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkMaintenance();
-  }, [pageKey]);
-
-  return { isUnderMaintenance, loading };
+// Character page is permanently under maintenance
+function usePageMaintenance() {
+  // Always return maintenance mode for character page
+  return { isUnderMaintenance: true, loading: false };
 }
 
 // Inline page maintenance component
@@ -130,7 +105,7 @@ interface BodyColors {
 }
 
 export default function Character() {
-  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance('character');
+  const { isUnderMaintenance, loading: maintenanceLoading } = usePageMaintenance();
   
   const context = useOutletContext<{
     user: any;
