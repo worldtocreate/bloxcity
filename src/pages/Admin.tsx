@@ -37,23 +37,37 @@ import { OrbitControls, Center } from '@react-three/drei';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as THREE from 'three';
 
-// Inline BugsTab + BlogTab (simple placeholders) to avoid module resolution issues
+// Full BugsTab implementation
 const BugsTab = ({ darkMode }: { darkMode: boolean }) => {
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold">Bug Reports</h2>
-      <p className="mt-2 text-muted-foreground">Temporarily unavailable while it’s being finalized.</p>
-    </div>
-  );
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  useEffect(() => { fetchReports(); }, []);
+  const fetchReports = async () => { const { data } = await supabase.from('bug_reports').select('*, forum_user:forum_user_id(username)').order('created_at', { ascending: false }).limit(50); setReports(data || []); setLoading(false); };
+  const updateStatus = async (id: string, status: string) => { await supabase.from('bug_reports').update({ status, reviewed_at: new Date().toISOString() }).eq('id', id); toast({ title: 'Updated' }); fetchReports(); };
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  return (<div className="space-y-4"><h2 className="text-xl font-bold">Bug Reports ({reports.length})</h2>{reports.length === 0 ? <p className="text-muted-foreground">No reports</p> : <div className="space-y-3">{reports.map((r) => (<div key={r.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4"><div className="flex justify-between"><div><h3 className="font-semibold">{r.title}</h3><p className="text-sm text-muted-foreground mt-1 line-clamp-2">{r.description}</p><p className="text-xs text-muted-foreground mt-2">By {r.forum_user?.username || 'Unknown'}</p></div><select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value)} className="px-2 py-1 text-sm border rounded h-fit"><option value="open">Open</option><option value="in_review">In Review</option><option value="fixed">Fixed</option><option value="closed">Closed</option></select></div></div>))}</div>}</div>);
 };
 
+// Full BlogTab implementation  
 const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
-  return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold">Blog</h2>
-      <p className="mt-2 text-muted-foreground">Temporarily unavailable while it’s being finalized.</p>
-    </div>
-  );
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showEditor, setShowEditor] = useState(false);
+  const [editingPost, setEditingPost] = useState<any>(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [excerpt, setExcerpt] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  useEffect(() => { fetchPosts(); }, []);
+  const fetchPosts = async () => { const { data } = await supabase.from('blog_posts').select('*, author:author_id(username)').order('created_at', { ascending: false }); setPosts(data || []); setLoading(false); };
+  const openEditor = (post?: any) => { if (post) { setEditingPost(post); setTitle(post.title); setContent(post.content); setExcerpt(post.excerpt || ''); setIsPublished(post.is_published); } else { setEditingPost(null); setTitle(''); setContent(''); setExcerpt(''); setIsPublished(false); } setShowEditor(true); };
+  const savePost = async () => { if (!title.trim() || !content.trim()) return; setSaving(true); const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-'); const { data: { user } } = await supabase.auth.getUser(); const { data: forumUser } = await supabase.from('forum_users').select('id').eq('user_id', user?.id).single(); if (editingPost) { await supabase.from('blog_posts').update({ title, slug, content, excerpt, is_published: isPublished, published_at: isPublished && !editingPost.is_published ? new Date().toISOString() : editingPost.published_at }).eq('id', editingPost.id); } else { await supabase.from('blog_posts').insert({ title, slug, content, excerpt, is_published: isPublished, author_id: forumUser?.id, published_at: isPublished ? new Date().toISOString() : null }); } toast({ title: 'Saved' }); setSaving(false); setShowEditor(false); fetchPosts(); };
+  const deletePost = async (id: string) => { if (!confirm('Delete?')) return; await supabase.from('blog_posts').delete().eq('id', id); fetchPosts(); };
+  if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  return (<div className="space-y-4"><div className="flex justify-between items-center"><h2 className="text-xl font-bold">Blog Posts</h2><button onClick={() => openEditor()} className="px-4 py-2 bg-blue-600 text-white rounded-lg">New Post</button></div>{showEditor && (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl p-6 space-y-4"><h3 className="text-lg font-semibold">{editingPost ? 'Edit' : 'New'} Post</h3><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full px-3 py-2 border rounded-lg" /><input value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Excerpt" className="w-full px-3 py-2 border rounded-lg" /><textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Content (HTML)" className="w-full px-3 py-2 border rounded-lg min-h-[150px]" /><label className="flex items-center gap-2"><input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} />Publish</label><div className="flex gap-2"><button onClick={() => setShowEditor(false)} className="flex-1 px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button onClick={savePost} disabled={saving} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">{saving ? 'Saving...' : 'Save'}</button></div></div></div>)}{posts.length === 0 ? <p className="text-muted-foreground">No posts</p> : <div className="space-y-3">{posts.map((p) => (<div key={p.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4 flex justify-between"><div><h3 className="font-semibold">{p.title}</h3><p className="text-sm text-muted-foreground">{p.is_published ? '✓ Published' : 'Draft'}</p></div><div className="flex gap-2"><button onClick={() => openEditor(p)} className="px-3 py-1 bg-gray-100 rounded">Edit</button><button onClick={() => deletePost(p.id)} className="px-3 py-1 bg-red-100 text-red-600 rounded">Delete</button></div></div>))}</div>}</div>);
 };
 
 // Inline 3D Model component for thumbnail rendering
