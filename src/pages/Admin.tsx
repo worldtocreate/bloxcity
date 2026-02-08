@@ -37,19 +37,107 @@ import { OrbitControls, Center } from '@react-three/drei';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as THREE from 'three';
 
-// Full BugsTab implementation
+// Full BugsTab implementation with realtime updates
 const BugsTab = ({ darkMode }: { darkMode: boolean }) => {
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState<string | null>(null);
   const { toast } = useToast();
+  
   useEffect(() => { fetchReports(); }, []);
-  const fetchReports = async () => { const { data } = await supabase.from('bug_reports').select('*, forum_user:forum_user_id(username)').order('created_at', { ascending: false }).limit(50); setReports(data || []); setLoading(false); };
-  const updateStatus = async (id: string, status: string) => { await supabase.from('bug_reports').update({ status, reviewed_at: new Date().toISOString() }).eq('id', id); toast({ title: 'Updated' }); fetchReports(); };
+  
+  const fetchReports = async () => { 
+    const { data } = await supabase
+      .from('bug_reports')
+      .select('*, forum_user:forum_user_id(username, avatar_url)')
+      .order('created_at', { ascending: false })
+      .limit(100); 
+    setReports(data || []); 
+    setLoading(false); 
+  };
+  
+  const updateStatus = async (id: string, status: string) => { 
+    setUpdating(id);
+    const { error } = await supabase
+      .from('bug_reports')
+      .update({ status, reviewed_at: new Date().toISOString() })
+      .eq('id', id); 
+    
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      // Immediately update local state for instant UI feedback
+      setReports(prev => prev.map(r => r.id === id ? { ...r, status, reviewed_at: new Date().toISOString() } : r));
+      toast({ title: 'Status updated', description: `Bug marked as ${status}` });
+    }
+    setUpdating(null);
+  };
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'in_review': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'fixed': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'closed': return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+  
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
-  return (<div className="space-y-4"><h2 className="text-xl font-bold">Bug Reports ({reports.length})</h2>{reports.length === 0 ? <p className="text-muted-foreground">No reports</p> : <div className="space-y-3">{reports.map((r) => (<div key={r.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4"><div className="flex justify-between"><div><h3 className="font-semibold">{r.title}</h3><p className="text-sm text-muted-foreground mt-1 line-clamp-2">{r.description}</p><p className="text-xs text-muted-foreground mt-2">By {r.forum_user?.username || 'Unknown'}</p></div><select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value)} className="px-2 py-1 text-sm border rounded h-fit"><option value="open">Open</option><option value="in_review">In Review</option><option value="fixed">Fixed</option><option value="closed">Closed</option></select></div></div>))}</div>}</div>);
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Bug Reports ({reports.length})</h2>
+        <button onClick={fetchReports} className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-2">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
+      </div>
+      
+      {reports.length === 0 ? (
+        <p className="text-muted-foreground text-center py-8">No bug reports submitted yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {reports.map((r) => (
+            <div key={r.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4">
+              <div className="flex justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(r.status)}`}>
+                      {r.status.replace('_', ' ')}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="font-semibold">{r.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{r.description}</p>
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    {r.forum_user?.avatar_url && <img src={r.forum_user.avatar_url} alt="" className="w-4 h-4 rounded-full" />}
+                    <span>By {r.forum_user?.username || 'Unknown'}</span>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <select 
+                    value={r.status} 
+                    onChange={(e) => updateStatus(r.id, e.target.value)} 
+                    disabled={updating === r.id}
+                    className="px-3 py-2 text-sm border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+                  >
+                    <option value="open">Open</option>
+                    <option value="in_review">In Review</option>
+                    <option value="fixed">Fixed</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
-// Full BlogTab implementation  
+// Full BlogTab implementation with thumbnail upload
 const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,16 +146,210 @@ const BlogTab = ({ darkMode }: { darkMode: boolean }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const { toast } = useToast();
+  
   useEffect(() => { fetchPosts(); }, []);
-  const fetchPosts = async () => { const { data } = await supabase.from('blog_posts').select('*, author:author_id(username)').order('created_at', { ascending: false }); setPosts(data || []); setLoading(false); };
-  const openEditor = (post?: any) => { if (post) { setEditingPost(post); setTitle(post.title); setContent(post.content); setExcerpt(post.excerpt || ''); setIsPublished(post.is_published); } else { setEditingPost(null); setTitle(''); setContent(''); setExcerpt(''); setIsPublished(false); } setShowEditor(true); };
-  const savePost = async () => { if (!title.trim() || !content.trim()) return; setSaving(true); const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-'); const { data: { user } } = await supabase.auth.getUser(); const { data: forumUser } = await supabase.from('forum_users').select('id').eq('user_id', user?.id).single(); if (editingPost) { await supabase.from('blog_posts').update({ title, slug, content, excerpt, is_published: isPublished, published_at: isPublished && !editingPost.is_published ? new Date().toISOString() : editingPost.published_at }).eq('id', editingPost.id); } else { await supabase.from('blog_posts').insert({ title, slug, content, excerpt, is_published: isPublished, author_id: forumUser?.id, published_at: isPublished ? new Date().toISOString() : null }); } toast({ title: 'Saved' }); setSaving(false); setShowEditor(false); fetchPosts(); };
-  const deletePost = async (id: string) => { if (!confirm('Delete?')) return; await supabase.from('blog_posts').delete().eq('id', id); fetchPosts(); };
+  
+  const fetchPosts = async () => { 
+    const { data } = await supabase.from('blog_posts').select('*, author:author_id(username)').order('created_at', { ascending: false }); 
+    setPosts(data || []); 
+    setLoading(false); 
+  };
+  
+  const openEditor = (post?: any) => { 
+    if (post) { 
+      setEditingPost(post); 
+      setTitle(post.title); 
+      setContent(post.content); 
+      setExcerpt(post.excerpt || ''); 
+      setThumbnailUrl(post.thumbnail_url || '');
+      setIsPublished(post.is_published); 
+    } else { 
+      setEditingPost(null); 
+      setTitle(''); 
+      setContent(''); 
+      setExcerpt(''); 
+      setThumbnailUrl('');
+      setIsPublished(false); 
+    } 
+    setShowEditor(true); 
+  };
+  
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Error', description: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Error', description: 'Image must be under 5MB', variant: 'destructive' });
+      return;
+    }
+    
+    setUploadingThumbnail(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const fileName = `blog-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+    
+    const { data, error } = await supabase.storage
+      .from('blog-thumbnails')
+      .upload(fileName, file, { cacheControl: '3600', upsert: false });
+    
+    if (error) {
+      toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
+    } else {
+      const { data: urlData } = supabase.storage.from('blog-thumbnails').getPublicUrl(fileName);
+      setThumbnailUrl(urlData.publicUrl);
+      toast({ title: 'Thumbnail uploaded!' });
+    }
+    setUploadingThumbnail(false);
+  };
+  
+  const savePost = async () => { 
+    if (!title.trim() || !content.trim()) return; 
+    setSaving(true); 
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-'); 
+    const { data: { user } } = await supabase.auth.getUser(); 
+    const { data: forumUser } = await supabase.from('forum_users').select('id').eq('user_id', user?.id).single(); 
+    
+    if (editingPost) { 
+      await supabase.from('blog_posts').update({ 
+        title, 
+        slug, 
+        content, 
+        excerpt, 
+        thumbnail_url: thumbnailUrl || null,
+        is_published: isPublished, 
+        published_at: isPublished && !editingPost.is_published ? new Date().toISOString() : editingPost.published_at 
+      }).eq('id', editingPost.id); 
+    } else { 
+      await supabase.from('blog_posts').insert({ 
+        title, 
+        slug, 
+        content, 
+        excerpt, 
+        thumbnail_url: thumbnailUrl || null,
+        is_published: isPublished, 
+        author_id: forumUser?.id, 
+        published_at: isPublished ? new Date().toISOString() : null 
+      }); 
+    } 
+    toast({ title: 'Saved' }); 
+    setSaving(false); 
+    setShowEditor(false); 
+    fetchPosts(); 
+  };
+  
+  const deletePost = async (id: string) => { 
+    if (!confirm('Delete this post?')) return; 
+    await supabase.from('blog_posts').delete().eq('id', id); 
+    fetchPosts(); 
+  };
+  
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
-  return (<div className="space-y-4"><div className="flex justify-between items-center"><h2 className="text-xl font-bold">Blog Posts</h2><button onClick={() => openEditor()} className="px-4 py-2 bg-blue-600 text-white rounded-lg">New Post</button></div>{showEditor && (<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"><div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl p-6 space-y-4"><h3 className="text-lg font-semibold">{editingPost ? 'Edit' : 'New'} Post</h3><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full px-3 py-2 border rounded-lg" /><input value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Excerpt" className="w-full px-3 py-2 border rounded-lg" /><textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Content (HTML)" className="w-full px-3 py-2 border rounded-lg min-h-[150px]" /><label className="flex items-center gap-2"><input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} />Publish</label><div className="flex gap-2"><button onClick={() => setShowEditor(false)} className="flex-1 px-4 py-2 bg-gray-200 rounded-lg">Cancel</button><button onClick={savePost} disabled={saving} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">{saving ? 'Saving...' : 'Save'}</button></div></div></div>)}{posts.length === 0 ? <p className="text-muted-foreground">No posts</p> : <div className="space-y-3">{posts.map((p) => (<div key={p.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4 flex justify-between"><div><h3 className="font-semibold">{p.title}</h3><p className="text-sm text-muted-foreground">{p.is_published ? '✓ Published' : 'Draft'}</p></div><div className="flex gap-2"><button onClick={() => openEditor(p)} className="px-3 py-1 bg-gray-100 rounded">Edit</button><button onClick={() => deletePost(p.id)} className="px-3 py-1 bg-red-100 text-red-600 rounded">Delete</button></div></div>))}</div>}</div>);
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Blog Posts</h2>
+        <button onClick={() => openEditor()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">New Post</button>
+      </div>
+      
+      {showEditor && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-3xl p-6 space-y-4 my-8">
+            <h3 className="text-lg font-semibold">{editingPost ? 'Edit' : 'New'} Post</h3>
+            
+            {/* Thumbnail Upload */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Thumbnail</label>
+              <div className="flex items-start gap-4">
+                {thumbnailUrl ? (
+                  <div className="relative">
+                    <img src={thumbnailUrl} alt="Thumbnail" className="w-32 h-20 object-cover rounded-lg border" />
+                    <button 
+                      onClick={() => setThumbnailUrl('')}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600"
+                    >×</button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400">
+                    <Image className="w-8 h-8" />
+                  </div>
+                )}
+                <div>
+                  <label className="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition inline-flex items-center gap-2">
+                    {uploadingThumbnail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {uploadingThumbnail ? 'Uploading...' : 'Upload Image'}
+                    <input type="file" accept="image/*" onChange={handleThumbnailUpload} className="hidden" disabled={uploadingThumbnail} />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">Max 5MB, recommended 800x400px</p>
+                </div>
+              </div>
+            </div>
+            
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+            <input value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Excerpt (short description)" className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" />
+            
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Content</label>
+              <p className="text-xs text-gray-500">Supports HTML. Line breaks will be preserved.</p>
+              <textarea 
+                value={content} 
+                onChange={(e) => setContent(e.target.value)} 
+                placeholder="Write your blog post here. Press Enter for new paragraphs."
+                className="w-full px-3 py-2 border rounded-lg min-h-[250px] font-mono text-sm dark:bg-gray-700 dark:border-gray-600" 
+              />
+            </div>
+            
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="w-4 h-4" />
+              <span>Publish immediately</span>
+            </label>
+            
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setShowEditor(false)} className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">Cancel</button>
+              <button onClick={savePost} disabled={saving || !title.trim() || !content.trim()} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {posts.length === 0 ? (
+        <p className="text-muted-foreground text-center py-8">No posts yet. Create your first blog post!</p>
+      ) : (
+        <div className="space-y-3">
+          {posts.map((p) => (
+            <div key={p.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4 flex gap-4">
+              {p.thumbnail_url ? (
+                <img src={p.thumbnail_url} alt="" className="w-24 h-16 object-cover rounded-lg flex-shrink-0" />
+              ) : (
+                <div className="w-24 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Image className="w-6 h-6 text-gray-400" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold truncate">{p.title}</h3>
+                <p className="text-sm text-muted-foreground">{p.is_published ? '✓ Published' : '○ Draft'} · {p.author?.username || 'Unknown'}</p>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={() => openEditor(p)} className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition">Edit</button>
+                <button onClick={() => deletePost(p.id)} className="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 transition">Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Inline 3D Model component for thumbnail rendering
