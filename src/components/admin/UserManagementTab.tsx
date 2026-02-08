@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2, RotateCcw, Lock, Unlock, Ban, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { Trash2, RotateCcw, Lock, Unlock, Ban, Loader2, Search, AlertTriangle, Mail, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PurgedUsername {
@@ -35,6 +35,11 @@ export default function UserManagementTab() {
   const [showAccountModal, setShowAccountModal] = useState<{ user: ForumUserItem; action: 'suspend' | 'lock' | 'disable' } | null>(null);
   const [accountReason, setAccountReason] = useState('');
   const [suspendDuration, setSuspendDuration] = useState('7');
+
+  // Email editing modal
+  const [showEmailModal, setShowEmailModal] = useState<ForumUserItem | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailUpdating, setEmailUpdating] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -139,6 +144,28 @@ export default function UserManagementTab() {
       fetchData();
     }
     setActionLoading(null);
+  };
+
+  const handleUpdateEmail = async () => {
+    if (!showEmailModal || !newEmail.trim()) return;
+    setEmailUpdating(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-manage-users', {
+        body: { action: 'update_email', forumUserId: showEmailModal.id, newEmail: newEmail.trim() }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Email updated successfully');
+      setShowEmailModal(null);
+      setNewEmail('');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update email');
+    }
+    setEmailUpdating(false);
   };
 
   const handleAccountAction = async () => {
@@ -388,6 +415,17 @@ export default function UserManagementTab() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => {
+                          setShowEmailModal(user);
+                          setNewEmail('');
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg"
+                        title="Edit Email"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </button>
+                      <button
                         onClick={() => setShowAccountModal({ user, action: 'lock' })}
                         className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg ${
                           user.is_locked
@@ -498,6 +536,49 @@ export default function UserManagementTab() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                 )}
                 Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Edit Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-lg font-semibold dark:text-white">Edit User Email</h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              User: <strong>{showEmailModal.username}</strong>
+            </p>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Email Address</label>
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="newemail@example.com"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                onClick={() => {
+                  setShowEmailModal(null);
+                  setNewEmail('');
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateEmail}
+                disabled={emailUpdating || !newEmail.trim()}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg"
+              >
+                {emailUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                Update Email
               </button>
             </div>
           </div>
