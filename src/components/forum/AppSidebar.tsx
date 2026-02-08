@@ -19,7 +19,10 @@ import {
   HelpCircle,
   Shield,
   Map,
-   Briefcase,
+  Briefcase,
+  FileText,
+  AlertCircle,
+  Package,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -53,6 +56,8 @@ const mainNavItems = [
   { title: 'Trading', url: '/trading', icon: ArrowLeftRight },
   { title: 'Achievements', url: '/achievements', icon: Award },
   { title: 'Roadmap', url: '/roadmap', icon: Map },
+  { title: 'Blog', url: '/blog', icon: FileText },
+  { title: 'Bug Reports', url: '/bugs', icon: AlertCircle },
   { title: 'Work for BLOX City', url: '/jobs', icon: Briefcase },
 ];
 
@@ -157,6 +162,19 @@ export default function AppSidebar({ forumUser, isLoggedIn }: AppSidebarProps) {
             )}
             <SidebarGroupContent>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild onClick={handleLinkClick}>
+                    <Link
+                      to="/inventory"
+                      onClickCapture={handleLinkClick}
+                      className={`bc-side-link ${isActive('/inventory') ? 'active' : ''}`}
+                      style={{ borderRadius: 'var(--bc-rounded-lg)', margin: '2px 0' }}
+                    >
+                      <Package className="bc-side-icon" />
+                      {!collapsed && <span>Inventory</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild onClick={handleLinkClick}>
                     <Link

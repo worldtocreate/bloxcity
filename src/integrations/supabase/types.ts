@@ -287,6 +287,49 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_post_collaborators: {
+        Row: {
+          blog_post_id: string
+          created_at: string
+          forum_user_id: string
+          id: string
+        }
+        Insert: {
+          blog_post_id: string
+          created_at?: string
+          forum_user_id: string
+          id?: string
+        }
+        Update: {
+          blog_post_id?: string
+          created_at?: string
+          forum_user_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_collaborators_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_collaborators_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_collaborators_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_id: string
@@ -297,6 +340,7 @@ export type Database = {
           is_published: boolean
           published_at: string | null
           slug: string
+          thumbnail_url: string | null
           title: string
           updated_at: string
         }
@@ -309,6 +353,7 @@ export type Database = {
           is_published?: boolean
           published_at?: string | null
           slug: string
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
         }
@@ -321,6 +366,7 @@ export type Database = {
           is_published?: boolean
           published_at?: string | null
           slug?: string
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
         }
@@ -335,6 +381,74 @@ export type Database = {
           {
             foreignKeyName: "blog_posts_author_id_fkey"
             columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bug_reports: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          forum_user_id: string
+          id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          forum_user_id: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          forum_user_id?: string
+          id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bug_reports_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_forum_user_id_fkey"
+            columns: ["forum_user_id"]
+            isOneToOne: false
+            referencedRelation: "forum_users_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "forum_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bug_reports_reviewed_by_fkey"
+            columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "forum_users_public"
             referencedColumns: ["id"]
@@ -3222,6 +3336,7 @@ export type Database = {
           locked_at: string | null
           locked_by: string | null
           locked_reason: string | null
+          membership_expires_at: string | null
           membership_tier: string | null
           post_count: number | null
           referral_code: string | null
@@ -3239,6 +3354,7 @@ export type Database = {
           social_x: string | null
           status_text: string | null
           status_updated_at: string | null
+          stripe_customer_id: string | null
           suspension_ends_at: string | null
           suspension_reason: string | null
           suspension_review_date: string | null
@@ -3291,6 +3407,7 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           locked_reason?: string | null
+          membership_expires_at?: string | null
           membership_tier?: string | null
           post_count?: number | null
           referral_code?: string | null
@@ -3308,6 +3425,7 @@ export type Database = {
           social_x?: string | null
           status_text?: string | null
           status_updated_at?: string | null
+          stripe_customer_id?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
           suspension_review_date?: string | null
@@ -3360,6 +3478,7 @@ export type Database = {
           locked_at?: string | null
           locked_by?: string | null
           locked_reason?: string | null
+          membership_expires_at?: string | null
           membership_tier?: string | null
           post_count?: number | null
           referral_code?: string | null
@@ -3377,6 +3496,7 @@ export type Database = {
           social_x?: string | null
           status_text?: string | null
           status_updated_at?: string | null
+          stripe_customer_id?: string | null
           suspension_ends_at?: string | null
           suspension_reason?: string | null
           suspension_review_date?: string | null
@@ -4662,6 +4782,10 @@ export type Database = {
       bootstrap_first_admin: { Args: { _user_id: string }; Returns: undefined }
       calculate_level: { Args: { xp_value: number }; Returns: number }
       can_submit_ad: { Args: never; Returns: boolean }
+      can_submit_bug_report: {
+        Args: { p_forum_user_id: string }
+        Returns: boolean
+      }
       cancel_trade: { Args: { p_trade_id: string }; Returns: Json }
       check_content_rate_limit: {
         Args: { p_content_type: string; p_forum_user_id: string }
@@ -4702,6 +4826,10 @@ export type Database = {
           gold_username: string
           is_affiliate: boolean
         }[]
+      }
+      get_bug_report_count_today: {
+        Args: { p_forum_user_id: string }
+        Returns: number
       }
       get_maintenance_status: { Args: never; Returns: Json }
       get_page_maintenance_status: { Args: never; Returns: Json }
