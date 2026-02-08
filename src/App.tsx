@@ -2659,7 +2659,9 @@ function Upgrades() {
   const checkSubscription = async () => {
     setCheckingSubscription(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
+      const { data, error } = await supabase.functions.invoke('send-verification-notification', {
+        body: { action: 'check-subscription' }
+      });
       if (!error && data) {
         setSubscription(data);
       }
@@ -2673,8 +2675,8 @@ function Upgrades() {
     if (!user) return;
     setPurchasing(tierId);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { tier: tierId }
+      const { data, error } = await supabase.functions.invoke('send-verification-notification', {
+        body: { action: 'create-checkout', tier: tierId }
       });
       if (error) throw error;
       if (data?.url) {
@@ -2689,7 +2691,9 @@ function Upgrades() {
   const handleManageSubscription = async () => {
     setManagingSubscription(true);
     try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
+      const { data, error } = await supabase.functions.invoke('send-verification-notification', {
+        body: { action: 'customer-portal' }
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
