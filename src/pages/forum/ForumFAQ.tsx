@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { HelpCircle, ArrowLeft } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import bloxcityLogo from '@/assets/bloxcity-logo.jpg';
+import bloxcityLogo from '@/assets/bloxcity-logo-new.png';
 
 export default function ForumFAQ() {
   return (
