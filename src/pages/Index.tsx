@@ -214,12 +214,7 @@ const Index = () => {
 
 
           {/* Original BLOX City Notice */}
-          <div className="original-notice">
-            <p>
-              Looking for where BLOX City is now? Isaac is over at{" "}
-              <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer">brickplanet.com</a>
-            </p>
-          </div>
+          
 
           {/* Footer */}
           <footer className="maintenance-footer">
