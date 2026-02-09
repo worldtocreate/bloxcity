@@ -132,7 +132,7 @@ interface ForumAnnouncement { enabled: boolean; message: string; type: 'info' | 
 interface TwoFASettings { is_enabled: boolean; method: string; }
 interface MaintenanceSettings { enabled: boolean; message: string; }
 
-// ============= INLINE TOPBAR =============
+// ============= INLINE TOPBAR (EXACT Blade Match) =============
 function Topbar({ 
   user, forumUser, isAdmin, 
   unreadMessageCount, friendRequestCount, 
@@ -148,8 +148,8 @@ function Topbar({
   const username = forumUser?.username || 'User';
   const displayUsername = username.length > 10 ? username.substring(0, 10) + '...' : username;
   const avatarUrl = forumUser?.avatar_url || '/placeholder.svg';
-  const currencyCash = forumUser?.currency_cash || 0;
-  const currencyCoins = forumUser?.currency_coins || 0;
+  const currencyCash = forumUser?.cash || 0;
+  const currencyCoins = forumUser?.coins || 0;
   const serialId = forumUser?.serial_id;
 
   return (
@@ -157,20 +157,20 @@ function Topbar({
       <nav className="topbar">
         {/* Mobile View */}
         <div className="hide-for-large">
-          <div className="topbar-sidebar-toggler" onClick={onToggleSidebar} style={{ marginLeft: 0, marginTop: '3px', padding: '0 15px', cursor: 'pointer' }}>
-            <Menu className="w-5 h-5" />
+          <div className="topbar-sidebar-toggler" id="sidebarToggler" onClick={onToggleSidebar} style={{ marginLeft: 0, marginTop: '3px', padding: '0 15px' }}>
+            <i className="fas fa-bars" style={{ fontSize: '20px' }}>☰</i>
           </div>
-          <Link to={user ? '/' : '/landing'} className="topbar-logo" style={{ marginLeft: '25%' }}>
+          <Link to={user ? '/' : '/landing'} className="topbar-logo topbar-logo-mobile" style={{ marginLeft: '25%' }}>
             <img src={bloxcityLogo} alt="BLOX City" />
           </Link>
           <div className="topbar-right">
             {!user ? (
               <>
                 <button className="topbar-link dropdown" onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
-                  <ChevronDown className="w-4 h-4" />
+                  <i className="fas fa-caret-down">▼</i>
                 </button>
                 {userDropdownOpen && (
-                  <ul className="dropdown-content navbar-user-dropdown show">
+                  <ul className="dropdown-content navbar-user-dropdown show" style={{ position: 'fixed', top: '61px', right: '10px' }}>
                     <li className="dropdown-item"><Link to="/login">Login</Link></li>
                     <li className="dropdown-item"><Link to="/register">Register</Link></li>
                   </ul>
@@ -182,11 +182,11 @@ function Topbar({
                   <img src={avatarUrl} alt="" style={{ borderRadius: '50%', width: '35px', height: '35px' }} />
                 </button>
                 {userDropdownOpen && (
-                  <ul className="dropdown-content navbar-user-dropdown show">
+                  <ul className="dropdown-content navbar-user-dropdown show" style={{ position: 'fixed', top: '61px', right: '10px' }}>
                     <li className="dropdown-item"><Link to={serialId ? `/${serialId}/${username}/profile` : '/settings'}>Profile</Link></li>
                     <li className="dropdown-item"><Link to="/character">Character</Link></li>
                     <li className="dropdown-item"><Link to="/settings">Settings</Link></li>
-                    <li className="dropdown-item"><button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }} className="w-full text-left">Logout</button></li>
+                    <li className="dropdown-item"><button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }}>Logout</button></li>
                   </ul>
                 )}
               </>
@@ -205,12 +205,12 @@ function Topbar({
             <Link to="/market" className="topbar-link">Market</Link>
             <Link to="/forum" className="topbar-link">Forum</Link>
             {user && <Link to="/create" className="topbar-link">Create</Link>}
-            <div className="relative">
+            <div style={{ position: 'relative', display: 'inline-block' }}>
               <button className="topbar-link dropdown" onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}>
-                <ChevronDown className="w-4 h-4" />
+                <i className="fas fa-caret-down">▼</i>
               </button>
               {moreDropdownOpen && (
-                <ul className="dropdown-content navbar-more-dropdown show">
+                <ul className="dropdown-content navbar-more-dropdown show" style={{ position: 'absolute', top: '61px', left: '0' }}>
                   <li className="dropdown-item"><Link to="/users">Users</Link></li>
                   <li className="dropdown-item"><Link to="/groups">Groups</Link></li>
                   <li className="dropdown-item"><Link to="/upgrade">Upgrade</Link></li>
@@ -228,30 +228,30 @@ function Topbar({
             ) : (
               <>
                 <Link to="/messages" className="topbar-link" title={`${unreadMessageCount} Messages`}>
-                  <i className="icon icon-inbox"></i> {unreadMessageCount}
+                  <span className="icon icon-inbox"></span> {unreadMessageCount}
                 </Link>
                 <Link to="/friends" className="topbar-link" title={`${friendRequestCount} Friend Requests`}>
-                  <i className="icon icon-friends"></i> {friendRequestCount}
+                  <span className="icon icon-friends"></span> {friendRequestCount}
                 </Link>
                 <Link to="/money?from=cash" className="topbar-link" title={`${currencyCash.toLocaleString()} Cash`}>
-                  <i className="icon icon-cash"></i> {currencyCash.toLocaleString()}
+                  <span className="icon icon-cash"></span> {currencyCash.toLocaleString()}
                 </Link>
                 <Link to="/money?from=coins" className="topbar-link" title={`${currencyCoins.toLocaleString()} Coins`}>
-                  <i className="icon icon-coins"></i> {currencyCoins.toLocaleString()}
+                  <span className="icon icon-coins"></span> {currencyCoins.toLocaleString()}
                 </Link>
-                <div className="relative">
+                <div style={{ position: 'relative', display: 'inline-block' }}>
                   <button className="topbar-link dropdown" onClick={() => setUserDropdownOpen(!userDropdownOpen)}>
                     <img src={avatarUrl} alt="" style={{ borderRadius: '50%', width: '25px', height: '25px', marginRight: '5px' }} />
                     {displayUsername}
-                    <ChevronDown className="w-4 h-4 ml-1" />
+                    <i className="fas fa-caret-down" style={{ marginLeft: '5px' }}>▼</i>
                   </button>
                   {userDropdownOpen && (
-                    <ul className="dropdown-content navbar-user-dropdown show">
+                    <ul className="dropdown-content navbar-user-dropdown show" style={{ position: 'absolute', top: '61px', right: '0' }}>
                       <li className="dropdown-item"><Link to={serialId ? `/${serialId}/${username}/profile` : '/settings'}>Profile</Link></li>
                       <li className="dropdown-item"><Link to="/character">Character</Link></li>
                       <li className="dropdown-item"><Link to="/settings">Settings</Link></li>
                       {isAdmin && <li className="dropdown-item"><Link to="/admin">Admin</Link></li>}
-                      <li className="dropdown-item"><button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }} className="w-full text-left">Logout</button></li>
+                      <li className="dropdown-item"><button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/login'; }}>Logout</button></li>
                     </ul>
                   )}
                 </div>
@@ -265,7 +265,7 @@ function Topbar({
   );
 }
 
-// ============= INLINE SIDEBAR =============
+// ============= INLINE SIDEBAR (EXACT Blade Match) =============
 function Sidebar({ 
   isOpen, onClose, user, forumUser, isAdmin,
   unreadMessageCount, friendRequestCount
@@ -273,8 +273,8 @@ function Sidebar({
   isOpen: boolean; onClose: () => void; user: any; forumUser: any; isAdmin: boolean;
   unreadMessageCount: number; friendRequestCount: number;
 }) {
-  const currencyCash = forumUser?.currency_cash || 0;
-  const currencyCoins = forumUser?.currency_coins || 0;
+  const currencyCash = forumUser?.cash || 0;
+  const currencyCoins = forumUser?.coins || 0;
 
   return (
     <>
@@ -284,25 +284,25 @@ function Sidebar({
       <div className={`sidebar hide-for-large ${isOpen ? '' : 'hide'}`}>
         <div className="sidebar-inner">
           <ul className="sidebar-items">
-            <li className="item"><Link to={user ? '/' : '/landing'} onClick={onClose}><Home className="w-5 h-5" /><span>Home</span></Link></li>
-            <li className="item"><Link to="/games" onClick={onClose}><Gamepad2 className="w-5 h-5" /><span>Games</span></Link></li>
-            <li className="item"><Link to="/market" onClick={onClose}><Store className="w-5 h-5" /><span>Market</span></Link></li>
-            <li className="item"><Link to="/forum" onClick={onClose}><MessageSquare className="w-5 h-5" /><span>Forum</span></Link></li>
-            <li className="item"><Link to="/users" onClick={onClose}><Search className="w-5 h-5" /><span>Users</span></Link></li>
-            <li className="item"><Link to="/upgrade" onClick={onClose}><ShoppingBasket className="w-5 h-5" /><span>Upgrade</span></Link></li>
-            {user && <li className="item"><Link to="/create" onClick={onClose}><Plus className="w-5 h-5" /><span>Create</span></Link></li>}
-            <li className="item"><Link to="/blog" onClick={onClose}><Pencil className="w-5 h-5" /><span>Blog</span></Link></li>
+            <li className="item"><Link to={user ? '/' : '/landing'} onClick={onClose}><Home size={21} /><span>Home</span></Link></li>
+            <li className="item"><Link to="/games" onClick={onClose}><Gamepad2 size={21} /><span>Games</span></Link></li>
+            <li className="item"><Link to="/market" onClick={onClose}><Store size={21} /><span>Market</span></Link></li>
+            <li className="item"><Link to="/forum" onClick={onClose}><MessageSquare size={21} /><span>Forum</span></Link></li>
+            <li className="item"><Link to="/users" onClick={onClose}><Search size={21} /><span>Users</span></Link></li>
+            <li className="item"><Link to="/upgrade" onClick={onClose}><ShoppingBasket size={21} /><span>Upgrade</span></Link></li>
+            {user && <li className="item"><Link to="/create" onClick={onClose}><Plus size={21} /><span>Create</span></Link></li>}
+            <li className="item"><Link to="/blog" onClick={onClose}><Pencil size={21} /><span>Blog</span></Link></li>
           </ul>
           
           {user && (
             <>
               <div className="sidebar-divider"></div>
               <ul className="sidebar-items">
-                <li className="item"><Link to="/money?from=cash" onClick={onClose}><i className="icon icon-cash"></i><span>{currencyCash.toLocaleString()} Cash</span></Link></li>
-                <li className="item"><Link to="/money?from=coins" onClick={onClose}><i className="icon icon-coins"></i><span>{currencyCoins.toLocaleString()} Coins</span></Link></li>
-                <li className="item"><Link to="/friends" onClick={onClose}><i className="icon icon-friends"></i><span>{friendRequestCount} Friend Requests</span></Link></li>
-                <li className="item"><Link to="/messages" onClick={onClose}><i className="icon icon-inbox"></i><span>{unreadMessageCount} Messages</span></Link></li>
-                {isAdmin && <li className="item"><Link to="/admin" onClick={onClose}><i className="icon icon-staff"></i><span>Panel</span></Link></li>}
+                <li className="item"><Link to="/money?from=cash" onClick={onClose}><span className="icon icon-cash"></span><span>{currencyCash.toLocaleString()} Cash</span></Link></li>
+                <li className="item"><Link to="/money?from=coins" onClick={onClose}><span className="icon icon-coins"></span><span>{currencyCoins.toLocaleString()} Coins</span></Link></li>
+                <li className="item"><Link to="/friends" onClick={onClose}><span className="icon icon-friends"></span><span>{friendRequestCount} Friend Requests</span></Link></li>
+                <li className="item"><Link to="/messages" onClick={onClose}><span className="icon icon-inbox"></span><span>{unreadMessageCount} Messages</span></Link></li>
+                {isAdmin && <li className="item"><Link to="/admin" onClick={onClose}><Shield size={21} /><span>Panel</span></Link></li>}
               </ul>
             </>
           )}
