@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
       // Look up forum user by username (case-insensitive)
       const { data: forumUser, error: forumError } = await supabaseAdmin
         .from('forum_users')
-        .select('user_id')
+        .select('user_id, avatar_url')
         .ilike('username', trimmedUsername)
         .maybeSingle();
 
@@ -65,7 +65,44 @@ Deno.serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ email: authUser.user.email }),
+        JSON.stringify({ email: authUser.user.email, avatar_url: forumUser.avatar_url }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get avatar by username action (for login preview)
+    if (action === 'get_avatar_by_username') {
+      if (!username || typeof username !== "string") {
+        return new Response(
+          JSON.stringify({ avatar_url: null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const trimmedUsername = username.trim();
+      if (trimmedUsername.length < 2) {
+        return new Response(
+          JSON.stringify({ avatar_url: null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Look up forum user by username (case-insensitive)
+      const { data: forumUser, error: forumError } = await supabaseAdmin
+        .from('forum_users')
+        .select('avatar_url')
+        .ilike('username', trimmedUsername)
+        .maybeSingle();
+
+      if (forumError || !forumUser) {
+        return new Response(
+          JSON.stringify({ avatar_url: null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ avatar_url: forumUser.avatar_url }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
