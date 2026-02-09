@@ -141,12 +141,11 @@ const Index = () => {
             </div>
             <h3>A Community Revival Project</h3>
             <p>
-              BLOX City is being brought back by a dedicated team of 4 developers who 
-              share a passion for reviving this once-loved platform. We are building this project with
+              BLOX City is being brought back by a dedicated team of talented people under Kyle Vickers's leadership who share a passion for reviving this once-loved platform. We are building this project with
               the vision to recreate the magic that made BLOX City special.
             </p>
             <div className="disclaimer">
-              <strong>Disclaimer:</strong> This project is <em>not</em> associated with Isaac Hymer, Kyle Vickers & his team, or the 
+              <strong>Disclaimer:</strong> This project is <em>not</em> associated with Isaac Hymer, or the 
               original BLOX City ownership. This is an independent revival effort by fans, for fans.
             </div>
           </div>
@@ -219,8 +218,6 @@ const Index = () => {
             <p>
               Looking for where BLOX City is now? Isaac is over at{" "}
               <a href="https://brickplanet.com" target="_blank" rel="noopener noreferrer">brickplanet.com</a>
-              {" "}& Kyle is over at{" "}
-              <a href="https://www.truworlds.net/" target="_blank" rel="noopener noreferrer">truworlds.net</a>
             </p>
           </div>
 
