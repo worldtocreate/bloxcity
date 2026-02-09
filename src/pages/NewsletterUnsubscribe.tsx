@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
 const NewsletterUnsubscribe = () => {
@@ -47,64 +46,50 @@ const NewsletterUnsubscribe = () => {
   }, [searchParams]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block">
-            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto rounded-xl mb-4" />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>BLOX City</h1>
-          </Link>
-        </div>
-
-        <div className="bc-card">
-          <div className="bc-card-body text-center">
-            {status === "loading" && (
-              <div className="py-8">
-                <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" style={{ color: 'hsl(var(--bc-primary))' }} />
-                <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Processing your request...</p>
-              </div>
-            )}
-
-            {status === "success" && (
-              <div className="py-8">
-                <div className="bc-section-icon mx-auto mb-4" style={{ background: 'hsla(var(--bc-success), 0.1)' }}>
-                  <CheckCircle className="w-8 h-8" style={{ color: 'hsl(var(--bc-success))' }} />
-                </div>
-                <h2 className="text-xl font-bold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Unsubscribed</h2>
-                <p className="mb-4" style={{ color: 'hsl(var(--bc-text-muted))' }}>{message}</p>
-                <p className="text-sm mb-6" style={{ color: 'hsl(var(--bc-text-muted))' }}>
-                  You will no longer receive newsletter emails from BLOX City.
-                </p>
-                <Link to="/" className="bc-btn bc-btn-info">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to BLOX City
-                </Link>
-              </div>
-            )}
-
-            {status === "error" && (
-              <div className="py-8">
-                <div className="bc-section-icon mx-auto mb-4" style={{ background: 'hsla(var(--bc-danger), 0.1)' }}>
-                  <AlertCircle className="w-8 h-8" style={{ color: 'hsl(var(--bc-danger))' }} />
-                </div>
-                <h2 className="text-xl font-bold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Error</h2>
-                <p className="mb-6" style={{ color: 'hsl(var(--bc-text-muted))' }}>{message}</p>
-                <Link to="/" className="bc-btn bc-btn-info">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to BLOX City
-                </Link>
-              </div>
-            )}
+    <div className="maintenance-container">
+      <div className="maintenance-content" style={{ maxWidth: "500px" }}>
+        <div className="brand-section">
+          <div className="logo-icon">
+            <img src={bloxcityLogo} alt="BLOX City Logo" />
           </div>
+          <h1 className="brand-title">BLOX City</h1>
         </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
-            © 2026 BLOX City, Inc. All rights reserved.
-          </p>
+        <div className="reservation-section">
+          {status === "loading" && (
+            <div className="text-center">
+              <p className="text-gray-400">Processing your request...</p>
+            </div>
+          )}
+
+          {status === "success" && (
+            <div className="reservation-success">
+              <div className="success-header">
+                <span>✅</span> Unsubscribed
+              </div>
+              <p className="success-message">{message}</p>
+              <p className="success-note">
+                You will no longer receive newsletter emails from BLOX City.
+              </p>
+              <a href="/" className="check-status-link">
+                ← Back to BLOX City
+              </a>
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="reservation-error" style={{ padding: "20px", borderRadius: "8px" }}>
+              <p style={{ marginBottom: "10px" }}>{message}</p>
+              <a href="/" className="check-status-link">
+                ← Back to BLOX City
+              </a>
+            </div>
+          )}
         </div>
+
+        <footer className="maintenance-footer">
+          <p>© 2026 BLOX City, Inc. All rights reserved.</p>
+        </footer>
       </div>
     </div>
   );

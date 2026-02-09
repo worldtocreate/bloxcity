@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Settings, Download, Upload, Trash2, AlertTriangle, 
-  Check, Shield, Mail, Bell, Database, RefreshCw, Megaphone
+  Check, Shield, Mail, Bell, Database, RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,24 +9,10 @@ interface SettingsTabProps {
   darkMode: boolean;
 }
 
-interface ForumAnnouncement {
-  enabled: boolean;
-  message: string;
-  type: 'info' | 'warning' | 'success';
-}
-
 const SettingsTab = ({ darkMode }: SettingsTabProps) => {
   const [exporting, setExporting] = useState(false);
   const [exportType, setExportType] = useState<'reservations' | 'subscribers' | 'logs'>('reservations');
   const [exportStatus, setExportStatus] = useState<{ success: boolean; message: string } | null>(null);
-
-  // Forum announcement state
-  const [announcement, setAnnouncement] = useState<ForumAnnouncement>({
-    enabled: false,
-    message: '',
-    type: 'info'
-  });
-  const [savingAnnouncement, setSavingAnnouncement] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -36,43 +22,6 @@ const SettingsTab = ({ darkMode }: SettingsTabProps) => {
     reservationCooldownHours: 24,
     enableRecaptcha: false,
   });
-
-  useEffect(() => {
-    fetchAnnouncement();
-  }, []);
-
-  const fetchAnnouncement = async () => {
-    const { data } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', 'forum_announcement')
-      .single();
-    
-    if (data?.value) {
-      setAnnouncement(data.value as unknown as ForumAnnouncement);
-    }
-  };
-
-  const handleSaveAnnouncement = async () => {
-    setSavingAnnouncement(true);
-    try {
-      const { error } = await supabase
-        .from('site_settings')
-        .upsert({ 
-          key: 'forum_announcement',
-          value: JSON.parse(JSON.stringify(announcement)),
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'key' });
-      
-      if (error) throw error;
-      setExportStatus({ success: true, message: 'Announcement saved successfully!' });
-    } catch (error) {
-      console.error('Save error:', error);
-      setExportStatus({ success: false, message: 'Failed to save announcement.' });
-    }
-    setSavingAnnouncement(false);
-    setTimeout(() => setExportStatus(null), 3000);
-  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -122,93 +71,6 @@ const SettingsTab = ({ darkMode }: SettingsTabProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Forum Announcement Banner */}
-      <div className={`rounded-xl shadow-sm border p-6 ${cardClass}`}>
-        <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-          <Megaphone className="w-5 h-5 text-amber-500" />
-          Forum Announcement Banner
-        </h2>
-        <p className={`mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Display a banner message at the top of all forum pages.
-        </p>
-        
-        <div className="space-y-4">
-          <label className="flex items-center justify-between">
-            <div>
-              <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Enable Banner</span>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Show the announcement on all forum pages
-              </p>
-            </div>
-            <button
-              onClick={() => setAnnouncement(a => ({ ...a, enabled: !a.enabled }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                announcement.enabled ? 'bg-blue-600' : darkMode ? 'bg-gray-600' : 'bg-gray-300'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                announcement.enabled ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </label>
-
-          <div>
-            <label className={`block font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-              Banner Type
-            </label>
-            <select
-              value={announcement.type}
-              onChange={(e) => setAnnouncement(a => ({ ...a, type: e.target.value as ForumAnnouncement['type'] }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${inputClass}`}
-            >
-              <option value="info">Info (Blue)</option>
-              <option value="warning">Warning (Amber)</option>
-              <option value="success">Success (Green)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className={`block font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-              Message
-            </label>
-            <textarea
-              value={announcement.message}
-              onChange={(e) => setAnnouncement(a => ({ ...a, message: e.target.value }))}
-              placeholder="Enter your announcement message..."
-              rows={3}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none ${inputClass}`}
-            />
-          </div>
-
-          {announcement.enabled && announcement.message && (
-            <div>
-              <label className={`block font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                Preview
-              </label>
-              <div className={`p-4 rounded-lg border ${
-                announcement.type === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' :
-                announcement.type === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800' :
-                'bg-green-50 border-green-200 text-green-800'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <Megaphone className="w-4 h-4 flex-shrink-0" />
-                  <span>{announcement.message}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={handleSaveAnnouncement}
-            disabled={savingAnnouncement}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-          >
-            <Check className="w-4 h-4" />
-            {savingAnnouncement ? 'Saving...' : 'Save Announcement'}
-          </button>
-        </div>
-      </div>
-
       {/* Export Data Section */}
       <div className={`rounded-xl shadow-sm border p-6 ${cardClass}`}>
         <h2 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>

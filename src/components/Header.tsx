@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Menu, X, Search } from "lucide-react";
-import bloxcityLogo from "@/assets/IMG_2412_Original-1.png";
+import { Menu, X } from "lucide-react";
+import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -8,16 +8,8 @@ const Header = () => {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/reserve", label: "Reserve Username" },
-    { href: "/forum", label: "Forum" },
     { href: "/faq", label: "FAQ" },
   ];
-
-  const isActive = (href: string) => {
-    if (typeof window !== 'undefined') {
-      return window.location.pathname === href;
-    }
-    return false;
-  };
 
   return (
     <header className="site-header">
@@ -33,7 +25,7 @@ const Header = () => {
             <a
               key={link.href}
               href={link.href}
-              className={`header-nav-link ${isActive(link.href) ? 'active' : ''}`}
+              className={`header-nav-link ${window.location.pathname === link.href ? 'active' : ''}`}
             >
               {link.label}
             </a>
@@ -57,7 +49,7 @@ const Header = () => {
             <a
               key={link.href}
               href={link.href}
-              className={`mobile-nav-link ${isActive(link.href) ? 'active' : ''}`}
+              className={`mobile-nav-link ${window.location.pathname === link.href ? 'active' : ''}`}
               onClick={() => setMobileMenuOpen(false)}
             >
               {link.label}
