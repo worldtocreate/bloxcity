@@ -1,8 +1,8 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail, Store, MessageSquare, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import bloxcityLogo from "@/assets/IMG_2412_Original-1.png";
-import logoSmall from "@/assets/IMG_2412_Original-1.png";
+import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import logoSmall from "@/assets/bloxcity-logo.jpg";
 const landingBg = "/3724.jpg";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
