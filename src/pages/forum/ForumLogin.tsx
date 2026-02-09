@@ -458,152 +458,132 @@ export default function ForumLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
-      {/* Welcome Dialog popup */}
+    <div className="auth-page">
       <WelcomeDialog isLoggedIn={false} />
       
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block">
-            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back</h1>
-            <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Login to BLOX City</p>
-          </Link>
-        </div>
-        {hasExistingSession && (
-          <div className="bc-alert bc-alert-warning mb-4">
-            <p className="text-sm font-medium">You’re already signed in.</p>
-            <p className="text-xs mt-1 opacity-80">If you meant to use a different account, sign out first.</p>
-            <div className="flex gap-2 mt-3">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="bc-btn bc-btn-info px-4"
-              >
-                Continue
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  setHasExistingSession(false);
-                  toast.success('Signed out');
-                }}
-                className="bc-btn bc-btn-gray px-4"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="bc-card">
-          <div className="bc-card-body space-y-4">
-            {error && (
-              <div className="bc-alert bc-alert-danger flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="text-sm">{error}</span>
-              </div>
-            )}
-
-            {emailNotConfirmed && (
-              <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bc-input-bg))', border: '1px solid hsl(var(--bc-section-border))', borderRadius: 'var(--bc-rounded-lg)' }}>
-                <p className="text-sm" style={{ color: 'hsl(var(--bc-text))' }}>
-                  Your account email isn't verified yet. You can resend the verification email, or use a login link to get in.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    disabled={resendingVerification || loading}
-                    className="bc-btn bc-btn-info bc-btn-xs"
-                  >
-                    {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                    Resend verification
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSendLoginLink}
-                    disabled={sendingLoginLink || loading}
-                    className="bc-btn bc-btn-gray bc-btn-xs"
-                  >
-                    {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                    Send login link
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  className="bc-input"
-                  style={{ paddingLeft: '42px' }}
-                  required
-                />
+      <div className="w-full max-w-md px-4">
+        <div className="auth-container">
+          <h5 className="text-xl font-bold mb-6 text-center" style={{ color: 'hsl(var(--bc-text))' }}>Log in</h5>
+          
+          {hasExistingSession && (
+            <div className="bc-alert bc-alert-warning mb-4">
+              <p className="text-sm font-medium">You're already signed in.</p>
+              <p className="text-xs mt-1 opacity-80">If you meant to use a different account, sign out first.</p>
+              <div className="flex gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="bc-btn bc-btn-info px-4"
+                >
+                  Continue
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setHasExistingSession(false);
+                    toast.success('Signed out');
+                  }}
+                  className="bc-btn bc-btn-gray px-4"
+                >
+                  Sign out
+                </button>
               </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="bc-input"
-                  style={{ paddingLeft: '42px' }}
-                  required
-                />
+          {error && (
+            <div className="bc-alert bc-alert-danger flex items-center gap-2 mb-4">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm">{error}</span>
+            </div>
+          )}
+
+          {emailNotConfirmed && (
+            <div className="p-3 space-y-2 mb-4" style={{ background: 'hsl(var(--bc-input-bg))', border: '1px solid hsl(var(--bc-section-border))', borderRadius: 'var(--bc-rounded-lg)' }}>
+              <p className="text-sm" style={{ color: 'hsl(var(--bc-text))' }}>
+                Your account email isn't verified yet.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification || loading}
+                  className="bc-btn bc-btn-info bc-btn-xs"
+                >
+                  {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Resend verification
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendLoginLink}
+                  disabled={sendingLoginLink || loading}
+                  className="bc-btn bc-btn-gray bc-btn-xs"
+                >
+                  {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  Send login link
+                </button>
               </div>
             </div>
+          )}
 
-            <div className="flex justify-between text-sm">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Username or Email"
+              className="form"
+              required
+            />
+
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className="form"
+              required
+            />
+
+            <div className="flex items-center justify-between">
               <button
-                type="button"
-                onClick={() => setShowForgotUsername(true)}
-                className="text-info hover:underline"
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary"
               >
-                Forgot username?
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Log in'
+                )}
               </button>
-              <Link to="/forgot-password" className="text-info hover:underline">
+              <Link to="/forgot-password" className="text-sm font-medium hover:underline" style={{ color: 'hsl(var(--bc-info))' }}>
                 Forgot password?
               </Link>
             </div>
+          </form>
 
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bc-btn bc-btn-info bc-btn-block"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Logging in...
-                </>
-              ) : (
-                'Login'
-              )}
-            </button>
-
-
-            <p className="text-center text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
+          <div className="mt-6 pt-4 border-t text-center" style={{ borderColor: 'hsl(var(--bc-section-border))' }}>
+            <p className="text-sm" style={{ color: 'hsl(var(--bc-text-muted))' }}>
               Don't have an account?{' '}
-              <Link to="/register" className="text-info hover:underline">
-                Create one
+              <Link to="/register" className="font-medium hover:underline" style={{ color: 'hsl(var(--bc-info))' }}>
+                Register
               </Link>
             </p>
+            <button
+              type="button"
+              onClick={() => setShowForgotUsername(true)}
+              className="text-sm mt-2 hover:underline"
+              style={{ color: 'hsl(var(--bc-text-muted))' }}
+            >
+              Forgot username?
+            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

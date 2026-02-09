@@ -243,6 +243,9 @@ export default function ForumLayout() {
   const [maintenanceSettings, setMaintenanceSettings] = useState<MaintenanceSettings | null>(null);
   const [showDOBPrompt, setShowDOBPrompt] = useState(false);
   const [maintenanceBypass, setMaintenanceBypass] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [friendRequestCount, setFriendRequestCount] = useState(0);
 
   // Track online status
   useOnlineStatus(forumUser?.id || null);
@@ -513,7 +516,7 @@ export default function ForumLayout() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full bg-[hsl(var(--bc-bg-light))]">
+      <div className="min-h-screen flex w-full" style={{ background: 'hsl(var(--bc-body-bg))' }}>
         <AppSidebar forumUser={forumUser} isLoggedIn={!!user} />
         
         <div className="flex-1 flex flex-col min-w-0">
