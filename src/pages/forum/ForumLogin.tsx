@@ -228,69 +228,65 @@ export default function ForumLogin() {
     );
   }
 
-  // Main login form (EXACT Blade Match)
+  // Main login form
   return (
     <div className="auth-page">
       <WelcomeDialog isLoggedIn={false} />
-      <div className="grid-x">
-        <div className="cell medium-6 medium-offset-4">
-          <div className="auth-container">
-            <h5 className="mb-25">Log in</h5>
+      <div className="auth-container">
+        <h5 className="mb-25">Log in</h5>
 
-            {hasExistingSession && (
-              <div className="alert alert-warning" style={{ marginBottom: '15px' }}>
-                <p style={{ fontSize: '14px', fontWeight: 500 }}>You're already signed in.</p>
-                <p style={{ fontSize: '12px', marginTop: '5px', opacity: 0.8 }}>If you meant to use a different account, sign out first.</p>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                  <button type="button" onClick={() => navigate('/')} className="button button-blue" style={{ fontSize: '12px', padding: '4px 10px' }}>Continue</button>
-                  <button type="button" onClick={async () => { await supabase.auth.signOut(); setHasExistingSession(false); toast.success('Signed out'); }} className="button button-gray" style={{ fontSize: '12px', padding: '4px 10px' }}>Sign out</button>
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="alert alert-error" style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '14px' }}>{error}</span>
-              </div>
-            )}
-
-            {emailNotConfirmed && (
-              <div className="alert alert-warning" style={{ marginBottom: '15px' }}>
-                <p style={{ fontSize: '14px' }}>Your account email isn't verified yet.</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-                  <button type="button" onClick={handleResendVerification} disabled={resendingVerification || loading} className="button button-blue" style={{ fontSize: '12px', padding: '4px 10px' }}>
-                    {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Resend verification
-                  </button>
-                  <button type="button" onClick={handleSendLoginLink} disabled={sendingLoginLink || loading} className="button button-gray" style={{ fontSize: '12px', padding: '4px 10px' }}>
-                    {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Send login link
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit}>
-              <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Username" className="form-input" required />
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="form-input" required />
-              <div className="grid-x align-middle">
-                <div className="cell auto">
-                  <button type="submit" disabled={loading} className="button button-blue">
-                    {loading ? <><Loader2 className="w-4 h-4 animate-spin" style={{ marginRight: '6px' }} />Loading...</> : 'Log in'}
-                  </button>
-                </div>
-                <div className="cell shrink">
-                  <Link to="/forgot-password">Forgot password?</Link>
-                </div>
-              </div>
-            </form>
-
-            <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign: 'center' }}>
-              <p style={{ fontSize: '14px', color: '#666' }}>
-                Don't have an account?{' '}
-                <Link to="/register">Register</Link>
-              </p>
-              <button type="button" onClick={() => setShowForgotUsername(true)} style={{ fontSize: '14px', marginTop: '10px', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Forgot username?</button>
+        {hasExistingSession && (
+          <div className="alert alert-warning" style={{ marginBottom: '15px' }}>
+            <p style={{ fontSize: '14px', fontWeight: 500 }}>You're already signed in.</p>
+            <p style={{ fontSize: '12px', marginTop: '5px', opacity: 0.8 }}>If you meant to use a different account, sign out first.</p>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              <button type="button" onClick={() => navigate('/')} className="button button-blue" style={{ fontSize: '12px', padding: '4px 10px' }}>Continue</button>
+              <button type="button" onClick={async () => { await supabase.auth.signOut(); setHasExistingSession(false); toast.success('Signed out'); }} className="button button-gray" style={{ fontSize: '12px', padding: '4px 10px' }}>Sign out</button>
             </div>
           </div>
+        )}
+
+        {error && (
+          <div className="alert alert-error" style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px' }}>{error}</span>
+          </div>
+        )}
+
+        {emailNotConfirmed && (
+          <div className="alert alert-warning" style={{ marginBottom: '15px' }}>
+            <p style={{ fontSize: '14px' }}>Your account email isn't verified yet.</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+              <button type="button" onClick={handleResendVerification} disabled={resendingVerification || loading} className="button button-blue" style={{ fontSize: '12px', padding: '4px 10px' }}>
+                {resendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Resend verification
+              </button>
+              <button type="button" onClick={handleSendLoginLink} disabled={sendingLoginLink || loading} className="button button-gray" style={{ fontSize: '12px', padding: '4px 10px' }}>
+                {sendingLoginLink ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Send login link
+              </button>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Username" className="form-input" required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="form-input" required />
+          <div className="grid-x align-middle">
+            <div className="cell auto">
+              <button type="submit" disabled={loading} className="button button-blue">
+                {loading ? <><Loader2 className="w-4 h-4 animate-spin" style={{ marginRight: '6px' }} />Loading...</> : 'Log in'}
+              </button>
+            </div>
+            <div className="cell shrink">
+              <Link to="/forgot-password">Forgot password?</Link>
+            </div>
+          </div>
+        </form>
+
+        <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #eee', textAlign: 'center' }}>
+          <p style={{ fontSize: '14px', color: '#666' }}>
+            Don't have an account?{' '}
+            <Link to="/register">Register</Link>
+          </p>
+          <button type="button" onClick={() => setShowForgotUsername(true)} style={{ fontSize: '14px', marginTop: '10px', color: '#666', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Forgot username?</button>
         </div>
       </div>
     </div>

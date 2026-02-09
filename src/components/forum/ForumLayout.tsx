@@ -441,7 +441,7 @@ export default function ForumLayout() {
     const endsAt = forumUser.suspension_ends_at ? new Date(forumUser.suspension_ends_at) : null;
     if (!endsAt || now < endsAt) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#ededed' }}>
           <div className="max-w-md w-full bc-card text-center p-8">
             <Shield className="w-16 h-16 mx-auto text-red-500 mb-4" />
             <h1 className="text-2xl font-bold text-red-600 mb-2">Account Suspended</h1>
@@ -458,7 +458,7 @@ export default function ForumLayout() {
 
   if (!loading && forumUser && (forumUser as any).has_pending_warning) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#ededed' }}>
         <div className="bc-card p-8 max-w-lg">
           <h1 className="text-2xl font-bold text-amber-600 mb-4 text-center">Account Warning</h1>
           <p className="text-[hsl(var(--bc-text))] mb-4 text-center">You have received a warning from the moderation team.</p>
@@ -474,7 +474,7 @@ export default function ForumLayout() {
 
   if (adminNeeds2FA && !isSettingsPage) {
     return (
-      <div className="min-h-screen" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+      <div className="min-h-screen" style={{ backgroundColor: '#ededed' }}>
         <Topbar user={user} forumUser={forumUser} isAdmin={isAdmin} unreadMessageCount={unreadMessageCount} friendRequestCount={friendRequestCount} onToggleSidebar={() => setMobileSidebarOpen(true)} />
         <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} user={user} forumUser={forumUser} isAdmin={isAdmin} unreadMessageCount={unreadMessageCount} friendRequestCount={friendRequestCount} />
         <div className="flex items-center justify-center p-4 py-20">
@@ -493,7 +493,7 @@ export default function ForumLayout() {
   const showEmailVerificationBanner = user && forumUser && emailVerified === false;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'hsl(var(--bc-body-bg))' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#ededed' }}>
       <Topbar user={user} forumUser={forumUser} isAdmin={isAdmin} unreadMessageCount={unreadMessageCount} friendRequestCount={friendRequestCount} onToggleSidebar={() => setMobileSidebarOpen(true)} />
       <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} user={user} forumUser={forumUser} isAdmin={isAdmin} unreadMessageCount={unreadMessageCount} friendRequestCount={friendRequestCount} />
       
