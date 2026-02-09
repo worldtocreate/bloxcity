@@ -5,7 +5,7 @@ import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import ForumHeader from './ForumHeader';
 import AppSidebar from './AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { Loader2, Megaphone, X, Shield, Lock, Mail, Send, Calendar, Hammer } from 'lucide-react';
+import { Loader2, Megaphone, X, Shield, Lock, Mail, Send, Calendar, Hammer, Menu, ChevronDown, Home, Gamepad2, Store, MessageSquare, Users, ShoppingBasket, Plus, Pencil, Coins, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -529,22 +529,18 @@ export default function ForumLayout() {
                 <div className="flex items-center gap-2 flex-1">
                   <Mail className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <span className="text-sm font-medium text-amber-800">
-                    Verify your email <strong>{user.email}</strong> to access forum features like posting, replying, and direct messages.
+                    Verify your email <strong>{user.email}</strong> to access forum features.
                   </span>
                 </div>
                 {verificationEmailSent ? (
-                  <span className="text-sm text-amber-700 font-medium">Email sent! Check your inbox.</span>
+                  <span className="text-sm text-amber-700 font-medium">Email sent!</span>
                 ) : (
                   <button
                     onClick={handleSendVerificationEmail}
                     disabled={sendingVerification}
                     className="flex items-center gap-2 px-4 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white rounded-lg text-sm font-medium transition"
                   >
-                    {sendingVerification ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
+                    {sendingVerification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     Send Verification Email
                   </button>
                 )}
@@ -552,19 +548,15 @@ export default function ForumLayout() {
             </div>
           )}
           
-          {/* Admin 2FA Warning Banner on Settings Page */}
           {adminNeeds2FA && isSettingsPage && (
             <div className="bg-amber-50 border-b border-amber-200">
               <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
                 <Shield className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                <span className="text-sm font-medium text-amber-800">
-                  You must enable Two-Factor Authentication before you can access other forum features.
-                </span>
+                <span className="text-sm font-medium text-amber-800">Enable 2FA to access forum features.</span>
               </div>
             </div>
           )}
           
-          {/* Announcement Banner */}
           {announcement?.enabled && announcement.message && !bannerDismissed && (
             <div className={`border-b ${bannerStyles[announcement.type]}`}>
               <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
@@ -572,11 +564,7 @@ export default function ForumLayout() {
                   <Megaphone className="w-5 h-5 flex-shrink-0" />
                   <span className="text-sm font-medium">{announcement.message}</span>
                 </div>
-                <button
-                  onClick={() => setBannerDismissed(true)}
-                  className="p-1 hover:bg-black/10 rounded transition"
-                  aria-label="Dismiss announcement"
-                >
+                <button onClick={() => setBannerDismissed(true)} className="p-1 hover:bg-black/10 rounded transition">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -590,13 +578,8 @@ export default function ForumLayout() {
               </div>
             ) : (
               <>
-                {/* DOB Prompt for existing users */}
                 {forumUser && showDOBPrompt && (
-                  <DOBPrompt
-                    isOpen={showDOBPrompt}
-                    onClose={() => setShowDOBPrompt(false)}
-                    forumUserId={forumUser.id}
-                  />
+                  <DOBPrompt isOpen={showDOBPrompt} onClose={() => setShowDOBPrompt(false)} forumUserId={forumUser.id} />
                 )}
                 <Outlet context={{ user, forumUser, isAdmin, loading, emailVerified }} />
               </>
@@ -606,14 +589,11 @@ export default function ForumLayout() {
           <footer className="border-t border-[hsl(var(--bc-border))] py-6 mt-auto">
             <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
               <div className="flex items-center justify-center gap-4 text-sm flex-wrap">
-                <Link to="/terms-of-service" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold transition">TERMS OF SERVICE</Link>
-                <Link to="/privacy-policy" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold transition">PRIVACY POLICY</Link>
+                <Link to="/terms-of-service" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold transition">TERMS</Link>
+                <Link to="/privacy-policy" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold transition">PRIVACY</Link>
                 <Link to="/faq" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold transition">FAQ</Link>
-                <Link to="/notes" className="text-[hsl(var(--bc-text-muted))] hover:text-[hsl(var(--bc-primary))] font-semibold transition">NOTES</Link>
               </div>
-              <p className="text-[hsl(var(--bc-text-muted))] text-sm">
-                © 2026 BLOX City. All rights reserved.
-              </p>
+              <p className="text-[hsl(var(--bc-text-muted))] text-sm">© 2026 BLOX City | Made with ♥ by Hurricane & Soba</p>
             </div>
           </footer>
         </div>

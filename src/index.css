@@ -3149,3 +3149,156 @@ textarea.bc-input {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ========================================
+   RESPONSIVE VISIBILITY CLASSES
+   (Blade Template Compatibility)
+======================================== */
+.hide-for-large {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.show-for-large {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .hide-for-large {
+    display: none !important;
+  }
+  
+  .show-for-large {
+    display: flex !important;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.hide {
+  display: none !important;
+}
+
+/* ========================================
+   FOOTER COMPONENT (Blade Template Match)
+======================================== */
+.footer {
+  background: hsl(var(--bc-section-bg));
+  border-top: 1px solid hsl(var(--bc-section-border));
+  padding: 24px 16px;
+  margin-top: auto;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.footer-link {
+  color: hsl(var(--bc-text-muted));
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: hsl(var(--bc-info));
+}
+
+.footer-copyright {
+  color: hsl(var(--bc-text-muted));
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+.footer-social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.footer-social-icon {
+  color: hsl(var(--bc-text-muted));
+  transition: color 0.2s, transform 0.2s;
+}
+
+.footer-social-icon:hover {
+  color: hsl(var(--bc-info));
+  transform: scale(1.1);
+}
+
+.footer-social-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Dark mode footer */
+.dark .footer {
+  background: hsl(0 0% 15%);
+  border-color: hsl(0 0% 28%);
+}
+
+.dark .footer-link {
+  color: hsl(0 0% 55%);
+}
+
+.dark .footer-link:hover {
+  color: hsl(199 97% 55%);
+}
+
+.dark .footer-copyright {
+  color: hsl(0 0% 70%);
+}
+
+.dark .footer-social-icon {
+  color: hsl(0 0% 55%);
+}
+
+.dark .footer-social-icon:hover {
+  color: hsl(199 97% 55%);
+}
+
+/* ========================================
+   TOPBAR DROPDOWN POSITIONS
+======================================== */
+.navbar-more-dropdown-auth {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+}
+
+.navbar-more-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+}
+
+.topbar-left {
+  position: relative;
+}
+
+.topbar-right {
+  position: relative;
+}
+
+/* Topbar avatar mobile */
+.topbar-avatar-mobile {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
