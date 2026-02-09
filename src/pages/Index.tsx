@@ -1,6 +1,6 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail, Store, MessageSquare, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import landingBg from "@/assets/landing-background.png";
 import logoSmall from "@/assets/IMG_2412_Original-1.png";
@@ -64,9 +64,6 @@ const Footer = () => {
 };
 
 const Index = () => {
-  // Maintenance mode state
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState<boolean | null>(null);
-  
   // Newsletter state
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
@@ -79,31 +76,9 @@ const Index = () => {
   const [recentThreads, setRecentThreads] = useState<RecentThread[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // Check maintenance mode on mount using RPC that bypasses RLS
   useEffect(() => {
-    const checkMaintenance = async () => {
-      try {
-        // Use the SECURITY DEFINER RPC to check global maintenance status
-        const { data } = await supabase.rpc('get_page_maintenance_status');
-        
-        if (data && typeof data === 'object' && 'global_enabled' in data) {
-          setIsMaintenanceMode((data as { global_enabled: boolean }).global_enabled);
-        } else {
-          setIsMaintenanceMode(false);
-        }
-      } catch {
-        // If the RPC fails, allow access (fail open)
-        setIsMaintenanceMode(false);
-      }
-    };
-    checkMaintenance();
+    fetchLandingData();
   }, []);
-
-  useEffect(() => {
-    if (isMaintenanceMode === false) {
-      fetchLandingData();
-    }
-  }, [isMaintenanceMode]);
 
   const fetchLandingData = async () => {
     setLoadingStats(true);
@@ -215,19 +190,6 @@ const Index = () => {
   };
 
   const getItemSlug = (name: string) => name.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
-
-  // Redirect to maintenance page if maintenance mode is enabled
-  if (isMaintenanceMode === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--bc-bg))]">
-        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--bc-primary))]" />
-      </div>
-    );
-  }
-
-  if (isMaintenanceMode) {
-    return <Navigate to="/maintenance" replace />;
-  }
 
   return (
     <div className="has-header">
