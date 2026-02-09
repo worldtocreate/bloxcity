@@ -1,6 +1,6 @@
 import { LogOut, Moon, Sun } from "lucide-react";
 import { User } from "@supabase/supabase-js";
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityLogo from "@/assets/bloxcity.jpg";
 
 interface AdminHeaderProps {
   user: User | null;
