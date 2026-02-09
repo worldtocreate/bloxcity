@@ -1,6 +1,6 @@
 import { HelpCircle } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityLogo from "@/assets/bloxcity.jpg";
 
 const FAQ = () => {
   return (
