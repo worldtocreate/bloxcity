@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityLogo from "@/assets/bloxcity.jpg";
 
 type ReservationStatus = 'pending' | 'approved' | 'denied' | null;
 
