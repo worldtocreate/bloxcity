@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Menu, X, Search } from "lucide-react";
-import bloxcityLogo from "@/assets/IMG_2412_Original-1.png";
+import bloxcityLogo from "@/assets/bloxcity-logo-new.png";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
