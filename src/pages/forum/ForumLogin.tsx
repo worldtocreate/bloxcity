@@ -16,13 +16,14 @@ interface DisabledAccountInfo {
 
 export default function ForumLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [sendingLoginLink, setSendingLoginLink] = useState(false);
+  const [resolvedEmail, setResolvedEmail] = useState('');
   
   // 2FA states
   const [requires2FA, setRequires2FA] = useState(false);
@@ -133,11 +134,37 @@ export default function ForumLogin() {
     }
   };
 
+  const lookupEmailByUsername = async (usernameInput: string): Promise<string | null> => {
+    const trimmedUsername = usernameInput.trim();
+    
+    // Use edge function to get email by username (bypasses RLS)
+    const { data, error } = await supabase.functions.invoke('forum-register', {
+      body: { action: 'get_email_by_username', username: trimmedUsername }
+    });
+    
+    if (error || !data?.email) {
+      return null;
+    }
+    
+    return data.email;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setEmailNotConfirmed(false);
     setLoading(true);
+
+    // Look up email by username
+    const email = await lookupEmailByUsername(username);
+    
+    if (!email) {
+      setError('Username not found');
+      setLoading(false);
+      return;
+    }
+    
+    setResolvedEmail(email);
 
     const twoFAStatus = await check2FA(email);
     
@@ -200,9 +227,8 @@ export default function ForumLogin() {
   };
 
   const handleResendVerification = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      toast.error('Please enter your email first.');
+    if (!resolvedEmail) {
+      toast.error('Please try logging in first to resolve your email.');
       return;
     }
 
@@ -210,7 +236,7 @@ export default function ForumLogin() {
     try {
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
-        email: trimmedEmail,
+        email: resolvedEmail,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -228,16 +254,15 @@ export default function ForumLogin() {
   };
 
   const handleSendLoginLink = async () => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) {
-      toast.error('Please enter your email first.');
+    if (!resolvedEmail) {
+      toast.error('Please try logging in first to resolve your email.');
       return;
     }
 
     setSendingLoginLink(true);
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: trimmedEmail,
+        email: resolvedEmail,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -535,17 +560,18 @@ export default function ForumLogin() {
             )}
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email</label>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Username</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
                   className="bc-input"
                   style={{ paddingLeft: '42px' }}
                   required
+                  autoComplete="username"
                 />
               </div>
             </div>

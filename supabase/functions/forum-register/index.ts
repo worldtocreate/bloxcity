@@ -14,12 +14,85 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, username, recaptchaToken, email } = await req.json();
+    const { action, username, recaptchaToken, email, user_id } = await req.json();
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Get email by username action (for username login)
+    if (action === 'get_email_by_username') {
+      if (!username || typeof username !== "string") {
+        return new Response(
+          JSON.stringify({ error: "username is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const trimmedUsername = username.trim();
+
+      // Look up forum user by username (case-insensitive)
+      const { data: forumUser, error: forumError } = await supabaseAdmin
+        .from('forum_users')
+        .select('user_id')
+        .ilike('username', trimmedUsername)
+        .maybeSingle();
+
+      if (forumError) {
+        console.error("Error looking up username:", forumError);
+        return new Response(
+          JSON.stringify({ error: "Error looking up username" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!forumUser) {
+        return new Response(
+          JSON.stringify({ error: "Username not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get the email from auth.users
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(forumUser.user_id);
+      
+      if (authError || !authUser?.user?.email) {
+        return new Response(
+          JSON.stringify({ error: "User not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ email: authUser.user.email }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get email by user_id action (legacy, keeping for compatibility)
+    if (action === 'get_email_by_user_id') {
+      if (!user_id) {
+        return new Response(
+          JSON.stringify({ error: "user_id is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      
+      if (authError || !authUser?.user?.email) {
+        return new Response(
+          JSON.stringify({ error: "User not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ email: authUser.user.email }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Check email usage limit action
     if (action === 'check_email_limit') {
