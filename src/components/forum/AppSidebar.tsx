@@ -37,7 +37,7 @@ import {
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
-import bloxcityLogo from "@/assets/IMG_2412_Original-1.png";
+import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 
 interface AppSidebarProps {
   forumUser?: {
