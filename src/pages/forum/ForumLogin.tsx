@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
-
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface DisabledAccountInfo {
   is_self_disabled: boolean;
@@ -42,6 +42,10 @@ export default function ForumLogin() {
 
   const [hasExistingSession, setHasExistingSession] = useState(false);
 
+  // Avatar preview state
+  const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | null>(null);
+  const [loadingAvatar, setLoadingAvatar] = useState(false);
+
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -52,6 +56,31 @@ export default function ForumLogin() {
       mounted = false;
     };
   }, []);
+
+  // Debounced avatar lookup
+  useEffect(() => {
+    const trimmed = username.trim();
+    if (trimmed.length < 2) {
+      setPreviewAvatarUrl(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      setLoadingAvatar(true);
+      try {
+        const { data } = await supabase.functions.invoke('forum-register', {
+          body: { action: 'get_avatar_by_username', username: trimmed }
+        });
+        setPreviewAvatarUrl(data?.avatar_url || null);
+      } catch {
+        setPreviewAvatarUrl(null);
+      } finally {
+        setLoadingAvatar(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [username]);
 
   const check2FA = async (userEmail: string): Promise<{ requires2FA: boolean; method: 'totp' | 'email' | 'none' }> => {
     try {
@@ -487,7 +516,7 @@ export default function ForumLogin() {
       {/* Welcome Dialog popup */}
       <WelcomeDialog isLoggedIn={false} />
       
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md mt-12">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
@@ -522,8 +551,33 @@ export default function ForumLogin() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bc-card">
-          <div className="bc-card-body space-y-4">
+        <form onSubmit={handleSubmit} className="bc-card relative">
+          {/* Avatar circle at top of card */}
+          <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10">
+            <div 
+              className="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300"
+              style={{ 
+                background: 'hsl(var(--bc-card-bg))', 
+                border: '4px solid hsl(var(--bc-section-border))',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}
+            >
+              {loadingAvatar ? (
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+              ) : previewAvatarUrl ? (
+                <Avatar className="w-full h-full">
+                  <AvatarImage src={previewAvatarUrl} alt="User avatar" className="object-cover" />
+                  <AvatarFallback className="text-2xl font-bold" style={{ background: 'hsl(var(--bc-input-bg))', color: 'hsl(var(--bc-text-muted))' }}>
+                    {username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <User className="w-10 h-10" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+              )}
+            </div>
+          </div>
+
+          <div className="bc-card-body space-y-4 pt-16">
             {error && (
               <div className="bc-alert bc-alert-danger flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
