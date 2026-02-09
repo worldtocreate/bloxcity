@@ -516,13 +516,38 @@ export default function ForumLogin() {
       {/* Welcome Dialog popup */}
       <WelcomeDialog isLoggedIn={false} />
       
-      <div className="w-full max-w-md mt-12">
-        <div className="text-center mb-8">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-4">
           <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back</h1>
             <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Login to BLOX City</p>
           </Link>
+        </div>
+        
+        {/* Avatar circle between header and card */}
+        <div className="flex justify-center mb-4">
+          <div 
+            className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300"
+            style={{ 
+              background: 'hsl(var(--bc-card-bg))', 
+              border: '3px solid hsl(var(--bc-section-border))',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }}
+          >
+            {loadingAvatar ? (
+              <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+            ) : previewAvatarUrl ? (
+              <Avatar className="w-full h-full">
+                <AvatarImage src={previewAvatarUrl} alt="User avatar" className="object-cover" />
+                <AvatarFallback className="text-xl font-bold" style={{ background: 'hsl(var(--bc-input-bg))', color: 'hsl(var(--bc-text-muted))' }}>
+                  {username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            ) : (
+              <User className="w-8 h-8" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+            )}
+          </div>
         </div>
         {hasExistingSession && (
           <div className="bc-alert bc-alert-warning mb-4">
@@ -551,33 +576,8 @@ export default function ForumLogin() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bc-card relative">
-          {/* Avatar circle at top of card */}
-          <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-10">
-            <div 
-              className="w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300"
-              style={{ 
-                background: 'hsl(var(--bc-card-bg))', 
-                border: '4px solid hsl(var(--bc-section-border))',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-              }}
-            >
-              {loadingAvatar ? (
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'hsl(var(--bc-text-muted))' }} />
-              ) : previewAvatarUrl ? (
-                <Avatar className="w-full h-full">
-                  <AvatarImage src={previewAvatarUrl} alt="User avatar" className="object-cover" />
-                  <AvatarFallback className="text-2xl font-bold" style={{ background: 'hsl(var(--bc-input-bg))', color: 'hsl(var(--bc-text-muted))' }}>
-                    {username.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <User className="w-10 h-10" style={{ color: 'hsl(var(--bc-text-muted))' }} />
-              )}
-            </div>
-          </div>
-
-          <div className="bc-card-body space-y-4 pt-16">
+        <form onSubmit={handleSubmit} className="bc-card">
+          <div className="bc-card-body space-y-4">
             {error && (
               <div className="bc-alert bc-alert-danger flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
