@@ -1,6 +1,6 @@
 import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail } from "lucide-react";
 import { useState } from "react";
-import bloxcityLogo from "@/assets/yv9521dJ_400x400 (1).jpg";
+import bloxcityLogo from "@/assets/bloxcity.jpg";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 
