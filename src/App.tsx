@@ -25,6 +25,7 @@ import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NewsletterUnsubscribe from "./pages/NewsletterUnsubscribe";
 import NotFound from "./pages/NotFound";
+import Maintenance from "./pages/Maintenance";
 
 // Inline error pages
 function Error403() {
@@ -5089,6 +5090,9 @@ const App = () => (
 
             {/* Suspended page - outside ForumLayout */}
             <Route path="/suspended" element={<SuspendedPage />} />
+
+            {/* Maintenance page - outside ForumLayout */}
+            <Route path="/maintenance" element={<Maintenance />} />
 
             {/* Admin Route - outside ForumLayout */}
             <Route path="/admin" element={<Admin />} />
