@@ -3270,35 +3270,328 @@ textarea.bc-input {
 }
 
 /* ========================================
-   TOPBAR DROPDOWN POSITIONS
+   TOPBAR - BLOX City Navigation
 ======================================== */
-.navbar-more-dropdown-auth {
-  position: absolute;
-  top: 100%;
+.topbar {
+  position: fixed;
+  top: 0;
   left: 0;
-  margin-top: 4px;
+  right: 0;
+  height: 56px;
+  background: hsl(var(--bc-section-bg));
+  border-bottom: 1px solid hsl(var(--bc-section-border));
+  z-index: 9999;
+  display: flex;
+  align-items: center;
 }
 
-.navbar-more-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
+.topbar-push {
+  height: 56px;
 }
 
 .topbar-left {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  padding-left: 16px;
 }
 
 .topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-left: auto;
+  padding-right: 16px;
+  height: 100%;
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+}
+
+.topbar-logo img {
+  height: 40px;
+  width: auto;
+  border-radius: 6px;
+}
+
+.topbar-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  color: hsl(var(--bc-text));
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.topbar-link:hover {
+  color: hsl(var(--bc-info));
+  background: hsl(var(--bc-input-bg));
+}
+
+.topbar-link.dropdown {
   position: relative;
 }
 
-/* Topbar avatar mobile */
-.topbar-avatar-mobile {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  object-fit: cover;
+.topbar-sidebar-toggler {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: hsl(var(--bc-text));
+  cursor: pointer;
+}
+
+.topbar-sidebar-toggler:hover {
+  color: hsl(var(--bc-info));
+}
+
+/* Dropdown Content */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 150px;
+  background: hsl(var(--bc-section-bg));
+  border: 1px solid hsl(var(--bc-section-border));
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  overflow: hidden;
+  margin-top: 4px;
+  list-style: none;
+  padding: 4px 0;
+}
+
+.dropdown-content.show {
+  display: block;
+}
+
+.dropdown-item {
+  display: block;
+}
+
+.dropdown-item a,
+.dropdown-item button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  color: hsl(var(--bc-text));
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.dropdown-item a:hover,
+.dropdown-item button:hover {
+  background: hsl(var(--bc-info));
+  color: white;
+}
+
+.navbar-user-dropdown {
+  min-width: 160px;
+}
+
+.navbar-more-dropdown {
+  min-width: 140px;
+}
+
+/* ========================================
+   SIDEBAR - Mobile Navigation
+======================================== */
+.sidebar {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: hsl(var(--bc-section-bg));
+  border-right: 1px solid hsl(var(--bc-section-border));
+  z-index: 9998;
+  transform: translateX(0);
+  transition: transform 0.2s ease-out;
+  overflow-y: auto;
+}
+
+.sidebar.hide {
+  transform: translateX(-100%);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9997;
+}
+
+.sidebar-inner {
+  padding: 16px 0;
+}
+
+.sidebar-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-items .item {
+  display: block;
+}
+
+.sidebar-items .item a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: hsl(var(--bc-text));
+  font-weight: 500;
+  font-size: 15px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-items .item a:hover {
+  background: hsl(var(--bc-input-bg));
+  color: hsl(var(--bc-info));
+}
+
+.sidebar-items .item a svg,
+.sidebar-items .item a i {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: hsl(var(--bc-section-border));
+  margin: 12px 20px;
+}
+
+/* Icon sprites for currency/etc */
+.icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.icon-inbox { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2377838c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-6l-2 3h-4l-2-3H2'/%3E%3Cpath d='M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/%3E%3C/svg%3E"); }
+.icon-friends { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2377838c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='9' cy='7' r='4'/%3E%3Cpath d='M23 21v-2a4 4 0 0 0-3-3.87'/%3E%3Cpath d='M16 3.13a4 4 0 0 1 0 7.75'/%3E%3C/svg%3E"); }
+.icon-cash { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' y1='1' x2='12' y2='23'/%3E%3Cpath d='M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/%3E%3C/svg%3E"); }
+.icon-coins { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eab308' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'/%3E%3Cpath d='M12 18V6'/%3E%3C/svg%3E"); }
+.icon-staff { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2377838c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E"); }
+
+/* ========================================
+   RESPONSIVE VISIBILITY CLASSES
+======================================== */
+.hide-for-large {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+}
+
+.show-for-large {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .hide-for-large {
+    display: none !important;
+  }
+  
+  .show-for-large {
+    display: flex !important;
+    align-items: center;
+    width: 100%;
+  }
+}
+
+/* ========================================
+   SITE BANNERS
+======================================== */
+.site-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.site-banner.bc-alert-warning {
+  background: hsl(36 100% 95%);
+  border-bottom: 1px solid hsl(36 100% 80%);
+  color: hsl(36 100% 25%);
+}
+
+.site-banner.bc-alert-danger,
+.site-banner.alert-error {
+  background: hsl(4 90% 95%);
+  border-bottom: 1px solid hsl(4 90% 80%);
+  color: hsl(4 90% 30%);
+}
+
+.site-banner.bc-alert-info {
+  background: hsl(199 95% 95%);
+  border-bottom: 1px solid hsl(199 95% 70%);
+  color: hsl(199 95% 25%);
+}
+
+.site-banner.bc-alert-success {
+  background: hsl(122 39% 95%);
+  border-bottom: 1px solid hsl(122 39% 70%);
+  color: hsl(122 39% 25%);
+}
+
+/* Dark mode adjustments */
+.dark .topbar {
+  background: hsl(0 0% 15%);
+  border-color: hsl(0 0% 28%);
+}
+
+.dark .sidebar {
+  background: hsl(0 0% 15%);
+  border-color: hsl(0 0% 28%);
+}
+
+.dark .dropdown-content {
+  background: hsl(0 0% 18%);
+  border-color: hsl(0 0% 30%);
+}
+
+.dark .site-banner.bc-alert-warning {
+  background: hsl(36 50% 15%);
+  border-color: hsl(36 50% 30%);
+  color: hsl(36 100% 70%);
+}
+
+.dark .site-banner.bc-alert-danger,
+.dark .site-banner.alert-error {
+  background: hsl(4 50% 15%);
+  border-color: hsl(4 50% 30%);
+  color: hsl(4 90% 70%);
 }
 
