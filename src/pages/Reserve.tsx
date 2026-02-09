@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityLogo from "@/assets/bloxcity.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 const Reserve = () => {
