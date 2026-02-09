@@ -2,8 +2,8 @@ import { Globe, Calendar, ArrowRight, Users, Target, Info, Mail, Store, MessageS
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
-import logoSmall from "@/assets/bloxcity-logo.jpg";
-const landingBg = "/3724.jpg";
+import landingBg from "@/assets/landing-background.png";
+import logoSmall from "@/assets/IMG_2412_Original-1.png";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
 

@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityLogo from '@/assets/IMG_2412_Original-1.png';
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
 
 interface DisabledAccountInfo {
   is_self_disabled: boolean;
@@ -16,14 +16,13 @@ interface DisabledAccountInfo {
 
 export default function ForumLogin() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [sendingLoginLink, setSendingLoginLink] = useState(false);
-  const [resolvedEmail, setResolvedEmail] = useState('');
   
   // 2FA states
   const [requires2FA, setRequires2FA] = useState(false);
@@ -42,10 +41,6 @@ export default function ForumLogin() {
 
   const [hasExistingSession, setHasExistingSession] = useState(false);
 
-  // Avatar preview state
-  const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | null>(null);
-  const [loadingAvatar, setLoadingAvatar] = useState(false);
-
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,31 +51,6 @@ export default function ForumLogin() {
       mounted = false;
     };
   }, []);
-
-  // Debounced avatar lookup
-  useEffect(() => {
-    const trimmed = username.trim();
-    if (trimmed.length < 2) {
-      setPreviewAvatarUrl(null);
-      return;
-    }
-
-    const timeoutId = setTimeout(async () => {
-      setLoadingAvatar(true);
-      try {
-        const { data } = await supabase.functions.invoke('forum-register', {
-          body: { action: 'get_avatar_by_username', username: trimmed }
-        });
-        setPreviewAvatarUrl(data?.avatar_url || null);
-      } catch {
-        setPreviewAvatarUrl(null);
-      } finally {
-        setLoadingAvatar(false);
-      }
-    }, 400);
-
-    return () => clearTimeout(timeoutId);
-  }, [username]);
 
   const check2FA = async (userEmail: string): Promise<{ requires2FA: boolean; method: 'totp' | 'email' | 'none' }> => {
     try {
@@ -163,37 +133,11 @@ export default function ForumLogin() {
     }
   };
 
-  const lookupEmailByUsername = async (usernameInput: string): Promise<string | null> => {
-    const trimmedUsername = usernameInput.trim();
-    
-    // Use edge function to get email by username (bypasses RLS)
-    const { data, error } = await supabase.functions.invoke('forum-register', {
-      body: { action: 'get_email_by_username', username: trimmedUsername }
-    });
-    
-    if (error || !data?.email) {
-      return null;
-    }
-    
-    return data.email;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setEmailNotConfirmed(false);
     setLoading(true);
-
-    // Look up email by username
-    const email = await lookupEmailByUsername(username);
-    
-    if (!email) {
-      setError('Username not found');
-      setLoading(false);
-      return;
-    }
-    
-    setResolvedEmail(email);
 
     const twoFAStatus = await check2FA(email);
     
@@ -256,8 +200,9 @@ export default function ForumLogin() {
   };
 
   const handleResendVerification = async () => {
-    if (!resolvedEmail) {
-      toast.error('Please try logging in first to resolve your email.');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email first.');
       return;
     }
 
@@ -265,7 +210,7 @@ export default function ForumLogin() {
     try {
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
-        email: resolvedEmail,
+        email: trimmedEmail,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -283,15 +228,16 @@ export default function ForumLogin() {
   };
 
   const handleSendLoginLink = async () => {
-    if (!resolvedEmail) {
-      toast.error('Please try logging in first to resolve your email.');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Please enter your email first.');
       return;
     }
 
     setSendingLoginLink(true);
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: resolvedEmail,
+        email: trimmedEmail,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -517,37 +463,12 @@ export default function ForumLogin() {
       <WelcomeDialog isLoggedIn={false} />
       
       <div className="w-full max-w-md">
-        <div className="text-center mb-4">
+        <div className="text-center mb-8">
           <Link to="/" className="inline-block">
             <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto mb-4" style={{ borderRadius: 'var(--bc-rounded-lg)' }} />
             <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--bc-text))' }}>Welcome Back</h1>
             <p style={{ color: 'hsl(var(--bc-text-muted))' }}>Login to BLOX City</p>
           </Link>
-        </div>
-        
-        {/* Avatar circle between header and card */}
-        <div className="flex justify-center mb-4">
-          <div 
-            className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300"
-            style={{ 
-              background: 'hsl(var(--bc-card-bg))', 
-              border: '3px solid hsl(var(--bc-section-border))',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-            }}
-          >
-            {loadingAvatar ? (
-              <Loader2 className="w-6 h-6 animate-spin" style={{ color: 'hsl(var(--bc-text-muted))' }} />
-            ) : previewAvatarUrl ? (
-              <Avatar className="w-full h-full">
-                <AvatarImage src={previewAvatarUrl} alt="User avatar" className="object-cover" />
-                <AvatarFallback className="text-xl font-bold" style={{ background: 'hsl(var(--bc-input-bg))', color: 'hsl(var(--bc-text-muted))' }}>
-                  {username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            ) : (
-              <User className="w-8 h-8" style={{ color: 'hsl(var(--bc-text-muted))' }} />
-            )}
-          </div>
         </div>
         {hasExistingSession && (
           <div className="bc-alert bc-alert-warning mb-4">
@@ -614,18 +535,17 @@ export default function ForumLogin() {
             )}
 
             <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Username</label>
+              <label className="block text-sm font-semibold mb-2" style={{ color: 'hsl(var(--bc-text))' }}>Email</label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'hsl(var(--bc-text-muted))' }} />
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
                   className="bc-input"
                   style={{ paddingLeft: '42px' }}
                   required
-                  autoComplete="username"
                 />
               </div>
             </div>
