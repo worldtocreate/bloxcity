@@ -1698,7 +1698,7 @@ function useGameParams() {
 }
 
 // Inline Landing Page for logged-out users
-const bloxcityLogoLanding = "/bloxcity-logo-new.png";
+import bloxcityLogoLanding from "@/assets/IMG_2412_Original-1.png";
 
 interface LandingThread {
   id: string;

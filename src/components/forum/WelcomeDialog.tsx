@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-const bloxcityLogo = '/bloxcity-logo-new.png';
+import bloxcityLogo from "@/assets/IMG_2412_Original-1.png";
 import { Sparkles } from 'lucide-react';
 
 interface WelcomeDialogProps {

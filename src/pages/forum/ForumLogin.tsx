@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import { toast } from 'sonner';
-const bloxcityLogo = '/bloxcity-logo-new.png';
+import bloxcityLogo from "@/assets/IMG_2412_Original-1.png";
 import TwoFactorVerify, { getTrustedDeviceToken, clearTrustedDeviceToken } from '@/components/forum/TwoFactorVerify';
 import WelcomeDialog from '@/components/forum/WelcomeDialog';
 
