@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import bloxcityLogo from "@/assets/bloxcity-logo.jpg";
+import bloxcityLogo from "@/assets/bloxcity.jpg";
 
 const NewsletterUnsubscribe = () => {
   const [searchParams] = useSearchParams();
