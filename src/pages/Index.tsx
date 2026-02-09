@@ -79,22 +79,20 @@ const Index = () => {
   const [recentThreads, setRecentThreads] = useState<RecentThread[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
 
-  // Check maintenance mode on mount
+  // Check maintenance mode on mount using RPC that bypasses RLS
   useEffect(() => {
     const checkMaintenance = async () => {
       try {
-        const { data } = await supabase
-          .from('admin_settings')
-          .select('value')
-          .eq('key', 'maintenance_mode')
-          .single();
+        // Use the SECURITY DEFINER RPC to check global maintenance status
+        const { data } = await supabase.rpc('get_page_maintenance_status');
         
-        if (data?.value && typeof data.value === 'object' && 'enabled' in data.value) {
-          setIsMaintenanceMode((data.value as { enabled: boolean }).enabled);
+        if (data && typeof data === 'object' && 'global_enabled' in data) {
+          setIsMaintenanceMode((data as { global_enabled: boolean }).global_enabled);
         } else {
           setIsMaintenanceMode(false);
         }
       } catch {
+        // If the RPC fails, allow access (fail open)
         setIsMaintenanceMode(false);
       }
     };
