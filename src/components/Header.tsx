@@ -7,7 +7,8 @@ const Header = () => {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/reserve", label: "Reserve Username" },
+    { href: "/reserve", label: "Reserve" },
+    { href: "/roadmap", label: "Roadmap" },
     { href: "/faq", label: "FAQ" },
   ];
 
@@ -18,40 +19,21 @@ const Header = () => {
           <img src={bloxcityLogo} alt="BLOX City" className="header-logo" />
           <span className="header-title">BLOX City</span>
         </a>
-
-        {/* Desktop Navigation */}
         <nav className="header-nav">
           {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`header-nav-link ${window.location.pathname === link.href ? 'active' : ''}`}
-            >
+            <a key={link.href} href={link.href} className={`header-nav-link ${window.location.pathname === link.href ? 'active' : ''}`}>
               {link.label}
             </a>
           ))}
         </nav>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="mobile-menu-button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
+        <button className="mobile-menu-button" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Toggle menu">
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
-
-      {/* Mobile Navigation */}
       {mobileMenuOpen && (
         <nav className="mobile-nav">
           {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`mobile-nav-link ${window.location.pathname === link.href ? 'active' : ''}`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
+            <a key={link.href} href={link.href} className={`mobile-nav-link ${window.location.pathname === link.href ? 'active' : ''}`} onClick={() => setMobileMenuOpen(false)}>
               {link.label}
             </a>
           ))}

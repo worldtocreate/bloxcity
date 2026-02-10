@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import bloxcityLogo from "@/assets/bloxcity.jpg";
+import { MailX, Loader2, ArrowLeft } from "lucide-react";
+import Header from "@/components/Header";
 
 const NewsletterUnsubscribe = () => {
   const [searchParams] = useSearchParams();
@@ -10,86 +11,56 @@ const NewsletterUnsubscribe = () => {
 
   useEffect(() => {
     const token = searchParams.get("token");
-    
-    if (!token) {
-      setStatus("error");
-      setMessage("Invalid unsubscribe link. Missing token.");
-      return;
-    }
-
+    if (!token) { setStatus("error"); setMessage("Invalid unsubscribe link. Missing token."); return; }
     const unsubscribe = async () => {
       try {
-        const response = await supabase.functions.invoke("newsletter-unsubscribe", {
-          body: { token },
-        });
-
-        if (response.error) {
-          throw new Error("Failed to unsubscribe");
-        }
-
+        const response = await supabase.functions.invoke("newsletter-unsubscribe", { body: { token } });
+        if (response.error) throw new Error("Failed to unsubscribe");
         const data = response.data as { success?: boolean; message?: string; error?: string };
-
-        if (data.error) {
-          setStatus("error");
-          setMessage(data.error);
-        } else {
-          setStatus("success");
-          setMessage(data.message || "Successfully unsubscribed!");
-        }
-      } catch (err) {
-        setStatus("error");
-        setMessage("Failed to unsubscribe. Please try again.");
-      }
+        if (data.error) { setStatus("error"); setMessage(data.error); }
+        else { setStatus("success"); setMessage(data.message || "Successfully unsubscribed!"); }
+      } catch { setStatus("error"); setMessage("Failed to unsubscribe. Please try again."); }
     };
-
     unsubscribe();
   }, [searchParams]);
 
   return (
-    <div className="maintenance-container">
-      <div className="maintenance-content" style={{ maxWidth: "500px" }}>
-        <div className="brand-section">
-          <div className="logo-icon">
-            <img src={bloxcityLogo} alt="BLOX City Logo" />
-          </div>
-          <h1 className="brand-title">BLOX City</h1>
-        </div>
-
-        <div className="reservation-section">
+    <div className="has-header">
+      <Header />
+      <div className="flex min-h-[70vh] items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
           {status === "loading" && (
-            <div className="text-center">
-              <p className="text-gray-400">Processing your request...</p>
-            </div>
+            <>
+              <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-muted-foreground" />
+              <p className="text-muted-foreground">Processing your request...</p>
+            </>
           )}
-
           {status === "success" && (
-            <div className="reservation-success">
-              <div className="success-header">
-                <span>✅</span> Unsubscribed
+            <>
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--bc-green))] text-white">
+                <MailX className="h-5 w-5" />
               </div>
-              <p className="success-message">{message}</p>
-              <p className="success-note">
-                You will no longer receive newsletter emails from BLOX City.
-              </p>
-              <a href="/" className="check-status-link">
-                ← Back to BLOX City
+              <h1 className="text-xl font-bold text-foreground">Unsubscribed</h1>
+              <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+              <p className="mt-1 text-xs text-muted-foreground">You will no longer receive newsletter emails from BLOX City.</p>
+              <a href="/" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
+                <ArrowLeft className="h-4 w-4" /> Back to BLOX City
               </a>
-            </div>
+            </>
           )}
-
           {status === "error" && (
-            <div className="reservation-error" style={{ padding: "20px", borderRadius: "8px" }}>
-              <p style={{ marginBottom: "10px" }}>{message}</p>
-              <a href="/" className="check-status-link">
-                ← Back to BLOX City
+            <>
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-destructive text-destructive-foreground">
+                <MailX className="h-5 w-5" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground">Something went wrong</h1>
+              <p className="mt-2 text-sm text-destructive">{message}</p>
+              <a href="/" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
+                <ArrowLeft className="h-4 w-4" /> Back to BLOX City
               </a>
-            </div>
+            </>
           )}
         </div>
-
-        <footer className="maintenance-footer">
-          <p>© 2026 BLOX City, Inc. All rights reserved.</p>
-        </footer>
       </div>
     </div>
   );

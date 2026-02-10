@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import bloxcityLogo from "@/assets/bloxcity.jpg";
+import Header from "@/components/Header";
 
 type ReservationStatus = 'pending' | 'approved' | 'denied' | null;
 
@@ -19,120 +20,75 @@ const CheckStatus = () => {
   const handleCheckStatus = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!checkEmail.trim()) return;
-
     setCheckLoading(true);
     setCheckError("");
     setStatusResult(null);
-
     try {
       const response = await supabase.functions.invoke('check-reservation-status', {
         body: { email: checkEmail.trim() },
       });
-
-      if (response.error) {
-        setCheckError("Failed to check status. Please try again.");
-        setCheckLoading(false);
-        return;
-      }
-
-      const data = response.data as any;
-      setStatusResult(data);
-    } catch (err) {
-      setCheckError("Failed to check status. Please try again.");
-    }
-
+      if (response.error) { setCheckError("Failed to check status. Please try again."); setCheckLoading(false); return; }
+      setStatusResult(response.data as any);
+    } catch { setCheckError("Failed to check status. Please try again."); }
     setCheckLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {/* Back Link */}
-        <a href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6 transition">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
+    <div className="has-header">
+      <Header />
+      <div className="mx-auto max-w-lg px-6 py-16">
+        <a href="/reserve" className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Back to Reserve
         </a>
 
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <img src={bloxcityLogo} alt="BLOX City" className="w-16 h-16 mx-auto rounded-xl mb-4" />
-            <h1 className="text-2xl font-bold text-gray-800">Check Reservation Status</h1>
-            <p className="text-gray-500 mt-2">Enter your email to check if your username has been approved or denied.</p>
+        <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <div className="mb-6 text-center">
+            <img src={bloxcityLogo} alt="BLOX City" className="mx-auto mb-4 h-14 w-14 rounded-xl" />
+            <h1 className="text-2xl font-bold text-foreground">Check Reservation Status</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Enter your email to check if your username has been approved</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleCheckStatus} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-              <input
-                type="email"
-                value={checkEmail}
-                onChange={(e) => setCheckEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                required
-                disabled={checkLoading}
-              />
+              <label className="mb-1 block text-sm font-medium text-foreground">Email Address</label>
+              <input type="email" value={checkEmail} onChange={(e) => setCheckEmail(e.target.value)} placeholder="Your email address" className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20" required disabled={checkLoading} />
             </div>
-            <button
-              type="submit"
-              disabled={checkLoading}
-              className="w-full flex items-center justify-center gap-2 bg-gray-800 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition disabled:opacity-50"
-            >
-              <Search className="w-4 h-4" />
+            <button type="submit" disabled={checkLoading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-foreground py-3.5 text-sm font-semibold text-background transition hover:bg-foreground/90 disabled:opacity-50">
+              <Search className="h-4 w-4" />
               {checkLoading ? "Checking..." : "Check Status"}
             </button>
           </form>
 
-          {/* Error */}
-          {checkError && (
-            <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-              {checkError}
-            </div>
-          )}
+          {checkError && <div className="mt-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">{checkError}</div>}
 
-          {/* Result */}
           {statusResult && (
-            <div className={`mt-6 p-4 rounded-xl ${
-              !statusResult.found ? 'bg-gray-50 border border-gray-200' :
-              statusResult.status === 'pending' ? 'bg-yellow-50 border border-yellow-300' :
-              statusResult.status === 'approved' ? 'bg-green-50 border border-green-300' :
-              'bg-red-50 border border-red-300'
+            <div className={`mt-6 rounded-xl border p-5 ${
+              !statusResult.found ? 'border-border bg-muted/50' :
+              statusResult.status === 'pending' ? 'border-[hsl(var(--bc-yellow))]/30 bg-[hsl(var(--bc-yellow))]/5' :
+              statusResult.status === 'approved' ? 'border-[hsl(var(--bc-green))]/30 bg-[hsl(var(--bc-green))]/5' :
+              'border-destructive/30 bg-destructive/5'
             }`}>
               {!statusResult.found ? (
                 <div className="text-center">
-                  <p className="text-gray-600">No reservation found for this email address.</p>
-                  <a href="/" className="inline-block mt-3 text-blue-600 font-medium hover:underline">
-                    Reserve a username →
-                  </a>
+                  <p className="text-sm text-muted-foreground">No reservation found for this email.</p>
+                  <a href="/reserve" className="mt-3 inline-block text-sm font-medium text-primary hover:text-primary/80">Reserve a username →</a>
                 </div>
               ) : statusResult.status === 'pending' ? (
                 <div>
-                  <p className="text-yellow-700 font-semibold text-lg mb-1">⏳ Pending Review</p>
-                  <p className="text-gray-600">
-                    Your username "<strong>{statusResult.username}</strong>" is currently being reviewed by our team.
-                  </p>
+                  <p className="font-semibold text-[hsl(var(--bc-yellow))]">⏳ Pending Review</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Your username "<strong className="text-foreground">{statusResult.username}</strong>" is being reviewed.</p>
                 </div>
               ) : statusResult.status === 'approved' ? (
                 <div>
-                  <p className="text-green-700 font-semibold text-lg mb-1">✅ Approved!</p>
-                  <p className="text-gray-600">
-                    Your username "<strong>{statusResult.username}</strong>" has been approved! Check your email for your reservation code.
-                  </p>
+                  <p className="font-semibold text-[hsl(var(--bc-green))]">✅ Approved!</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Your username "<strong className="text-foreground">{statusResult.username}</strong>" has been approved! Check your email for your reservation code.</p>
                 </div>
               ) : statusResult.status === 'denied' ? (
                 <div>
-                  <p className="text-red-700 font-semibold text-lg mb-1">❌ Denied</p>
-                  <p className="text-gray-600">
-                    Unfortunately, the username "<strong>{statusResult.username}</strong>" was not approved.
-                  </p>
-                  {statusResult.denialReason && (
-                    <p className="text-red-600 text-sm mt-2 italic">Reason: {statusResult.denialReason}</p>
-                  )}
-                  <a href="/" className="inline-block mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition">
-                    Reserve a Different Username
-                  </a>
+                  <p className="font-semibold text-destructive">❌ Denied</p>
+                  <p className="mt-1 text-sm text-muted-foreground">The username "<strong className="text-foreground">{statusResult.username}</strong>" was not approved.</p>
+                  {statusResult.denialReason && <p className="mt-2 text-xs italic text-destructive">{statusResult.denialReason}</p>}
+                  <a href="/reserve" className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90">Reserve a Different Username</a>
                 </div>
               ) : null}
             </div>
